@@ -31,37 +31,43 @@ function KpiCard({
   value,
   gold,
   green,
+  sub,
 }: {
   label: string
   value: string
   gold?: boolean
   green?: boolean
+  sub?: string
 }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 pb-4">
-      <p className="text-[10px] text-gray-400 mb-2 leading-snug">{label}</p>
-      <p
-        className={`text-2xl font-light tracking-tight ${
-          gold ? 'text-[#B8860B]' : green ? 'text-emerald-600' : 'text-gray-900'
-        }`}
-      >
+    <div className="bg-[#141414] border border-[rgba(201,151,58,0.12)] rounded-xl p-4 hover:border-[rgba(201,151,58,0.3)] transition-colors">
+      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">{label}</p>
+      <p className={`text-xl font-light tracking-tight ${
+        gold ? 'text-[#C9973A]' : green ? 'text-emerald-400' : 'text-white'
+      }`}>
         {value}
       </p>
+      {sub && <p className="text-[10px] text-gray-600 mt-1">{sub}</p>}
     </div>
   )
 }
 
-function SummaryBar({ items }: { items: { label: string; value: string; gold?: boolean }[] }) {
+function SummaryBar({ items }: { items: { label: string; value: string; gold?: boolean; green?: boolean }[] }) {
   return (
-    <div className="bg-gray-100 rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-      {items.map((item) => (
-        <div key={item.label} className="text-center">
-          <p className="text-[9px] text-gray-400 uppercase tracking-wider mb-1">{item.label}</p>
-          <p className={`text-base font-medium ${item.gold ? 'text-[#B8860B]' : 'text-gray-900'}`}>
-            {item.value}
-          </p>
-        </div>
-      ))}
+    <div className="bg-[#0D0D0D] border border-[rgba(201,151,58,0.15)] rounded-xl p-5 mb-8">
+      <p className="text-[10px] text-[#C9973A] uppercase tracking-[0.2em] mb-4">Account Overview · Last 30 Days</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
+        {items.map((item) => (
+          <div key={item.label}>
+            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{item.label}</p>
+            <p className={`text-base font-semibold ${
+              item.gold ? 'text-[#C9973A]' : item.green ? 'text-emerald-400' : 'text-white'
+            }`}>
+              {item.value}
+            </p>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -92,8 +98,8 @@ function CampaignSection({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
             {
               label: 'Spend (NZD)',
               data: ads.map((a) => parseFloat(a.amount_spent || '0')),
-              backgroundColor: 'rgba(184,134,11,0.75)',
-              borderRadius: 3,
+              backgroundColor: 'rgba(201,151,58,0.8)',
+              borderRadius: 4,
               yAxisID: 'y',
             },
             {
@@ -102,15 +108,15 @@ function CampaignSection({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
                 const m = a.results?.value?.match(/^(\d+)/)
                 return m ? parseInt(m[1]) : 0
               }),
-              backgroundColor: 'rgba(24,95,165,0.6)',
-              borderRadius: 3,
+              backgroundColor: 'rgba(99,179,237,0.6)',
+              borderRadius: 4,
               yAxisID: 'y1',
             },
             {
               label: 'Leads',
               data: ads.map((a) => parseInt(a.lead || '0') || 0),
-              backgroundColor: 'rgba(29,158,117,0.85)',
-              borderRadius: 3,
+              backgroundColor: 'rgba(52,211,153,0.7)',
+              borderRadius: 4,
               yAxisID: 'y1',
             },
           ],
@@ -122,21 +128,24 @@ function CampaignSection({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
             legend: {
               display: true,
               position: 'top',
-              labels: { font: { size: 10 }, boxWidth: 10, padding: 10, color: '#888' },
+              labels: { font: { size: 10 }, boxWidth: 10, padding: 12, color: '#666' },
             },
           },
           scales: {
-            x: { ticks: { color: '#888', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+            x: {
+              ticks: { color: '#555', font: { size: 10 } },
+              grid: { color: 'rgba(255,255,255,0.04)' },
+            },
             y: {
-              ticks: { color: '#888', font: { size: 10 }, callback: (v) => '$' + v },
-              grid: { color: 'rgba(0,0,0,0.05)' },
-              title: { display: true, text: 'Spend', color: '#aaa', font: { size: 9 } },
+              ticks: { color: '#555', font: { size: 10 }, callback: (v) => '$' + v },
+              grid: { color: 'rgba(255,255,255,0.04)' },
+              title: { display: true, text: 'Spend', color: '#555', font: { size: 9 } },
             },
             y1: {
               position: 'right',
-              ticks: { color: '#888', font: { size: 10 } },
+              ticks: { color: '#555', font: { size: 10 } },
               grid: { display: false },
-              title: { display: true, text: 'LPVs / Leads', color: '#aaa', font: { size: 9 } },
+              title: { display: true, text: 'LPVs / Leads', color: '#555', font: { size: 9 } },
             },
           },
         },
@@ -148,31 +157,42 @@ function CampaignSection({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
   }, [open, ads])
 
   return (
-    <div className="mb-5">
+    <div className="mb-6">
       {/* Campaign header */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full bg-[#2C2C2A] text-white px-4 py-3 rounded-t-lg flex items-center justify-between text-sm font-medium hover:bg-[#3a3a38] transition-colors"
+        className="w-full bg-[#141414] border border-[rgba(201,151,58,0.2)] text-white px-5 py-4 rounded-xl flex items-center justify-between hover:border-[rgba(201,151,58,0.4)] hover:bg-[#1a1a1a] transition-all duration-200"
+        style={{ borderRadius: open ? '12px 12px 0 0' : '12px' }}
       >
-        <span>{campaign.name}</span>
-        <div className="flex items-center gap-2">
-          <span className="text-xs bg-emerald-900/40 text-emerald-400 px-2 py-0.5 rounded-full">
+        <div className="flex items-center gap-3">
+          <span className="w-0.5 h-5 bg-[#C9973A] rounded-full inline-block opacity-70" />
+          <span className="font-semibold text-sm text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>{campaign.name}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="hidden sm:flex items-center gap-1 text-[10px] text-[#C9973A]">
+            <span className="text-gray-500">Spend</span>
+            <span className="font-semibold">{fmtDollar(spend)}</span>
+          </span>
+          <span className="text-[10px] bg-emerald-900/30 text-emerald-400 border border-emerald-800/30 px-2 py-0.5 rounded-full">
             Active
           </span>
-          <span className="text-gray-400 text-xs">{open ? '▲' : '▼'}</span>
+          <span className="text-gray-600 text-xs">{open ? '▲' : '▼'}</span>
         </div>
       </button>
 
       {open && (
-        <div className="border border-t-0 border-gray-200 rounded-b-lg p-4">
-          {/* KPI cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+        <div className="border border-t-0 border-[rgba(201,151,58,0.15)] rounded-b-xl bg-[#0D0D0D] p-5">
+
+          {/* KPI row 1 */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
             <KpiCard label="Amount Spent" value={fmtDollar(spend)} gold />
             <KpiCard label="Reach" value={fmt(campaign.reach)} />
             <KpiCard label="Impressions" value={fmt(campaign.impressions)} />
-            <KpiCard label="Clicks on Ads" value={fmt(campaign.clicks)} />
+            <KpiCard label="Clicks" value={fmt(campaign.clicks)} />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+
+          {/* KPI row 2 — lead gen */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             <KpiCard label="Landing Page Views" value={lpv > 0 ? fmt(lpv) : '—'} />
             <KpiCard label="Cost Per LPV" value={cplpv > 0 ? `$${cplpv.toFixed(2)}` : '—'} />
             <KpiCard label="Leads" value={leads > 0 ? String(leads) : '—'} green={leads > 0} />
@@ -181,24 +201,25 @@ function CampaignSection({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
 
           {/* Ad breakdown table */}
           {ads.length > 0 && (
-            <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
-              <div className="bg-[#2C2C2A] text-white px-4 py-2 text-xs font-medium">
-                {campaign.name} — Ads
+            <div className="border border-[rgba(201,151,58,0.12)] rounded-xl overflow-hidden mb-6">
+              <div className="bg-[#141414] border-b border-[rgba(201,151,58,0.12)] px-4 py-2.5 flex items-center gap-2">
+                <span className="w-0.5 h-3 bg-[#C9973A] rounded-full inline-block" />
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Ad Performance — {campaign.name}
+                </p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="border-b border-gray-100">
-                      {['Ad', 'Spend', 'Reach', 'Impressions', 'Clicks', 'LPV', 'Cost/LPV', 'Leads', 'CPL'].map(
-                        (h) => (
-                          <th
-                            key={h}
-                            className={`py-2 px-3 text-gray-400 font-medium whitespace-nowrap ${h === 'Ad' ? 'text-left' : 'text-right'}`}
-                          >
-                            {h}
-                          </th>
-                        )
-                      )}
+                    <tr className="border-b border-[rgba(255,255,255,0.05)]">
+                      {['Ad', 'Spend', 'Reach', 'Impressions', 'Clicks', 'LPV', 'Cost/LPV', 'Leads', 'CPL'].map((h) => (
+                        <th
+                          key={h}
+                          className={`py-2.5 px-3 text-gray-600 font-medium whitespace-nowrap uppercase tracking-wider text-[10px] ${h === 'Ad' ? 'text-left' : 'text-right'}`}
+                        >
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
@@ -213,20 +234,20 @@ function CampaignSection({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
                       const adSpend = parseFloat(ad.amount_spent || '0')
 
                       return (
-                        <tr key={ad.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                          <td className="py-2 px-3 font-medium text-blue-700">{ad.name}</td>
-                          <td className="py-2 px-3 text-right">${adSpend.toFixed(2)}</td>
-                          <td className="py-2 px-3 text-right">{fmt(ad.reach)}</td>
-                          <td className="py-2 px-3 text-right">{fmt(ad.impressions)}</td>
-                          <td className="py-2 px-3 text-right">{fmt(ad.clicks)}</td>
-                          <td className="py-2 px-3 text-right">{adLpv > 0 ? fmt(adLpv) : '—'}</td>
-                          <td className={`py-2 px-3 text-right ${adCplpv > 0 && adCplpv < 0.75 ? 'text-emerald-600 font-medium' : adCplpv > 1 ? 'text-amber-600' : ''}`}>
+                        <tr key={ad.id} className="border-b border-[rgba(255,255,255,0.03)] hover:bg-[rgba(201,151,58,0.03)] transition-colors">
+                          <td className="py-2.5 px-3 font-medium text-[#C9973A]">{ad.name}</td>
+                          <td className="py-2.5 px-3 text-right text-gray-300">${adSpend.toFixed(2)}</td>
+                          <td className="py-2.5 px-3 text-right text-gray-400">{fmt(ad.reach)}</td>
+                          <td className="py-2.5 px-3 text-right text-gray-400">{fmt(ad.impressions)}</td>
+                          <td className="py-2.5 px-3 text-right text-gray-400">{fmt(ad.clicks)}</td>
+                          <td className="py-2.5 px-3 text-right text-gray-400">{adLpv > 0 ? fmt(adLpv) : '—'}</td>
+                          <td className={`py-2.5 px-3 text-right font-medium ${adCplpv > 0 && adCplpv < 0.75 ? 'text-emerald-400' : adCplpv > 1 ? 'text-amber-500' : 'text-gray-400'}`}>
                             {adCplpv > 0 ? `$${adCplpv.toFixed(2)}` : '—'}
                           </td>
-                          <td className={`py-2 px-3 text-right font-medium ${adLeads > 0 ? 'text-emerald-600' : 'text-gray-300'}`}>
+                          <td className={`py-2.5 px-3 text-right font-semibold ${adLeads > 0 ? 'text-emerald-400' : 'text-gray-700'}`}>
                             {adLeads > 0 ? adLeads : '—'}
                           </td>
-                          <td className={`py-2 px-3 text-right ${adCpl > 0 ? 'text-[#B8860B] font-medium' : 'text-gray-300'}`}>
+                          <td className={`py-2.5 px-3 text-right font-medium ${adCpl > 0 ? 'text-[#C9973A]' : 'text-gray-700'}`}>
                             {adCpl > 0 ? `$${adCpl.toFixed(2)}` : '—'}
                           </td>
                         </tr>
@@ -240,12 +261,15 @@ function CampaignSection({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
 
           {/* Chart */}
           {ads.length > 0 && (
-            <div className="relative h-44 mb-4">
-              <canvas ref={chartRef} />
+            <div className="bg-[#141414] border border-[rgba(201,151,58,0.12)] rounded-xl p-4 mb-6">
+              <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-3">Ad Performance Chart</p>
+              <div className="relative h-48">
+                <canvas ref={chartRef} />
+              </div>
             </div>
           )}
 
-          {/* Summary */}
+          {/* Campaign summary */}
           <CampaignSummary campaign={campaign} ads={ads} />
         </div>
       )}
@@ -283,51 +307,43 @@ function CampaignSummary({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
   } else if (lpv > 0) {
     insight = `${lpv} landing page views recorded. No leads attributed yet — verify the lead event is firing on the landing page. `
   }
-
   if (topAdByCplpv) {
     const m = topAdByCplpv.cost_per_result?.value?.match(/[\d.]+/)
-    if (m) {
-      insight += `${topAdByCplpv.name} has the most efficient cost per LPV at $${parseFloat(m[0]).toFixed(2)}.`
-    }
+    if (m) insight += `${topAdByCplpv.name} has the most efficient cost per LPV at $${parseFloat(m[0]).toFixed(2)}.`
   }
-
   if (ctr > 3) insight += ` CTR of ${ctr.toFixed(2)}% is excellent — well above the account average.`
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="w-0.5 h-3 bg-[#B8860B] rounded inline-block" />
-        <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">
+    <div className="bg-[#141414] border border-[rgba(201,151,58,0.15)] rounded-xl p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="w-0.5 h-3 bg-[#C9973A] rounded-full inline-block" />
+        <p className="text-[10px] font-semibold text-[#C9973A] uppercase tracking-[0.15em]">
           Campaign Summary
         </p>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-        <div className="bg-gray-50 rounded p-2">
-          <p className="text-[9px] text-gray-400 uppercase tracking-wide mb-0.5">CTR</p>
-          <p className={`text-sm font-medium ${ctr > 2 ? 'text-emerald-600' : 'text-gray-700'}`}>
-            {ctr.toFixed(2)}%
-          </p>
-        </div>
-        <div className="bg-gray-50 rounded p-2">
-          <p className="text-[9px] text-gray-400 uppercase tracking-wide mb-0.5">CPM</p>
-          <p className="text-sm font-medium text-gray-700">
-            ${parseFloat(campaign.cpm || '0').toFixed(2)}
-          </p>
-        </div>
-        <div className="bg-gray-50 rounded p-2">
-          <p className="text-[9px] text-gray-400 uppercase tracking-wide mb-0.5">Leads</p>
-          <p className={`text-sm font-medium ${leads > 0 ? 'text-emerald-600' : 'text-gray-400'}`}>
-            {leads || '—'}
-          </p>
-        </div>
-        <div className="bg-gray-50 rounded p-2">
-          <p className="text-[9px] text-gray-400 uppercase tracking-wide mb-0.5">CPL</p>
-          <p className={`text-sm font-medium ${cpl > 0 ? 'text-[#B8860B]' : 'text-gray-400'}`}>
-            {cpl > 0 ? `$${cpl.toFixed(2)}` : '—'}
-          </p>
-        </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        {[
+          { label: 'CTR', value: `${ctr.toFixed(2)}%`, highlight: ctr > 2 ? 'green' : '' },
+          { label: 'CPM', value: `$${parseFloat(campaign.cpm || '0').toFixed(2)}`, highlight: '' },
+          { label: 'Leads', value: leads > 0 ? String(leads) : '—', highlight: leads > 0 ? 'green' : '' },
+          { label: 'CPL', value: cpl > 0 ? `$${cpl.toFixed(2)}` : '—', highlight: cpl > 0 ? 'gold' : '' },
+        ].map((item) => (
+          <div key={item.label} className="bg-[#0D0D0D] border border-[rgba(255,255,255,0.04)] rounded-lg p-3">
+            <p className="text-[9px] text-gray-600 uppercase tracking-wider mb-1">{item.label}</p>
+            <p className={`text-sm font-semibold ${
+              item.highlight === 'green' ? 'text-emerald-400' :
+              item.highlight === 'gold' ? 'text-[#C9973A]' : 'text-gray-300'
+            }`}>
+              {item.value}
+            </p>
+          </div>
+        ))}
       </div>
-      {insight && <p className="text-xs text-gray-500 leading-relaxed">{insight}</p>}
+      {insight && (
+        <p className="text-xs text-gray-500 leading-relaxed border-t border-[rgba(255,255,255,0.05)] pt-3">
+          {insight}
+        </p>
+      )}
     </div>
   )
 }
@@ -339,7 +355,6 @@ export function DashboardClient({ client, summary, campaigns, ads }: Props) {
 
   return (
     <>
-      {/* Portfolio summary bar */}
       <SummaryBar
         items={[
           { label: 'Total Spend', value: fmtDollar(totalSpend), gold: true },
@@ -348,14 +363,13 @@ export function DashboardClient({ client, summary, campaigns, ads }: Props) {
           { label: 'Clicks', value: fmt(summary?.clicks) },
           { label: 'Avg CTR', value: `${parseFloat(summary?.ctr || '0').toFixed(2)}%` },
           { label: 'Avg CPM', value: `$${parseFloat(summary?.cpm || '0').toFixed(2)}` },
-          { label: 'Total Leads', value: totalLeads > 0 ? String(totalLeads) : '—' },
+          { label: 'Total Leads', value: totalLeads > 0 ? String(totalLeads) : '—', green: totalLeads > 0 },
           { label: 'Cost Per Lead', value: cpl > 0 ? fmtDollar(cpl) : '—', gold: cpl > 0 },
         ]}
       />
 
-      {/* Per-campaign sections */}
       {campaigns.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
+        <div className="text-center py-16 text-gray-600 border border-[rgba(201,151,58,0.1)] rounded-xl">
           No active campaigns in the last 30 days.
         </div>
       ) : (

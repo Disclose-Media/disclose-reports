@@ -1,14 +1,46 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --gold: #B8860B;
-  --dm-dark: #0D0D0D;
+  --gold: #C9973A;
+  --gold-light: #E8B86D;
+  --gold-dim: rgba(201,151,58,0.15);
+  --dm-dark: #0A0A0A;
+  --dm-dark2: #141414;
+  --dm-dark3: #1E1E1E;
+  --dm-border: rgba(201,151,58,0.2);
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: #F5F5F4;
-  color: #1a1a1a;
+  background: #0A0A0A;
+  color: #E8E8E8;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Gold gradient text utility */
+.gold-text {
+  background: linear-gradient(135deg, #C9973A 0%, #E8B86D 50%, #C9973A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Subtle gold glow */
+.gold-glow {
+  box-shadow: 0 0 20px rgba(201,151,58,0.15);
+}
+
+/* Card border shimmer */
+.card-border {
+  border: 1px solid rgba(201,151,58,0.15);
+}
+
+.card-border:hover {
+  border-color: rgba(201,151,58,0.4);
 }
