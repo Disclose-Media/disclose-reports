@@ -1,7 +1,12 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getClientByToken } from '@/lib/clients'
-import { getCampaigns, getAds, getAccountSummary, getAdThumbnails, type DatePreset } from '@/lib/meta'
+import {
+  getCampaigns, getAds, getAccountSummary, getAdThumbnails,
+  getPageInsights, getIgInsights, getLinkedIgAccount,
+  getFacebookPosts, getInstagramPosts,
+  type DatePreset, type PageInsightsSummary, type IgInsightsSummary, type PostItem,
+} from '@/lib/meta'
 import { DashboardClient } from '@/app/(main)/client/[id]/DashboardClient'
 
 const PRESETS: { label: string; value: DatePreset }[] = [
@@ -31,15 +36,39 @@ export default async function SharePage({
   let campaigns: Awaited<ReturnType<typeof getCampaigns>> = []
   let ads: Awaited<ReturnType<typeof getAds>> = []
   let thumbnails: Record<string, string> = {}
+  let pageInsights: PageInsightsSummary[] = []
+  let igInsights: IgInsightsSummary | null = null
+  let posts: PostItem[] = []
   let error = null
 
   try {
-    ;[summary, campaigns, ads, thumbnails] = await Promise.all([
-      getAccountSummary(client.accountId, period),
-      getCampaigns(client.accountId, period),
-      getAds(client.accountId, period),
-      getAdThumbnails(client.accountId),
+    const hasPaid = client.type === 'paid' && !!client.accountId
+    const pageIds = client.facebookPageIds || []
+    const igUserId = pageIds.length > 0 ? await getLinkedIgAccount(pageIds[0]) : null
+
+    const results = await Promise.all([
+      hasPaid ? getAccountSummary(client.accountId, period) : Promise.resolve(null),
+      hasPaid ? getCampaigns(client.accountId, period) : Promise.resolve([]),
+      hasPaid ? getAds(client.accountId, period) : Promise.resolve([]),
+      hasPaid ? getAdThumbnails(client.accountId) : Promise.resolve({}),
+      ...pageIds.map((pid) => getPageInsights(pid, period)),
+      igUserId ? getIgInsights(igUserId, period) : Promise.resolve(null),
     ])
+
+    summary = results[0] as typeof summary
+    campaigns = results[1] as Awaited<ReturnType<typeof getCampaigns>>
+    ads = results[2] as Awaited<ReturnType<typeof getAds>>
+    thumbnails = results[3] as Record<string, string>
+    pageInsights = results.slice(4, 4 + pageIds.length) as PageInsightsSummary[]
+    igInsights = (results[4 + pageIds.length] as IgInsightsSummary | null) ?? null
+
+    const [fbPosts, igPosts] = await Promise.all([
+      pageIds.length > 0 ? getFacebookPosts(pageIds[0], period).catch(() => []) : Promise.resolve([]),
+      igUserId ? getInstagramPosts(igUserId, period).catch(() => []) : Promise.resolve([]),
+    ])
+    posts = [...fbPosts, ...igPosts].sort(
+      (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    )
   } catch (e: unknown) {
     error = e instanceof Error ? e.message : 'Failed to load data'
   }
@@ -50,67 +79,51 @@ export default async function SharePage({
   return (
     <div className="min-h-screen bg-[#F8F6F2]">
 
-      {/* Header — no navigation, just branding + client name */}
-      <div className="bg-white border-b border-[#E8E4DC]">
-        {/* Gold rule top */}
-        <div style={{ height: '3px', background: 'linear-gradient(90deg, #C8972D 0%, #F0D080 50%, #C8972D 100%)' }} />
-
-        <div className="px-8 py-5 flex items-center justify-between flex-wrap gap-4">
-          {/* DM logo + branding */}
-          <div className="flex items-center gap-4">
-            <img src="/dm-logo-dark.png" alt="Disclose Media" className="h-7 w-auto object-contain" />
+      {/* Dark hero — matches main dashboard */}
+      <div className="bg-[#111111] px-8 pt-7 pb-6">
+        {/* Top row: logo + live/date */}
+        <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <img src="/dm-logo-white.png" alt="Disclose Media" className="h-7 w-auto object-contain" />
             <div>
-              <p
-                className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#111111]"
-                style={{ fontFamily: 'Montserrat, sans-serif' }}
-              >
+              <p className="text-white text-[10px] font-bold tracking-[0.12em] uppercase" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 Disclose Media
               </p>
-              <p
-                className="text-[9px] uppercase tracking-[0.15em]"
-                style={{ fontFamily: 'Montserrat, sans-serif', color: '#C8972D', fontWeight: 600 }}
-              >
-                Performance Report
+              <p className="text-[9px] tracking-[0.18em] uppercase font-semibold" style={{ fontFamily: 'Montserrat, sans-serif', color: '#C8972D' }}>
+                Reporting Portal
               </p>
             </div>
           </div>
-
-          {/* Live indicator + date */}
           <div className="flex items-center gap-3">
-            <span
-              className="flex items-center gap-2 text-[10px] text-emerald-700 border border-emerald-200 bg-emerald-50 px-3 py-1.5 rounded-full"
-              style={{ fontFamily: 'Inter, sans-serif' }}
-            >
+            <span className="flex items-center gap-2 text-[10px] text-emerald-400 border border-emerald-900/40 bg-emerald-900/20 px-3 py-1.5 rounded-full" style={{ fontFamily: 'Inter, sans-serif' }}>
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
               </span>
-              Live data
+              Live
             </span>
-            <span className="text-[11px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>
-              {dateLabel}
-            </span>
+            <span className="text-[11px] text-[#666666]" style={{ fontFamily: 'Inter, sans-serif' }}>{dateLabel}</span>
           </div>
         </div>
-      </div>
 
-      {/* Client title bar */}
-      <div className="bg-white border-b border-[#E8E4DC] px-8 pt-6 pb-5">
+        {/* Channel label */}
         <p
-          className="text-[10px] uppercase tracking-[0.18em] mb-1.5"
+          className="text-[10px] uppercase tracking-[0.18em] mb-2"
           style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#C8972D' }}
         >
           {client.type === 'organic' ? 'Organic · Facebook Page' : 'Paid Media · Meta Ads'}
           {client.hasLeadGen && ' · Lead Generation'}
         </p>
+
+        {/* Client name */}
         <h1
-          className="text-[24px] font-extrabold text-[#111111] mb-4"
+          className="text-[26px] font-extrabold text-white leading-tight mb-5"
           style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.02em' }}
         >
           {client.name}
         </h1>
 
-        {/* Date presets */}
+        {/* Date preset pills */}
         <div className="flex flex-wrap gap-2">
           {PRESETS.map((preset) => (
             <Link
@@ -119,7 +132,7 @@ export default async function SharePage({
               className={`text-[11px] px-3.5 py-1.5 rounded-full border transition-all duration-150 ${
                 preset.value === period
                   ? 'bg-[#C8972D] border-[#C8972D] text-white font-bold'
-                  : 'border-[#E8E4DC] text-[#888888] hover:border-[#C8972D] hover:text-[#C8972D]'
+                  : 'border-[#2A2A2A] text-[#888888] hover:border-[#C8972D] hover:text-[#C8972D]'
               }`}
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
@@ -135,10 +148,11 @@ export default async function SharePage({
       {/* Dashboard content */}
       <main className="px-8 py-8">
         {error ? (
-          <div className="bg-white border border-red-100 rounded-[8px] p-8 text-center max-w-lg mx-auto">
-            <p className="text-[#111111] font-semibold mb-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-              Unable to load data
-            </p>
+          <div className="bg-white border border-red-100 rounded-[8px] p-8 text-center max-w-lg mx-auto shadow-sm">
+            <div className="w-10 h-10 rounded-full bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-3">
+              <span className="text-red-500 text-sm font-bold">!</span>
+            </div>
+            <p className="text-[#111111] font-semibold mb-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>Unable to load data</p>
             <p className="text-[#888888] text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>{error}</p>
           </div>
         ) : (
@@ -149,6 +163,9 @@ export default async function SharePage({
             ads={ads}
             thumbnails={thumbnails}
             period={currentPreset.label}
+            pageInsights={pageInsights}
+            igInsights={igInsights}
+            posts={posts}
           />
         )}
       </main>
