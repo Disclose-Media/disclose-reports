@@ -8,6 +8,7 @@ export type Client = {
   currency: string
   hasLeadGen: boolean
   cities?: string[]
+  shareToken: string
 }
 
 export const CLIENTS: Client[] = [
@@ -20,6 +21,7 @@ export const CLIENTS: Client[] = [
     currency: 'NZD',
     hasLeadGen: true,
     cities: ['Auckland', 'Wellington', 'Christchurch', 'Mandarin / Auckland'],
+    shareToken: 'ck-x7m2p9qr4w',
   },
   {
     id: 'creative-hub',
@@ -29,6 +31,7 @@ export const CLIENTS: Client[] = [
     status: 'active',
     currency: 'NZD',
     hasLeadGen: false,
+    shareToken: 'ch-q4k8n3bs6t',
   },
   {
     id: 'south-sea',
@@ -38,6 +41,7 @@ export const CLIENTS: Client[] = [
     status: 'active',
     currency: 'NZD',
     hasLeadGen: false,
+    shareToken: 'ss-r6w1t5jy2v',
   },
   {
     id: 'cascade',
@@ -47,6 +51,7 @@ export const CLIENTS: Client[] = [
     status: 'active',
     currency: 'NZD',
     hasLeadGen: false,
+    shareToken: 'cc-b8j3v7pn5m',
   },
   {
     id: 'karaka',
@@ -56,6 +61,7 @@ export const CLIENTS: Client[] = [
     status: 'active',
     currency: 'NZD',
     hasLeadGen: false,
+    shareToken: 'ka-y2l9f4dh8c',
   },
   {
     id: 'pocket-bar',
@@ -65,6 +71,7 @@ export const CLIENTS: Client[] = [
     status: 'active',
     currency: 'NZD',
     hasLeadGen: false,
+    shareToken: 'pb-d5s8m1zk3e',
   },
   {
     id: 'hilton-nz',
@@ -74,6 +81,7 @@ export const CLIENTS: Client[] = [
     status: 'active',
     currency: 'NZD',
     hasLeadGen: false,
+    shareToken: 'hnz-e3g6c9uw7a',
   },
   {
     id: 'hilton-fiji',
@@ -83,21 +91,27 @@ export const CLIENTS: Client[] = [
     status: 'active',
     currency: 'NZD',
     hasLeadGen: false,
+    shareToken: 'hfj-u7a4h2xq1f',
   },
   {
     id: 'mai-sunset',
     name: 'Mai Sunset Beach Resort',
     accountId: '996924450165919',
-    pageId: '', // Add Facebook Page ID here
+    pageId: '',
     type: 'organic',
     status: 'active',
     currency: 'NZD',
     hasLeadGen: false,
+    shareToken: 'ms-w9n5k6rb4g',
   },
 ]
 
 export function getClient(id: string): Client | undefined {
   return CLIENTS.find((c) => c.id === id)
+}
+
+export function getClientByToken(token: string): Client | undefined {
+  return CLIENTS.find((c) => c.shareToken === token)
 }
 
 export const paidClients = CLIENTS.filter((c) => c.type === 'paid' && c.status === 'active')

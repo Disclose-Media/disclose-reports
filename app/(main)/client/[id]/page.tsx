@@ -4,6 +4,7 @@ import { getClient } from '@/lib/clients'
 import { getCampaigns, getAds, getAccountSummary, getAdThumbnails, type DatePreset } from '@/lib/meta'
 import { DashboardClient } from './DashboardClient'
 import { ExportButton } from '@/components/ExportButton'
+import { ShareButton } from '@/components/ShareButton'
 
 const PRESETS: { label: string; value: DatePreset }[] = [
   { label: 'Today', value: 'today' },
@@ -96,6 +97,7 @@ export default async function ClientPage({
             {client.name}
           </h1>
           <div className="flex items-center gap-3">
+            <ShareButton shareUrl={`https://reports.disclosemedia.co.nz/share/${client.shareToken}`} />
             <ExportButton clientName={client.name} period={currentPreset.label} />
             <span className="flex items-center gap-2 text-[10px] text-emerald-700 border border-emerald-200 bg-emerald-50 px-3 py-1.5 rounded-full" style={{ fontFamily: 'Inter, sans-serif' }}>
               <span className="relative flex h-1.5 w-1.5">
