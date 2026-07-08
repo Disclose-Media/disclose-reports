@@ -113,7 +113,7 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-4 border-t border-[#E8E4DC]">
+      <div className="px-4 py-4 border-t border-[#E8E4DC] space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
@@ -128,6 +128,18 @@ export function Sidebar() {
             Meta Ads API
           </span>
         </div>
+        <form action="/logout" method="POST">
+          <button
+            type="submit"
+            className="w-full text-left text-[10px] text-[#CCCCCC] hover:text-[#888888] transition-colors flex items-center gap-2 py-1"
+            style={{ fontFamily: 'Inter, sans-serif' }}
+          >
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+              <path d="M4 1H2a1 1 0 00-1 1v7a1 1 0 001 1h2M7.5 8L10 5.5 7.5 3M10 5.5H4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Sign out
+          </button>
+        </form>
       </div>
     </div>
   )
