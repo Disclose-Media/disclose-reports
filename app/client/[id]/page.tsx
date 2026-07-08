@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { getClient } from '@/lib/clients'
 import { getCampaigns, getAds, getAccountSummary, type DatePreset } from '@/lib/meta'
 import { DashboardClient } from './DashboardClient'
+import { ExportButton } from '@/components/ExportButton'
 
 const PRESETS: { label: string; value: DatePreset }[] = [
   { label: 'Today', value: 'today' },
@@ -47,8 +48,25 @@ export default async function ClientPage({
 
   return (
     <div className="min-h-screen bg-[#F8F6F2]">
+
+      {/* Print-only header */}
+      <div className="print-header hidden items-center justify-between border-b-2 border-[#C8972D] pb-4 mb-6 px-0">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-[#C8972D] font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            Disclose Media · Confidential Report
+          </p>
+          <h1 className="text-[22px] font-extrabold text-[#111111] mt-1" style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.02em' }}>
+            {client.name}
+          </h1>
+          <p className="text-[11px] text-[#888888] mt-0.5" style={{ fontFamily: 'Inter, sans-serif' }}>
+            {currentPreset.label} · Generated {new Date().toLocaleDateString('en-NZ', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+        </div>
+        <img src="/dm-logo-white.png" alt="Disclose Media" style={{ height: '40px', filter: 'invert(1)' }} />
+      </div>
+
       {/* Client hero — dark chrome */}
-      <div className="bg-[#111111] px-8 pt-8 pb-6">
+      <div className="print:hidden bg-[#111111] px-8 pt-8 pb-6">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-4">
           <Link href="/" className="text-[10px] text-[#777777] hover:text-[#AAAAAA] transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -76,6 +94,7 @@ export default async function ClientPage({
             {client.name}
           </h1>
           <div className="flex items-center gap-3">
+            <ExportButton clientName={client.name} period={currentPreset.label} />
             <span className="flex items-center gap-2 text-[10px] text-emerald-400 border border-emerald-900/40 bg-emerald-900/20 px-3 py-1.5 rounded-full" style={{ fontFamily: 'Inter, sans-serif' }}>
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -88,7 +107,7 @@ export default async function ClientPage({
         </div>
 
         {/* Date preset selector */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 print:hidden">
           {PRESETS.map((preset) => (
             <Link
               key={preset.value}

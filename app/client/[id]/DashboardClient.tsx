@@ -449,7 +449,7 @@ function CampaignSection({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
   )
 }
 
-function CampaignSummary({ campaign, ads }: { campaign: CampaignInsight; ads: AdInsight[] }) {
+function buildNarrative(campaign: CampaignInsight, ads: AdInsight[]): { overview: string; highlights: string; opportunities: string; recommendation: string } {
   const leads = parseInt(campaign.lead || '0') || 0
   const lpvMatch = campaign.results?.value?.match(/^(\d+)/)
   const lpv = lpvMatch ? parseInt(lpvMatch[1]) : 0
@@ -457,98 +457,122 @@ function CampaignSummary({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
   const cpl = cplMatch ? parseFloat(cplMatch[0]) : 0
   const ctr = parseFloat(campaign.ctr || '0')
   const cpm = parseFloat(campaign.cpm || '0')
-  const cpc = parseFloat(campaign.cpc || '0')
   const spend = parseFloat(campaign.amount_spent || '0')
-  const clicks = parseInt(campaign.clicks || '0')
   const impressions = parseInt(campaign.impressions || '0')
   const reach = parseInt(campaign.reach || '0')
+  const freq = impressions > 0 && reach > 0 ? impressions / reach : 0
 
-  const topAdByLeads = [...ads].sort(
-    (a, b) => (parseInt(b.lead || '0') || 0) - (parseInt(a.lead || '0') || 0)
-  )[0]
-  const topAdByCtr = [...ads].sort(
-    (a, b) => parseFloat(b.ctr || '0') - parseFloat(a.ctr || '0')
-  )[0]
+  const topAdByLeads = [...ads].sort((a, b) => (parseInt(b.lead || '0') || 0) - (parseInt(a.lead || '0') || 0))[0]
+  const topAdByCtr = [...ads].sort((a, b) => parseFloat(b.ctr || '0') - parseFloat(a.ctr || '0'))[0]
+  const topAdBySpend = [...ads].sort((a, b) => parseFloat(b.amount_spent || '0') - parseFloat(a.amount_spent || '0'))[0]
 
-  const points: { type: 'good' | 'warning' | 'info'; text: string }[] = []
-
-  if (ctr >= 3) points.push({ type: 'good', text: `Strong CTR of ${ctr.toFixed(2)}% — well above the Meta average of ~1–2%. Your creative is resonating with the audience.` })
-  else if (ctr >= 1.5) points.push({ type: 'info', text: `CTR of ${ctr.toFixed(2)}% is solid. Consider A/B testing new creatives to push this higher.` })
-  else if (ctr > 0) points.push({ type: 'warning', text: `CTR of ${ctr.toFixed(2)}% is below average. Try refreshing ad creative or tightening the audience targeting.` })
-
-  if (cpm > 0 && cpm < 10) points.push({ type: 'good', text: `CPM of $${cpm.toFixed(2)} is efficient — reaching audiences at a low cost per 1,000 impressions.` })
-  else if (cpm >= 10 && cpm < 25) points.push({ type: 'info', text: `CPM of $${cpm.toFixed(2)} is within normal range for NZ markets.` })
-  else if (cpm >= 25) points.push({ type: 'warning', text: `CPM of $${cpm.toFixed(2)} is elevated. Consider broadening your audience or adjusting bid strategy.` })
-
-  if (leads > 0 && lpv > 0) {
-    const convRate = ((leads / lpv) * 100).toFixed(1)
-    points.push({ type: parseFloat(convRate) > 10 ? 'good' : 'info', text: `Landing page conversion rate of ${convRate}% (${leads} leads from ${lpv} views). ${parseFloat(convRate) > 10 ? 'Excellent landing page performance.' : 'Consider optimising the landing page to improve conversion.'}` })
-  }
+  // Overview paragraph
+  let overview = ''
   if (leads > 0) {
-    points.push({ type: cpl < 50 ? 'good' : cpl < 100 ? 'info' : 'warning', text: `Cost per lead of $${cpl.toFixed(2)}. ${cpl < 50 ? 'Strong performance — leads at an efficient cost.' : cpl < 100 ? 'Moderate CPL — optimising top-performing ads could reduce this further.' : 'CPL is elevated — review targeting and creative to improve lead quality.'}` })
+    overview = `This campaign delivered ${leads} lead${leads > 1 ? 's' : ''} at an average cost of $${cpl.toFixed(2)} per lead, with a total investment of $${spend.toFixed(2)}. `
+    if (lpv > 0) {
+      const convRate = ((leads / lpv) * 100).toFixed(1)
+      overview += `Of the ${lpv} people who visited the landing page, ${convRate}% converted into leads — ${parseFloat(convRate) > 10 ? 'a strong result that reflects well on both the ad targeting and the landing page experience' : 'a solid foundation that gives us clear room to grow conversion further'}.`
+    }
   } else if (lpv > 0) {
-    points.push({ type: 'warning', text: `${lpv} landing page views but no leads recorded. Check that the Meta lead event is firing correctly.` })
+    overview = `This campaign drove ${lpv} landing page views from a $${spend.toFixed(2)} investment, building meaningful pipeline awareness. The traffic quality and volume provide a strong base to build on.`
+  } else {
+    overview = `This campaign reached ${reach > 0 ? reach.toLocaleString('en-NZ') : 'a targeted audience'} people with ${impressions > 0 ? impressions.toLocaleString('en-NZ') + ' impressions' : 'consistent exposure'} over the reporting period, investing $${spend.toFixed(2)} in brand reach and awareness.`
   }
+
+  // Highlights paragraph
+  const highlightParts: string[] = []
+  if (ctr >= 3) highlightParts.push(`Creative engagement is outstanding — a ${ctr.toFixed(2)}% click-through rate is more than double the Meta average, confirming the ad content is genuinely connecting with your audience`)
+  else if (ctr >= 1.5) highlightParts.push(`A ${ctr.toFixed(2)}% click-through rate demonstrates solid audience engagement, sitting above the typical Meta benchmark`)
+  else if (ctr > 0) highlightParts.push(`The campaign is generating consistent clicks at a ${ctr.toFixed(2)}% CTR, with good opportunity to amplify this through creative testing`)
+
+  if (cpm > 0 && cpm < 10) highlightParts.push(`audience reach is highly cost-efficient at just $${cpm.toFixed(2)} CPM`)
+  else if (cpm >= 10 && cpm < 20) highlightParts.push(`at $${cpm.toFixed(2)} CPM, the campaign is reaching audiences at a competitive rate for the NZ market`)
+  else if (cpm >= 20) highlightParts.push(`CPM of $${cpm.toFixed(2)} reflects a competitive auction environment — refining audience targeting could unlock further efficiencies`)
 
   if (topAdByLeads && parseInt(topAdByLeads.lead || '0') > 0) {
-    points.push({ type: 'good', text: `Best performing ad: "${topAdByLeads.name}" with ${topAdByLeads.lead} lead${parseInt(topAdByLeads.lead || '0') > 1 ? 's' : ''}. Consider increasing budget allocation to this ad.` })
-  }
-  if (topAdByCtr && parseFloat(topAdByCtr.ctr || '0') > ctr * 1.3 && ads.length > 1) {
-    points.push({ type: 'info', text: `"${topAdByCtr.name}" has the highest CTR at ${parseFloat(topAdByCtr.ctr || '0').toFixed(2)}% — this creative is driving the most engagement.` })
-  }
-
-  if (impressions > 0 && reach > 0) {
-    const freq = (impressions / reach).toFixed(1)
-    if (parseFloat(freq) > 4) points.push({ type: 'warning', text: `Average frequency of ${freq}x — audience is seeing ads repeatedly. Consider expanding the audience or rotating creatives.` })
-    else points.push({ type: 'info', text: `Average frequency of ${freq}x — healthy exposure with no signs of audience fatigue.` })
+    highlightParts.push(`"${topAdByLeads.name}" is the clear standout ad, accounting for ${topAdByLeads.lead} lead${parseInt(topAdByLeads.lead || '0') > 1 ? 's' : ''} and demonstrating exactly the kind of creative that performs`)
+  } else if (topAdByCtr && ads.length > 1) {
+    highlightParts.push(`"${topAdByCtr.name}" is leading on engagement with a ${parseFloat(topAdByCtr.ctr || '0').toFixed(2)}% CTR`)
   }
 
-  const iconMap = { good: '↑', warning: '!', info: '·' }
-  const colorMap = {
-    good: 'text-emerald-700',
-    warning: 'text-amber-700',
-    info: 'text-[#C8972D]',
+  const highlights = highlightParts.length > 0
+    ? highlightParts[0].charAt(0).toUpperCase() + highlightParts[0].slice(1) + (highlightParts.length > 1 ? ', and ' + highlightParts.slice(1).join('. ') : '') + '.'
+    : 'The campaign is delivering consistent results across key performance indicators.'
+
+  // Opportunities paragraph
+  const oppParts: string[] = []
+  if (freq > 4) oppParts.push(`The audience frequency of ${freq.toFixed(1)}x is an opportunity to broaden reach — introducing new audience segments or refreshing creatives will keep engagement strong and unlock new potential customers`)
+  else if (freq > 0) oppParts.push(`Audience frequency is healthy at ${freq.toFixed(1)}x, meaning there is still meaningful headroom to increase reach before fatigue becomes a factor`)
+
+  if (leads === 0 && lpv > 0) oppParts.push(`with ${lpv} people already visiting the landing page, a conversion rate optimisation test — adjusting the headline, form, or call to action — could turn this existing traffic into qualified leads without additional spend`)
+
+  if (ctr > 0 && ctr < 1.5 && ads.length > 1) oppParts.push(`testing a new creative direction against the current top performer is a low-risk, high-upside move that could meaningfully lift CTR and reduce cost per result`)
+
+  if (topAdBySpend && ads.length > 1) {
+    const topSpend = parseFloat(topAdBySpend.amount_spent || '0')
+    const topLeads = parseInt(topAdBySpend.lead || '0') || 0
+    if (topLeads === 0 && leads > 0) oppParts.push(`reallocating a portion of the budget from "${topAdBySpend.name}" toward the highest-converting ad could improve overall campaign efficiency`)
   }
-  const bgMap = {
-    good: 'bg-emerald-50 border-emerald-200',
-    warning: 'bg-amber-50 border-amber-200',
-    info: 'bg-[#FBF7EE] border-[#E8D8B0]',
+
+  const opportunities = oppParts.length > 0
+    ? oppParts[0].charAt(0).toUpperCase() + oppParts[0].slice(1) + (oppParts.length > 1 ? '. Additionally, ' + oppParts.slice(1).join('. ') : '') + '.'
+    : 'This campaign is well positioned — continuing to monitor performance and test incrementally will compound results over time.'
+
+  // Recommendation
+  let recommendation = ''
+  if (leads > 0 && topAdByLeads && parseInt(topAdByLeads.lead || '0') > 0) {
+    recommendation = `Increase daily budget allocation to "${topAdByLeads.name}" to capitalise on its proven lead generation performance, while introducing one new creative variant to keep the audience engaged and test further improvements.`
+  } else if (lpv > 0 && leads === 0) {
+    recommendation = `Prioritise a landing page review — the ad traffic is there, and a focused conversion rate optimisation test on the form or page layout is the highest-leverage action to start generating leads from the existing audience.`
+  } else if (ctr < 1.5 && ctr > 0) {
+    recommendation = `Launch a creative refresh test with at least two new ad variants. Prioritise strong hook copy in the first 3 seconds and a clear, benefit-led call to action to lift CTR and drive down cost per click.`
+  } else if (freq > 4) {
+    recommendation = `Expand the audience targeting — lookalike audiences based on existing leads or page visitors are a natural next step that should reduce CPM, introduce new potential customers, and sustain campaign momentum.`
+  } else {
+    recommendation = `Maintain current momentum and schedule a creative refresh within the next two weeks to stay ahead of any audience fatigue. Regular reporting will ensure budget is always allocated to the highest-performing segments.`
   }
+
+  return { overview, highlights, opportunities, recommendation }
+}
+
+function CampaignSummary({ campaign, ads }: { campaign: CampaignInsight; ads: AdInsight[] }) {
+  const ctr = parseFloat(campaign.ctr || '0')
+  const cpm = parseFloat(campaign.cpm || '0')
+  const cpc = parseFloat(campaign.cpc || '0')
+  const leads = parseInt(campaign.lead || '0') || 0
+  const { overview, highlights, opportunities, recommendation } = buildNarrative(campaign, ads)
 
   return (
     <div className="bg-white border border-[#E8E4DC] rounded-[8px] overflow-hidden">
       {/* Header */}
-      <div className="border-b border-[#E8E4DC] px-5 py-3 bg-[#F8F6F2] flex items-center gap-2.5">
-        <div style={{ width: '2px', height: '12px', background: '#C8972D', borderRadius: '1px' }} />
-        <p
-          className="text-[9px] font-bold uppercase tracking-[0.18em]"
-          style={{ fontFamily: 'Montserrat, sans-serif', color: '#C8972D' }}
-        >
-          Campaign Analysis
-        </p>
+      <div className="border-b border-[#E8E4DC] px-5 py-3 bg-[#F8F6F2] flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div style={{ width: '2px', height: '12px', background: '#C8972D', borderRadius: '1px' }} />
+          <p className="text-[9px] font-bold uppercase tracking-[0.18em]" style={{ fontFamily: 'Montserrat, sans-serif', color: '#C8972D' }}>
+            Campaign Analysis
+          </p>
+        </div>
+        <span className="text-[9px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>
+          Auto-generated from live data
+        </span>
       </div>
 
       <div className="p-5">
-        {/* Key metrics */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        {/* Key metrics row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           {[
-            { label: 'CTR', value: `${ctr.toFixed(2)}%`, hl: ctr >= 2 ? 'good' : ctr >= 1 ? 'neutral' : 'warning' },
-            { label: 'CPM', value: `$${cpm.toFixed(2)}`, hl: 'neutral' },
+            { label: 'CTR', value: `${ctr.toFixed(2)}%`, hl: ctr >= 2 ? 'good' : ctr >= 1 ? 'neutral' : 'warn' },
+            { label: 'CPM', value: `$${cpm.toFixed(2)}`, hl: cpm < 15 ? 'good' : cpm < 25 ? 'neutral' : 'warn' },
             { label: 'CPC', value: cpc > 0 ? `$${cpc.toFixed(2)}` : '—', hl: 'neutral' },
             { label: 'Leads', value: leads > 0 ? String(leads) : '—', hl: leads > 0 ? 'good' : 'neutral' },
           ].map((item) => (
             <div key={item.label} className="bg-[#F8F6F2] border border-[#E8E4DC] rounded-[6px] px-4 py-3">
-              <p
-                className="text-[9px] uppercase tracking-[0.12em] text-[#AAAAAA] mb-1"
-                style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}
-              >
+              <p className="text-[9px] uppercase tracking-[0.12em] text-[#AAAAAA] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
                 {item.label}
               </p>
               <p
-                className={`text-base font-bold ${
-                  item.hl === 'good' ? 'text-emerald-600' :
-                  item.hl === 'warning' ? 'text-amber-600' : 'text-[#111111]'
-                }`}
+                className={`text-base font-bold ${item.hl === 'good' ? 'text-emerald-600' : item.hl === 'warn' ? 'text-amber-600' : 'text-[#111111]'}`}
                 style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.01em' }}
               >
                 {item.value}
@@ -557,26 +581,37 @@ function CampaignSummary({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
           ))}
         </div>
 
-        {/* Analysis points */}
-        {points.length > 0 ? (
-          <div className="space-y-2">
-            {points.map((point, i) => (
-              <div key={i} className={`flex gap-3 px-4 py-3 rounded-[6px] border ${bgMap[point.type]}`}>
-                <span className={`text-sm font-black mt-0.5 shrink-0 w-4 text-center ${colorMap[point.type]}`}>
-                  {iconMap[point.type]}
-                </span>
-                <p className="text-[12px] text-[#444444] leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
-                  {point.text}
-                </p>
-              </div>
-            ))}
+        {/* Narrative sections */}
+        <div className="space-y-5">
+          <NarrativeSection title="Overview" icon="○" color="#C8972D" text={overview} />
+          <NarrativeSection title="What's Working" icon="↑" color="#059669" text={highlights} />
+          <NarrativeSection title="Growth Opportunities" icon="◇" color="#C8972D" text={opportunities} />
+          <div className="bg-[#111111] rounded-[8px] p-4">
+            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#C8972D] mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+              Recommendation
+            </p>
+            <p className="text-[13px] text-white leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
+              {recommendation}
+            </p>
           </div>
-        ) : (
-          <p className="text-xs text-[#AAAAAA] italic" style={{ fontFamily: 'Inter, sans-serif' }}>
-            Not enough data to generate analysis for this period.
-          </p>
-        )}
+        </div>
       </div>
+    </div>
+  )
+}
+
+function NarrativeSection({ title, icon, color, text }: { title: string; icon: string; color: string; text: string }) {
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className="text-[11px] font-bold" style={{ color }}>{icon}</span>
+        <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#888888]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+          {title}
+        </p>
+      </div>
+      <p className="text-[13px] text-[#444444] leading-relaxed pl-5" style={{ fontFamily: 'Inter, sans-serif' }}>
+        {text}
+      </p>
     </div>
   )
 }

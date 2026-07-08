@@ -64,6 +64,33 @@ body {
 }
 
 /* Label style from brand guidelines — 11px tracked caps gold */
+/* ── Print / PDF export ─────────────────────────────────────────── */
+@media print {
+  @page {
+    margin: 18mm 14mm;
+    size: A4;
+  }
+
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+  body { background: #ffffff !important; color: #111111 !important; font-size: 11pt; }
+
+  /* Hide interactive chrome */
+  .lg\\:ml-52 { margin-left: 0 !important; }
+
+  /* Campaign sections: keep together where possible */
+  .campaign-section { break-inside: avoid; page-break-inside: avoid; }
+
+  /* Print header shown only during print */
+  .print-header { display: flex !important; }
+
+  /* Remove box shadows for cleaner print */
+  * { box-shadow: none !important; }
+
+  /* Ensure dark campaign headers print correctly */
+  .campaign-header-dark { background: #111111 !important; color: #ffffff !important; }
+}
+
 .brand-label {
   font-family: 'Montserrat', system-ui, sans-serif;
   font-size: 11px;
