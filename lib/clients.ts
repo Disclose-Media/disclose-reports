@@ -50,7 +50,6 @@ export const CLIENTS: Client[] = [
     id: 'cascade',
     name: 'Cascade Creek Retreat',
     accountId: '362659505064113',
-    windsorPageId: '437554069630323',
     type: 'paid',
     status: 'active',
     currency: 'NZD',
@@ -99,6 +98,17 @@ export const CLIENTS: Client[] = [
   },
 
   // ── Organic-only clients (Windsor facebook_organic) ───────────────────────
+  {
+    id: 'cascade-organic',
+    name: 'Cascade Creek Retreat',
+    accountId: '',
+    windsorPageId: '437554069630323',
+    type: 'organic',
+    status: 'active',
+    currency: 'NZD',
+    hasLeadGen: false,
+    shareToken: 'cc-org-x2k9w4mn7p',
+  },
   {
     id: 'mai-sunset',
     name: 'Mai Sunset Beach Resort',
