@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { getClient } from '@/lib/clients'
 import {
   getCampaigns, getAds, getAccountSummary, getAdThumbnails,
-  type DatePreset,
+  getLinkedIgAccount, getIgInsights,
+  type DatePreset, type IgInsightsSummary,
 } from '@/lib/meta'
 import { getWindsorOrganicData } from '@/lib/windsor'
 import { DashboardClient } from './DashboardClient'
@@ -38,25 +39,33 @@ export default async function ClientPage({
   let ads: Awaited<ReturnType<typeof getAds>> = []
   let thumbnails: Record<string, string> = {}
   let windsorOrganic = null
+  let igInsights: IgInsightsSummary | null = null
   let error = null
 
   try {
     const hasPaid = client.type === 'paid' && !!client.accountId
     const hasWindsor = !!client.windsorPageId
 
-    const [summaryResult, campaignsResult, adsResult, thumbnailsResult, windsorResult] = await Promise.all([
+    // Discover linked IG account for Windsor pages (works for BM pages like Cascade Creek)
+    const igUserId = hasWindsor
+      ? await getLinkedIgAccount(client.windsorPageId!).catch(() => null)
+      : null
+
+    const [summaryRes, campaignsRes, adsRes, thumbnailsRes, windsorRes, igRes] = await Promise.all([
       hasPaid ? getAccountSummary(client.accountId, period) : Promise.resolve(null),
       hasPaid ? getCampaigns(client.accountId, period) : Promise.resolve([]),
       hasPaid ? getAds(client.accountId, period) : Promise.resolve([]),
       hasPaid ? getAdThumbnails(client.accountId) : Promise.resolve({}),
       hasWindsor ? getWindsorOrganicData(client.windsorPageId!, period) : Promise.resolve(null),
+      igUserId ? getIgInsights(igUserId, period).catch(() => null) : Promise.resolve(null),
     ])
 
-    summary = summaryResult
-    campaigns = campaignsResult as Awaited<ReturnType<typeof getCampaigns>>
-    ads = adsResult as Awaited<ReturnType<typeof getAds>>
-    thumbnails = thumbnailsResult as Record<string, string>
-    windsorOrganic = windsorResult
+    summary = summaryRes
+    campaigns = campaignsRes as Awaited<ReturnType<typeof getCampaigns>>
+    ads = adsRes as Awaited<ReturnType<typeof getAds>>
+    thumbnails = thumbnailsRes as Record<string, string>
+    windsorOrganic = windsorRes
+    igInsights = igRes as IgInsightsSummary | null
   } catch (e: unknown) {
     error = e instanceof Error ? e.message : 'Failed to load data'
   }
@@ -85,7 +94,6 @@ export default async function ClientPage({
 
       {/* Client hero — dark */}
       <div className="print:hidden bg-[#111111] px-8 pt-7 pb-6">
-        {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-4">
           <Link href="/" className="text-[10px] text-[#666666] hover:text-[#C8972D] transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
             All Clients
@@ -100,7 +108,8 @@ export default async function ClientPage({
           className="text-[10px] uppercase tracking-[0.18em] mb-2"
           style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#C8972D' }}
         >
-          {client.type === 'organic' ? 'Organic · Facebook Page' : 'Paid Media · Meta Ads'}
+          {client.type === 'organic' ? 'Organic · Facebook & Instagram' : 'Paid Media · Meta Ads'}
+          {client.windsorPageId && client.type === 'paid' && ' · + Organic'}
           {client.hasLeadGen && ' · Lead Generation'}
         </p>
 
@@ -125,7 +134,6 @@ export default async function ClientPage({
           </div>
         </div>
 
-        {/* Date preset selector */}
         <div className="flex flex-wrap gap-2 print:hidden">
           {PRESETS.map((preset) => (
             <Link
@@ -144,10 +152,8 @@ export default async function ClientPage({
         </div>
       </div>
 
-      {/* Gold rule */}
       <div style={{ height: '2px', background: 'linear-gradient(90deg, #C8972D 0%, rgba(200,151,45,0.15) 100%)' }} />
 
-      {/* Main content */}
       <main className="px-8 py-8">
         {error ? (
           <div className="bg-white border border-red-100 rounded-[8px] p-8 text-center max-w-lg mx-auto shadow-sm">
@@ -166,6 +172,7 @@ export default async function ClientPage({
             thumbnails={thumbnails}
             period={currentPreset.label}
             windsorOrganic={windsorOrganic}
+            igInsights={igInsights}
           />
         )}
       </main>

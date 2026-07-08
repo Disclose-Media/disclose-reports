@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { Client } from '@/lib/clients'
-import type { CampaignInsight, AdInsight, PostItem } from '@/lib/meta'
-import type { WindsorOrganicSummary } from '@/lib/windsor'
+import type { CampaignInsight, AdInsight, IgInsightsSummary, PostItem } from '@/lib/meta'
+import type { WindsorOrganicResult } from '@/lib/windsor'
 import { OrganicSection } from '@/components/OrganicSection'
 import { ContentTable } from '@/components/ContentTable'
 
@@ -14,7 +14,8 @@ type Props = {
   ads: AdInsight[]
   thumbnails: Record<string, string>
   period: string
-  windsorOrganic?: WindsorOrganicSummary | null
+  windsorOrganic?: WindsorOrganicResult | null
+  igInsights?: IgInsightsSummary | null
   posts?: PostItem[]
 }
 
@@ -645,7 +646,7 @@ function NarrativeSection({ title, icon, color, text }: { title: string; icon: s
   )
 }
 
-export function DashboardClient({ client, summary, campaigns, ads, thumbnails, period, windsorOrganic = null, posts = [] }: Props) {
+export function DashboardClient({ client, summary, campaigns, ads, thumbnails, period, windsorOrganic = null, igInsights = null, posts = [] }: Props) {
   const totalSpend = parseFloat(summary?.amount_spent || '0')
   const totalLeads = campaigns.reduce((s, c) => s + (parseInt(c.lead || '0') || 0), 0)
   const cpl = totalLeads > 0 ? totalSpend / totalLeads : 0
@@ -670,7 +671,7 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
       )}
 
       {windsorOrganic && (
-        <OrganicSection windsorOrganic={windsorOrganic} />
+        <OrganicSection windsorOrganic={windsorOrganic} igInsights={igInsights} />
       )}
 
       {client.type === 'organic' && posts.length > 0 && <ContentTable posts={posts} />}

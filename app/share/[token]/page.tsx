@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { getClientByToken } from '@/lib/clients'
 import {
   getCampaigns, getAds, getAccountSummary, getAdThumbnails,
-  type DatePreset,
+  getLinkedIgAccount, getIgInsights,
+  type DatePreset, type IgInsightsSummary,
 } from '@/lib/meta'
 import { getWindsorOrganicData } from '@/lib/windsor'
 import { DashboardClient } from '@/app/(main)/client/[id]/DashboardClient'
@@ -36,25 +37,32 @@ export default async function SharePage({
   let ads: Awaited<ReturnType<typeof getAds>> = []
   let thumbnails: Record<string, string> = {}
   let windsorOrganic = null
+  let igInsights: IgInsightsSummary | null = null
   let error = null
 
   try {
     const hasPaid = client.type === 'paid' && !!client.accountId
     const hasWindsor = !!client.windsorPageId
 
-    const [summaryResult, campaignsResult, adsResult, thumbnailsResult, windsorResult] = await Promise.all([
+    const igUserId = hasWindsor
+      ? await getLinkedIgAccount(client.windsorPageId!).catch(() => null)
+      : null
+
+    const [summaryRes, campaignsRes, adsRes, thumbnailsRes, windsorRes, igRes] = await Promise.all([
       hasPaid ? getAccountSummary(client.accountId, period) : Promise.resolve(null),
       hasPaid ? getCampaigns(client.accountId, period) : Promise.resolve([]),
       hasPaid ? getAds(client.accountId, period) : Promise.resolve([]),
       hasPaid ? getAdThumbnails(client.accountId) : Promise.resolve({}),
       hasWindsor ? getWindsorOrganicData(client.windsorPageId!, period) : Promise.resolve(null),
+      igUserId ? getIgInsights(igUserId, period).catch(() => null) : Promise.resolve(null),
     ])
 
-    summary = summaryResult
-    campaigns = campaignsResult as Awaited<ReturnType<typeof getCampaigns>>
-    ads = adsResult as Awaited<ReturnType<typeof getAds>>
-    thumbnails = thumbnailsResult as Record<string, string>
-    windsorOrganic = windsorResult
+    summary = summaryRes
+    campaigns = campaignsRes as Awaited<ReturnType<typeof getCampaigns>>
+    ads = adsRes as Awaited<ReturnType<typeof getAds>>
+    thumbnails = thumbnailsRes as Record<string, string>
+    windsorOrganic = windsorRes
+    igInsights = igRes as IgInsightsSummary | null
   } catch (e: unknown) {
     error = e instanceof Error ? e.message : 'Failed to load data'
   }
@@ -65,9 +73,7 @@ export default async function SharePage({
   return (
     <div className="min-h-screen bg-[#F8F6F2]">
 
-      {/* Dark hero — matches main dashboard */}
       <div className="bg-[#111111] px-8 pt-7 pb-6">
-        {/* Top row: logo + live/date */}
         <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <img src="/dm-logo-white.png" alt="Disclose Media" className="h-7 w-auto object-contain" />
@@ -92,16 +98,15 @@ export default async function SharePage({
           </div>
         </div>
 
-        {/* Channel label */}
         <p
           className="text-[10px] uppercase tracking-[0.18em] mb-2"
           style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#C8972D' }}
         >
-          {client.type === 'organic' ? 'Organic · Facebook Page' : 'Paid Media · Meta Ads'}
+          {client.type === 'organic' ? 'Organic · Facebook & Instagram' : 'Paid Media · Meta Ads'}
+          {client.windsorPageId && client.type === 'paid' && ' · + Organic'}
           {client.hasLeadGen && ' · Lead Generation'}
         </p>
 
-        {/* Client name */}
         <h1
           className="text-[26px] font-extrabold text-white leading-tight mb-5"
           style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.02em' }}
@@ -109,7 +114,6 @@ export default async function SharePage({
           {client.name}
         </h1>
 
-        {/* Date preset pills */}
         <div className="flex flex-wrap gap-2">
           {PRESETS.map((preset) => (
             <Link
@@ -128,10 +132,8 @@ export default async function SharePage({
         </div>
       </div>
 
-      {/* Gold rule */}
       <div style={{ height: '2px', background: 'linear-gradient(90deg, #C8972D 0%, rgba(200,151,45,0.15) 100%)' }} />
 
-      {/* Dashboard content */}
       <main className="px-8 py-8">
         {error ? (
           <div className="bg-white border border-red-100 rounded-[8px] p-8 text-center max-w-lg mx-auto shadow-sm">
@@ -150,11 +152,11 @@ export default async function SharePage({
             thumbnails={thumbnails}
             period={currentPreset.label}
             windsorOrganic={windsorOrganic}
+            igInsights={igInsights}
           />
         )}
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-[#E8E4DC] px-8 py-5 mt-4 flex items-center justify-between flex-wrap gap-3">
         <span className="text-[10px] text-[#AAAAAA] uppercase tracking-[0.15em]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
           {client.name} · Confidential Report

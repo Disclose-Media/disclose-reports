@@ -10,6 +10,19 @@ export type WindsorOrganicSummary = {
   linkClicks: number
   visits: number
   follows: number
+  totalPageLikes: number
+}
+
+export type WindsorDailyPoint = {
+  date: string
+  impressions: number
+  reach: number
+  engagements: number
+}
+
+export type WindsorOrganicResult = {
+  summary: WindsorOrganicSummary
+  daily: WindsorDailyPoint[]
 }
 
 function presetToDates(preset: DatePreset): { dateFrom: string; dateTo: string } {
@@ -40,19 +53,18 @@ function presetToDates(preset: DatePreset): { dateFrom: string; dateTo: string }
   }
 }
 
-function sumField(rows: Record<string, unknown>[], field: string): number {
-  return rows.reduce((sum, row) => sum + (Number(row[field]) || 0), 0)
-}
-
 export async function getWindsorOrganicData(
   pageId: string,
   period: DatePreset = 'last_30d'
-): Promise<WindsorOrganicSummary> {
+): Promise<WindsorOrganicResult> {
   const { dateFrom, dateTo } = presetToDates(period)
 
   const url = new URL(`${BASE}/facebook_organic`)
   url.searchParams.set('api_key', KEY)
-  url.searchParams.set('fields', 'page_impressions,page_impressions_unique,page_post_engagements,post_clicks,page_views_total,page_daily_follows')
+  url.searchParams.set(
+    'fields',
+    'date,page_impressions,page_impressions_unique,page_post_engagements,post_clicks,page_views_total,page_daily_follows,page_fans_daily'
+  )
   url.searchParams.set('date_from', dateFrom)
   url.searchParams.set('date_to', dateTo)
   url.searchParams.set('_account_id', pageId)
@@ -62,15 +74,53 @@ export async function getWindsorOrganicData(
     if (!res.ok) throw new Error(`Windsor error: ${res.status}`)
     const json = await res.json()
     const rows: Record<string, unknown>[] = json.data ?? json.result ?? (Array.isArray(json) ? json : [])
+
+    // Windsor returns 2 rows per date (page metrics row + post metrics row) — merge by date
+    type DayAccum = {
+      impressions: number; reach: number; engagements: number
+      linkClicks: number; visits: number; follows: number; pageLikes: number
+    }
+    const byDate = new Map<string, DayAccum>()
+
+    for (const row of rows) {
+      const date = String(row.date ?? '')
+      if (!date) continue
+      if (!byDate.has(date)) {
+        byDate.set(date, { impressions: 0, reach: 0, engagements: 0, linkClicks: 0, visits: 0, follows: 0, pageLikes: 0 })
+      }
+      const e = byDate.get(date)!
+      if (row.page_impressions != null)        e.impressions  += Number(row.page_impressions) || 0
+      if (row.page_impressions_unique != null)  e.reach        += Number(row.page_impressions_unique) || 0
+      if (row.page_post_engagements != null)    e.engagements  += Number(row.page_post_engagements) || 0
+      if (row.post_clicks != null)              e.linkClicks   += Number(row.post_clicks) || 0
+      if (row.page_views_total != null)         e.visits       += Number(row.page_views_total) || 0
+      if (row.page_daily_follows != null)       e.follows      += Number(row.page_daily_follows) || 0
+      if (row.page_fans_daily != null)          e.pageLikes     = Math.max(e.pageLikes, Number(row.page_fans_daily) || 0)
+    }
+
+    const daily: WindsorDailyPoint[] = Array.from(byDate.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, v]) => ({ date, impressions: v.impressions, reach: v.reach, engagements: v.engagements }))
+
+    let views = 0, viewers = 0, interactions = 0, linkClicks = 0, visits = 0, follows = 0, totalPageLikes = 0
+    for (const [, v] of byDate) {
+      views        += v.impressions
+      viewers      += v.reach
+      interactions += v.engagements
+      linkClicks   += v.linkClicks
+      visits       += v.visits
+      follows      += v.follows
+      if (v.pageLikes > totalPageLikes) totalPageLikes = v.pageLikes
+    }
+
     return {
-      views: sumField(rows, 'page_impressions'),
-      viewers: sumField(rows, 'page_impressions_unique'),
-      interactions: sumField(rows, 'page_post_engagements'),
-      linkClicks: sumField(rows, 'post_clicks'),
-      visits: sumField(rows, 'page_views_total'),
-      follows: sumField(rows, 'page_daily_follows'),
+      summary: { views, viewers, interactions, linkClicks, visits, follows, totalPageLikes },
+      daily,
     }
   } catch {
-    return { views: 0, viewers: 0, interactions: 0, linkClicks: 0, visits: 0, follows: 0 }
+    return {
+      summary: { views: 0, viewers: 0, interactions: 0, linkClicks: 0, visits: 0, follows: 0, totalPageLikes: 0 },
+      daily: [],
+    }
   }
 }
