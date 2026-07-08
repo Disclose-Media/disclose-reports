@@ -46,8 +46,9 @@ export default async function ClientPage({
     const hasPaid = client.type === 'paid' && !!client.accountId
     const hasWindsor = !!client.windsorPageId
 
-    // Discover linked IG account for Windsor pages (works for BM pages like Cascade Creek)
-    const igUserId = hasWindsor
+    // Only try to discover linked IG for paid clients in BM (e.g. Cascade Creek)
+    // Personal page accounts (organic-only) are not accessible via system user token
+    const igUserId = hasWindsor && client.type === 'paid'
       ? await getLinkedIgAccount(client.windsorPageId!).catch(() => null)
       : null
 

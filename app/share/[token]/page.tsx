@@ -44,7 +44,7 @@ export default async function SharePage({
     const hasPaid = client.type === 'paid' && !!client.accountId
     const hasWindsor = !!client.windsorPageId
 
-    const igUserId = hasWindsor
+    const igUserId = hasWindsor && client.type === 'paid'
       ? await getLinkedIgAccount(client.windsorPageId!).catch(() => null)
       : null
 
