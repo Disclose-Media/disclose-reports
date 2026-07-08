@@ -2,6 +2,7 @@ export type Client = {
   id: string
   name: string
   accountId: string
+  pageId?: string
   type: 'paid' | 'organic'
   status: 'active' | 'closed'
   currency: string
@@ -87,6 +88,7 @@ export const CLIENTS: Client[] = [
     id: 'mai-sunset',
     name: 'Mai Sunset Beach Resort',
     accountId: '996924450165919',
+    pageId: '', // Add Facebook Page ID here
     type: 'organic',
     status: 'active',
     currency: 'NZD',
@@ -97,3 +99,6 @@ export const CLIENTS: Client[] = [
 export function getClient(id: string): Client | undefined {
   return CLIENTS.find((c) => c.id === id)
 }
+
+export const paidClients = CLIENTS.filter((c) => c.type === 'paid' && c.status === 'active')
+export const organicClients = CLIENTS.filter((c) => c.type === 'organic' && c.status === 'active')
