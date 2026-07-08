@@ -1,10 +1,34 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useFormState, useFormStatus } from 'react-dom'
 import { login } from './actions'
 
+function SubmitButton() {
+  const { pending } = useFormStatus()
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="w-full py-3 px-4 bg-[#C8972D] hover:bg-[#B8871D] disabled:opacity-60 text-white text-[12px] font-bold rounded-[6px] transition-colors duration-150 flex items-center justify-center gap-2"
+      style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '0.06em' }}
+    >
+      {pending ? (
+        <>
+          <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+          Signing in…
+        </>
+      ) : (
+        'Sign In'
+      )}
+    </button>
+  )
+}
+
 export default function LoginPage() {
-  const [state, action, pending] = useActionState(login, undefined)
+  const [state, action] = useFormState(login, undefined)
 
   return (
     <div className="min-h-screen bg-[#F8F6F2] flex items-center justify-center p-4">
@@ -84,24 +108,7 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={pending}
-                className="w-full py-3 px-4 bg-[#C8972D] hover:bg-[#B8871D] disabled:opacity-60 text-white text-[12px] font-bold rounded-[6px] transition-colors duration-150 flex items-center justify-center gap-2"
-                style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '0.06em' }}
-              >
-                {pending ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                    </svg>
-                    Signing in…
-                  </>
-                ) : (
-                  'Sign In'
-                )}
-              </button>
+              <SubmitButton />
             </form>
           </div>
         </div>
