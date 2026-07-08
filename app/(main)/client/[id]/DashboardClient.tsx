@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { Client } from '@/lib/clients'
-import type { CampaignInsight, AdInsight, PageInsightsSummary, IgInsightsSummary } from '@/lib/meta'
+import type { CampaignInsight, AdInsight, PageInsightsSummary, IgInsightsSummary, PostItem } from '@/lib/meta'
 import { OrganicSection } from '@/components/OrganicSection'
+import { ContentTable } from '@/components/ContentTable'
 
 type Props = {
   client: Client
@@ -14,6 +15,7 @@ type Props = {
   period: string
   pageInsights?: PageInsightsSummary[]
   igInsights?: IgInsightsSummary | null
+  posts?: PostItem[]
 }
 
 function fmt(n: string | number | undefined, decimals = 0) {
@@ -643,7 +645,7 @@ function NarrativeSection({ title, icon, color, text }: { title: string; icon: s
   )
 }
 
-export function DashboardClient({ client, summary, campaigns, ads, thumbnails, period, pageInsights = [], igInsights = null }: Props) {
+export function DashboardClient({ client, summary, campaigns, ads, thumbnails, period, pageInsights = [], igInsights = null, posts = [] }: Props) {
   const totalSpend = parseFloat(summary?.amount_spent || '0')
   const totalLeads = campaigns.reduce((s, c) => s + (parseInt(c.lead || '0') || 0), 0)
   const cpl = totalLeads > 0 ? totalSpend / totalLeads : 0
@@ -675,6 +677,8 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
           facebookPageIds={client.facebookPageIds}
         />
       )}
+
+      {posts.length > 0 && <ContentTable posts={posts} />}
 
       {client.type === 'paid' && (
         campaigns.length === 0 ? (

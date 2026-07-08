@@ -323,3 +323,126 @@ export async function getAccountSummary(
     ctr: r.ctr || '0',
   }
 }
+
+// ── Content Posts ────────────────────────────────────────────────────────────
+
+export type PostItem = {
+  id: string
+  platform: 'facebook' | 'instagram'
+  type: 'photo' | 'video' | 'reel' | 'story' | 'text'
+  caption: string
+  thumbnailUrl: string
+  publishedAt: string
+  reach: number
+  views: number
+  likes: number
+  comments: number
+  shares: number
+  saves: number
+}
+
+export async function getFacebookPosts(pageId: string, period: DatePreset = 'last_30d'): Promise<PostItem[]> {
+  const { since, until } = presetToSinceUntil(period)
+  try {
+    const data = await graphFetch(`${pageId}/published_posts`, {
+      fields: 'id,message,story,created_time,full_picture,attachments{media_type}',
+      since: String(since),
+      until: String(until),
+      limit: '25',
+    })
+    const posts = data.data || []
+    if (posts.length === 0) return []
+
+    // Fetch insights for each post in parallel (batch of 25)
+    const withInsights = await Promise.all(
+      posts.map(async (post: Record<string, unknown>) => {
+        try {
+          const ins = await graphFetch(`${post.id}/insights`, {
+            metric: 'post_impressions,post_impressions_unique,post_engaged_users,post_clicks,post_reactions_by_type_total',
+            period: 'lifetime',
+          })
+          const metric = (name: string) =>
+            ((ins.data || []) as { name: string; values: { value: number }[] }[])
+              .find((m) => m.name === name)?.values?.[0]?.value || 0
+          const attachType = (post.attachments as { data?: { media_type?: string }[] } | undefined)?.data?.[0]?.media_type
+          const type: PostItem['type'] =
+            attachType === 'video' ? 'video' : attachType === 'photo' ? 'photo' : 'text'
+          return {
+            id: String(post.id),
+            platform: 'facebook' as const,
+            type,
+            caption: String(post.message || post.story || ''),
+            thumbnailUrl: String(post.full_picture || ''),
+            publishedAt: String(post.created_time || ''),
+            reach: metric('post_impressions_unique'),
+            views: metric('post_impressions'),
+            likes: metric('post_reactions_by_type_total'),
+            comments: 0,
+            shares: 0,
+            saves: 0,
+          } as PostItem
+        } catch {
+          return null
+        }
+      })
+    )
+    return withInsights.filter(Boolean) as PostItem[]
+  } catch {
+    return []
+  }
+}
+
+export async function getInstagramPosts(igUserId: string, period: DatePreset = 'last_30d'): Promise<PostItem[]> {
+  const { since, until } = presetToSinceUntil(period)
+  try {
+    const data = await graphFetch(`${igUserId}/media`, {
+      fields: 'id,caption,media_type,timestamp,thumbnail_url,media_url,like_count,comments_count',
+      since: String(since),
+      until: String(until),
+      limit: '25',
+    })
+    const posts = data.data || []
+    if (posts.length === 0) return []
+
+    const withInsights = await Promise.all(
+      posts.map(async (post: Record<string, unknown>) => {
+        try {
+          const mediaType = String(post.media_type || '').toLowerCase()
+          const isStory = false // stories come from a different endpoint
+          const metric_names = mediaType === 'video'
+            ? 'impressions,reach,saved,likes,comments,shares,plays'
+            : 'impressions,reach,saved,likes,comments,shares'
+          const ins = await graphFetch(`${post.id}/insights`, {
+            metric: metric_names,
+            period: 'lifetime',
+          })
+          const metric = (name: string) =>
+            ((ins.data || []) as { name: string; values: { value: number }[] }[])
+              .find((m) => m.name === name)?.values?.[0]?.value || 0
+          const type: PostItem['type'] =
+            mediaType === 'video' ? (String(post.media_url || '').includes('reel') ? 'reel' : 'video') :
+            isStory ? 'story' : 'photo'
+          return {
+            id: String(post.id),
+            platform: 'instagram' as const,
+            type,
+            caption: String(post.caption || ''),
+            thumbnailUrl: String(post.thumbnail_url || post.media_url || ''),
+            publishedAt: String(post.timestamp || ''),
+            reach: metric('reach'),
+            views: metric('impressions'),
+            likes: metric('likes') || Number(post.like_count || 0),
+            comments: metric('comments') || Number(post.comments_count || 0),
+            shares: metric('shares'),
+            saves: metric('saved'),
+          } as PostItem
+        } catch {
+          return null
+        }
+      })
+    )
+    return withInsights.filter(Boolean) as PostItem[]
+  } catch {
+    return []
+  }
+}

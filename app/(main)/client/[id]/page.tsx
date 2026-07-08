@@ -4,7 +4,8 @@ import { getClient } from '@/lib/clients'
 import {
   getCampaigns, getAds, getAccountSummary, getAdThumbnails,
   getPageInsights, getIgInsights, getLinkedIgAccount,
-  type DatePreset, type PageInsightsSummary, type IgInsightsSummary,
+  getFacebookPosts, getInstagramPosts,
+  type DatePreset, type PageInsightsSummary, type IgInsightsSummary, type PostItem,
 } from '@/lib/meta'
 import { DashboardClient } from './DashboardClient'
 import { ExportButton } from '@/components/ExportButton'
@@ -39,6 +40,7 @@ export default async function ClientPage({
   let thumbnails: Record<string, string> = {}
   let pageInsights: PageInsightsSummary[] = []
   let igInsights: IgInsightsSummary | null = null
+  let posts: PostItem[] = []
   let error = null
 
   try {
@@ -64,6 +66,15 @@ export default async function ClientPage({
     // results[4 .. 4+pageIds.length-1] = page insights
     pageInsights = results.slice(4, 4 + pageIds.length) as PageInsightsSummary[]
     igInsights = (results[4 + pageIds.length] as IgInsightsSummary | null) ?? null
+
+    // Fetch posts separately (non-blocking — don't fail the whole page)
+    const [fbPosts, igPosts] = await Promise.all([
+      pageIds.length > 0 ? getFacebookPosts(pageIds[0], period).catch(() => []) : Promise.resolve([]),
+      igUserId ? getInstagramPosts(igUserId, period).catch(() => []) : Promise.resolve([]),
+    ])
+    posts = [...fbPosts, ...igPosts].sort(
+      (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    )
   } catch (e: unknown) {
     error = e instanceof Error ? e.message : 'Failed to load data'
   }
@@ -174,6 +185,7 @@ export default async function ClientPage({
             period={currentPreset.label}
             pageInsights={pageInsights}
             igInsights={igInsights}
+            posts={posts}
           />
         )}
       </main>

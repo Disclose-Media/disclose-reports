@@ -38,17 +38,17 @@ export function Sidebar() {
     <div className="flex flex-col h-full bg-[#111111]">
       {/* Logo & brand */}
       <div className="px-5 pt-6 pb-5 border-b border-[#1E1E1E]">
-        <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-3">
-          <img src="/dm-logo-white.png" alt="Disclose Media" className="h-7 w-auto object-contain" />
+        <Link href="/" onClick={() => setMobileOpen(false)} className="flex flex-col items-center gap-3">
+          <img src="/dm-logo-white.png" alt="Disclose Media" className="h-12 w-auto object-contain" />
+          <div className="text-center">
+            <p className="text-white text-[11px] font-bold tracking-[0.12em] uppercase" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+              Disclose Media
+            </p>
+            <p className="text-[9px] tracking-[0.18em] uppercase mt-0.5 font-semibold" style={{ fontFamily: 'Montserrat, sans-serif', color: '#C8972D' }}>
+              Reporting Portal
+            </p>
+          </div>
         </Link>
-        <div className="mt-3">
-          <p className="text-white text-[11px] font-bold tracking-[0.12em] uppercase" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-            Disclose Media
-          </p>
-          <p className="text-[9px] tracking-[0.18em] uppercase mt-0.5 font-semibold" style={{ fontFamily: 'Montserrat, sans-serif', color: '#C8972D' }}>
-            Reporting Portal
-          </p>
-        </div>
       </div>
 
       {/* Nav */}
