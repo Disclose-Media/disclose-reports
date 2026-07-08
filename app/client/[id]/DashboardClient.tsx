@@ -76,7 +76,7 @@ function SummaryBar({ items, period }: { items: { label: string; value: string; 
         >
           Account Overview
         </p>
-        <span className="text-[10px] text-[#555555]" style={{ fontFamily: 'Inter, sans-serif' }}>
+        <span className="text-[10px] text-[#888888]" style={{ fontFamily: 'Inter, sans-serif' }}>
           {period}
         </span>
       </div>
@@ -105,8 +105,58 @@ function SummaryBar({ items, period }: { items: { label: string; value: string; 
   )
 }
 
+type SortKey = 'name' | 'spend' | 'reach' | 'impressions' | 'clicks' | 'lpv' | 'cplpv' | 'leads' | 'cpl'
+type SortDir = 'asc' | 'desc'
+
+function adValue(ad: AdInsight, key: SortKey): number | string {
+  switch (key) {
+    case 'name': return ad.name
+    case 'spend': return parseFloat(ad.amount_spent || '0')
+    case 'reach': return parseInt(ad.reach || '0')
+    case 'impressions': return parseInt(ad.impressions || '0')
+    case 'clicks': return parseInt(ad.clicks || '0')
+    case 'lpv': { const m = ad.results?.value?.match(/^(\d+)/); return m ? parseInt(m[1]) : 0 }
+    case 'cplpv': { const m = ad.cost_per_result?.value?.match(/[\d.]+/); return m ? parseFloat(m[0]) : 0 }
+    case 'leads': return parseInt(ad.lead || '0') || 0
+    case 'cpl': { const m = ad.cost_per_action_type_lead?.match(/[\d.]+/); return m ? parseFloat(m[0]) : 0 }
+  }
+}
+
+function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
+  return (
+    <span className={`inline-flex flex-col ml-1 gap-[1px] ${active ? 'text-[#C8972D]' : 'text-[#CCCCCC]'}`}>
+      <svg width="6" height="4" viewBox="0 0 6 4" fill="currentColor" className={active && dir === 'asc' ? 'opacity-100' : 'opacity-40'}>
+        <path d="M3 0L6 4H0L3 0Z"/>
+      </svg>
+      <svg width="6" height="4" viewBox="0 0 6 4" fill="currentColor" className={active && dir === 'desc' ? 'opacity-100' : 'opacity-40'}>
+        <path d="M3 4L0 0H6L3 4Z"/>
+      </svg>
+    </span>
+  )
+}
+
 function CampaignSection({ campaign, ads }: { campaign: CampaignInsight; ads: AdInsight[] }) {
   const [open, setOpen] = useState(true)
+  const [sortKey, setSortKey] = useState<SortKey>('spend')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'))
+    } else {
+      setSortKey(key)
+      setSortDir('desc')
+    }
+  }
+
+  const sortedAds = [...ads].sort((a, b) => {
+    const av = adValue(a, sortKey)
+    const bv = adValue(b, sortKey)
+    if (typeof av === 'string' && typeof bv === 'string') {
+      return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av)
+    }
+    return sortDir === 'asc' ? (av as number) - (bv as number) : (bv as number) - (av as number)
+  })
   const chartRef = useRef<HTMLCanvasElement>(null)
   const chartObj = useRef<unknown>(null)
 
@@ -237,7 +287,7 @@ function CampaignSection({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <span className="hidden sm:flex items-center gap-1.5 text-[11px]" style={{ fontFamily: 'Inter, sans-serif' }}>
-            <span className="text-[#555555]">Spend</span>
+            <span className="text-[#AAAAAA]">Spend</span>
             <span className="font-bold text-[#C8972D]">{fmtDollar(spend)}</span>
           </span>
           <span className="text-[10px] bg-emerald-900/30 text-emerald-400 border border-emerald-900/40 px-2.5 py-1 rounded-full" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -245,7 +295,7 @@ function CampaignSection({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
           </span>
           <svg
             width="12" height="12" viewBox="0 0 12 12" fill="none"
-            className={`text-[#555555] transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+            className={`text-[#888888] transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
           >
             <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
@@ -287,19 +337,33 @@ function CampaignSection({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-[#E8E4DC]">
-                      {['Ad', 'Spend', 'Reach', 'Impressions', 'Clicks', 'LPV', 'Cost/LPV', 'Leads', 'CPL'].map((h) => (
+                      {([
+                        { label: 'Ad', key: 'name' as SortKey, align: 'left' },
+                        { label: 'Spend', key: 'spend' as SortKey, align: 'right' },
+                        { label: 'Reach', key: 'reach' as SortKey, align: 'right' },
+                        { label: 'Impressions', key: 'impressions' as SortKey, align: 'right' },
+                        { label: 'Clicks', key: 'clicks' as SortKey, align: 'right' },
+                        { label: 'LPV', key: 'lpv' as SortKey, align: 'right' },
+                        { label: 'Cost/LPV', key: 'cplpv' as SortKey, align: 'right' },
+                        { label: 'Leads', key: 'leads' as SortKey, align: 'right' },
+                        { label: 'CPL', key: 'cpl' as SortKey, align: 'right' },
+                      ]).map((col) => (
                         <th
-                          key={h}
-                          className={`py-3 px-4 text-[9px] font-bold text-[#AAAAAA] uppercase tracking-[0.12em] whitespace-nowrap bg-white ${h === 'Ad' ? 'text-left' : 'text-right'}`}
+                          key={col.key}
+                          onClick={() => handleSort(col.key)}
+                          className={`py-3 px-4 text-[9px] font-bold uppercase tracking-[0.12em] whitespace-nowrap bg-white cursor-pointer select-none hover:text-[#C8972D] transition-colors ${col.align === 'left' ? 'text-left' : 'text-right'} ${sortKey === col.key ? 'text-[#C8972D]' : 'text-[#AAAAAA]'}`}
                           style={{ fontFamily: 'Montserrat, sans-serif' }}
                         >
-                          {h}
+                          <span className="inline-flex items-center gap-0.5">
+                            {col.label}
+                            <SortIcon active={sortKey === col.key} dir={sortDir} />
+                          </span>
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {ads.map((ad, idx) => {
+                    {sortedAds.map((ad, idx) => {
                       const adLpvMatch = ad.results?.value?.match(/^(\d+)/)
                       const adLpv = adLpvMatch ? parseInt(adLpvMatch[1]) : 0
                       const adCplpvMatch = ad.cost_per_result?.value?.match(/[\d.]+/)

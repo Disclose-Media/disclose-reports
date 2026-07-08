@@ -51,10 +51,10 @@ export default async function ClientPage({
       <div className="bg-[#111111] px-8 pt-8 pb-6">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-4">
-          <Link href="/" className="text-[10px] text-[#555555] hover:text-[#888888] transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
+          <Link href="/" className="text-[10px] text-[#777777] hover:text-[#AAAAAA] transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
             All Clients
           </Link>
-          <span className="text-[#333333]">›</span>
+          <span className="text-[#555555]">›</span>
           <span className="text-[10px] text-[#888888]" style={{ fontFamily: 'Inter, sans-serif' }}>
             {client.name}
           </span>
@@ -83,7 +83,7 @@ export default async function ClientPage({
               </span>
               Live
             </span>
-            <span className="text-[11px] text-[#555555]" style={{ fontFamily: 'Inter, sans-serif' }}>{dateLabel}</span>
+            <span className="text-[11px] text-[#888888]" style={{ fontFamily: 'Inter, sans-serif' }}>{dateLabel}</span>
           </div>
         </div>
 
