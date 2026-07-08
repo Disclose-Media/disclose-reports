@@ -9,6 +9,7 @@ type Props = {
   summary: Record<string, string> | null
   campaigns: CampaignInsight[]
   ads: AdInsight[]
+  period: string
 }
 
 function fmt(n: string | number | undefined, decimals = 0) {
@@ -52,10 +53,10 @@ function KpiCard({
   )
 }
 
-function SummaryBar({ items }: { items: { label: string; value: string; gold?: boolean; green?: boolean }[] }) {
+function SummaryBar({ items, period }: { items: { label: string; value: string; gold?: boolean; green?: boolean }[]; period: string }) {
   return (
     <div className="bg-[#0D0D0D] border border-[rgba(201,151,58,0.15)] rounded-xl p-5 mb-8">
-      <p className="text-[10px] text-[#C9973A] uppercase tracking-[0.2em] mb-4">Account Overview · Last 30 Days</p>
+      <p className="text-[10px] text-[#C9973A] uppercase tracking-[0.2em] mb-4">Account Overview · {period}</p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
         {items.map((item) => (
           <div key={item.label}>
@@ -284,71 +285,111 @@ function CampaignSummary({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
   const cplMatch = campaign.cost_per_action_type_lead?.match(/[\d.]+/)
   const cpl = cplMatch ? parseFloat(cplMatch[0]) : 0
   const ctr = parseFloat(campaign.ctr || '0')
+  const cpm = parseFloat(campaign.cpm || '0')
+  const cpc = parseFloat(campaign.cpc || '0')
+  const spend = parseFloat(campaign.amount_spent || '0')
+  const clicks = parseInt(campaign.clicks || '0')
+  const impressions = parseInt(campaign.impressions || '0')
+  const reach = parseInt(campaign.reach || '0')
 
   const topAdByLeads = [...ads].sort(
     (a, b) => (parseInt(b.lead || '0') || 0) - (parseInt(a.lead || '0') || 0)
   )[0]
-  const topAdByCplpv = [...ads].sort((a, b) => {
-    const am = a.cost_per_result?.value?.match(/[\d.]+/)
-    const bm = b.cost_per_result?.value?.match(/[\d.]+/)
-    const av = am ? parseFloat(am[0]) : 999
-    const bv = bm ? parseFloat(bm[0]) : 999
-    return av - bv
-  })[0]
+  const topAdBySpend = [...ads].sort(
+    (a, b) => parseFloat(b.amount_spent || '0') - parseFloat(a.amount_spent || '0')
+  )[0]
+  const topAdByCtr = [...ads].sort(
+    (a, b) => parseFloat(b.ctr || '0') - parseFloat(a.ctr || '0')
+  )[0]
 
-  let insight = ''
+  // Build analysis points
+  const points: { type: 'good' | 'warning' | 'info'; text: string }[] = []
+
+  // CTR analysis
+  if (ctr >= 3) points.push({ type: 'good', text: `Strong CTR of ${ctr.toFixed(2)}% — well above the Meta average of ~1–2%. Your creative is resonating with the audience.` })
+  else if (ctr >= 1.5) points.push({ type: 'info', text: `CTR of ${ctr.toFixed(2)}% is solid. Consider A/B testing new creatives to push this higher.` })
+  else if (ctr > 0) points.push({ type: 'warning', text: `CTR of ${ctr.toFixed(2)}% is below average. Try refreshing ad creative or tightening the audience targeting.` })
+
+  // CPM analysis
+  if (cpm > 0 && cpm < 10) points.push({ type: 'good', text: `CPM of $${cpm.toFixed(2)} is efficient — you're reaching audiences at a low cost per 1,000 impressions.` })
+  else if (cpm >= 10 && cpm < 25) points.push({ type: 'info', text: `CPM of $${cpm.toFixed(2)} is within normal range for NZ markets.` })
+  else if (cpm >= 25) points.push({ type: 'warning', text: `CPM of $${cpm.toFixed(2)} is elevated. Consider broadening your audience or adjusting bid strategy to reduce costs.` })
+
+  // Lead gen analysis
+  if (leads > 0 && lpv > 0) {
+    const convRate = ((leads / lpv) * 100).toFixed(1)
+    points.push({ type: leads / lpv > 0.1 ? 'good' : 'info', text: `Landing page conversion rate is ${convRate}% (${leads} leads from ${lpv} views). ${parseFloat(convRate) > 10 ? 'Excellent landing page performance.' : 'Consider optimising the landing page to improve conversion.'}` })
+  }
   if (leads > 0) {
-    const bestAd = topAdByLeads
-    const bestAdLeads = parseInt(bestAd?.lead || '0') || 0
-    insight = `This campaign generated ${leads} lead${leads > 1 ? 's' : ''} at $${cpl.toFixed(2)} CPL. `
-    if (bestAd && bestAdLeads > 0) {
-      insight += `${bestAd.name} is the top-converting ad with ${bestAdLeads} lead${bestAdLeads > 1 ? 's' : ''}. `
-    }
+    points.push({ type: cpl < 50 ? 'good' : cpl < 100 ? 'info' : 'warning', text: `Cost per lead of $${cpl.toFixed(2)}. ${cpl < 50 ? 'Strong performance — leads are coming in at an efficient cost.' : cpl < 100 ? 'Moderate CPL — optimising top-performing ads could reduce this further.' : 'CPL is high — review targeting and creative to improve lead quality and volume.'}` })
   } else if (lpv > 0) {
-    insight = `${lpv} landing page views recorded. No leads attributed yet — verify the lead event is firing on the landing page. `
+    points.push({ type: 'warning', text: `${lpv} landing page views but no leads recorded. Check that the Meta lead event is firing correctly on the landing page.` })
   }
-  if (topAdByCplpv) {
-    const m = topAdByCplpv.cost_per_result?.value?.match(/[\d.]+/)
-    if (m) insight += `${topAdByCplpv.name} has the most efficient cost per LPV at $${parseFloat(m[0]).toFixed(2)}.`
+
+  // Top ad insights
+  if (topAdByLeads && parseInt(topAdByLeads.lead || '0') > 0) {
+    points.push({ type: 'good', text: `Best performing ad: "${topAdByLeads.name}" with ${topAdByLeads.lead} lead${parseInt(topAdByLeads.lead || '0') > 1 ? 's' : ''}. Consider increasing budget allocation to this ad.` })
   }
-  if (ctr > 3) insight += ` CTR of ${ctr.toFixed(2)}% is excellent — well above the account average.`
+  if (topAdByCtr && parseFloat(topAdByCtr.ctr || '0') > ctr * 1.3 && ads.length > 1) {
+    points.push({ type: 'info', text: `"${topAdByCtr.name}" has the highest CTR at ${parseFloat(topAdByCtr.ctr || '0').toFixed(2)}% — this creative is driving the most engagement.` })
+  }
+
+  // Frequency / reach insight
+  if (impressions > 0 && reach > 0) {
+    const freq = (impressions / reach).toFixed(1)
+    if (parseFloat(freq) > 4) points.push({ type: 'warning', text: `Average frequency of ${freq}x — your audience is seeing ads repeatedly. Consider expanding the audience or rotating creatives to avoid fatigue.` })
+    else points.push({ type: 'info', text: `Average frequency of ${freq}x — healthy exposure levels with no signs of audience fatigue.` })
+  }
+
+  const iconMap = { good: '↑', warning: '!', info: '·' }
+  const colorMap = { good: 'text-emerald-400', warning: 'text-amber-400', info: 'text-[#C9973A]' }
+  const bgMap = { good: 'bg-emerald-900/20 border-emerald-900/30', warning: 'bg-amber-900/20 border-amber-900/30', info: 'bg-[rgba(201,151,58,0.08)] border-[rgba(201,151,58,0.2)]' }
 
   return (
     <div className="bg-[#141414] border border-[rgba(201,151,58,0.15)] rounded-xl p-5">
       <div className="flex items-center gap-2 mb-4">
         <span className="w-0.5 h-3 bg-[#C9973A] rounded-full inline-block" />
-        <p className="text-[10px] font-semibold text-[#C9973A] uppercase tracking-[0.15em]">
-          Campaign Summary
-        </p>
+        <p className="text-[10px] font-semibold text-[#C9973A] uppercase tracking-[0.15em]">Campaign Analysis</p>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+
+      {/* Key metrics row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         {[
-          { label: 'CTR', value: `${ctr.toFixed(2)}%`, highlight: ctr > 2 ? 'green' : '' },
-          { label: 'CPM', value: `$${parseFloat(campaign.cpm || '0').toFixed(2)}`, highlight: '' },
-          { label: 'Leads', value: leads > 0 ? String(leads) : '—', highlight: leads > 0 ? 'green' : '' },
-          { label: 'CPL', value: cpl > 0 ? `$${cpl.toFixed(2)}` : '—', highlight: cpl > 0 ? 'gold' : '' },
+          { label: 'CTR', value: `${ctr.toFixed(2)}%`, highlight: ctr >= 2 ? 'good' : ctr >= 1 ? 'info' : 'warning' },
+          { label: 'CPM', value: `$${cpm.toFixed(2)}`, highlight: 'info' },
+          { label: 'CPC', value: cpc > 0 ? `$${cpc.toFixed(2)}` : '—', highlight: 'info' },
+          { label: 'Leads', value: leads > 0 ? String(leads) : '—', highlight: leads > 0 ? 'good' : 'info' },
         ].map((item) => (
           <div key={item.label} className="bg-[#0D0D0D] border border-[rgba(255,255,255,0.04)] rounded-lg p-3">
             <p className="text-[9px] text-gray-600 uppercase tracking-wider mb-1">{item.label}</p>
             <p className={`text-sm font-semibold ${
-              item.highlight === 'green' ? 'text-emerald-400' :
-              item.highlight === 'gold' ? 'text-[#C9973A]' : 'text-gray-300'
-            }`}>
-              {item.value}
-            </p>
+              item.highlight === 'good' ? 'text-emerald-400' :
+              item.highlight === 'warning' ? 'text-amber-400' : 'text-gray-300'
+            }`}>{item.value}</p>
           </div>
         ))}
       </div>
-      {insight && (
-        <p className="text-xs text-gray-500 leading-relaxed border-t border-[rgba(255,255,255,0.05)] pt-3">
-          {insight}
-        </p>
+
+      {/* Analysis points */}
+      {points.length > 0 && (
+        <div className="space-y-2">
+          {points.map((point, i) => (
+            <div key={i} className={`flex gap-3 p-3 rounded-lg border ${bgMap[point.type]}`}>
+              <span className={`text-xs font-bold mt-0.5 shrink-0 ${colorMap[point.type]}`}>{iconMap[point.type]}</span>
+              <p className="text-xs text-gray-400 leading-relaxed">{point.text}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {points.length === 0 && (
+        <p className="text-xs text-gray-600 italic">Not enough data to generate analysis for this period.</p>
       )}
     </div>
   )
 }
 
-export function DashboardClient({ client, summary, campaigns, ads }: Props) {
+export function DashboardClient({ client, summary, campaigns, ads, period }: Props) {
   const totalSpend = parseFloat(summary?.amount_spent || '0')
   const totalLeads = campaigns.reduce((s, c) => s + (parseInt(c.lead || '0') || 0), 0)
   const cpl = totalLeads > 0 ? totalSpend / totalLeads : 0
@@ -356,6 +397,7 @@ export function DashboardClient({ client, summary, campaigns, ads }: Props) {
   return (
     <>
       <SummaryBar
+        period={period}
         items={[
           { label: 'Total Spend', value: fmtDollar(totalSpend), gold: true },
           { label: 'Impressions', value: fmt(summary?.impressions) },

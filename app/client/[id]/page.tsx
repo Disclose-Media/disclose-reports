@@ -1,12 +1,31 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getClient } from '@/lib/clients'
-import { getCampaigns, getAds, getAccountSummary } from '@/lib/meta'
+import { getCampaigns, getAds, getAccountSummary, type DatePreset } from '@/lib/meta'
 import { DashboardClient } from './DashboardClient'
 
-export default async function ClientPage({ params }: { params: { id: string } }) {
+const PRESETS: { label: string; value: DatePreset }[] = [
+  { label: 'Today', value: 'today' },
+  { label: '7 Days', value: 'last_7d' },
+  { label: '14 Days', value: 'last_14d' },
+  { label: '30 Days', value: 'last_30d' },
+  { label: 'This Month', value: 'this_month' },
+  { label: 'Last Month', value: 'last_month' },
+  { label: '90 Days', value: 'last_90d' },
+]
+
+export default async function ClientPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string }
+  searchParams: { period?: string }
+}) {
   const client = getClient(params.id)
   if (!client) notFound()
+
+  const period = (searchParams.period as DatePreset) || 'last_30d'
+  const currentPreset = PRESETS.find((p) => p.value === period) || PRESETS[3]
 
   let summary = null
   let campaigns: Awaited<ReturnType<typeof getCampaigns>> = []
@@ -15,9 +34,9 @@ export default async function ClientPage({ params }: { params: { id: string } })
 
   try {
     ;[summary, campaigns, ads] = await Promise.all([
-      getAccountSummary(client.accountId),
-      getCampaigns(client.accountId),
-      getAds(client.accountId),
+      getAccountSummary(client.accountId, period),
+      getCampaigns(client.accountId, period),
+      getAds(client.accountId, period),
     ])
   } catch (e: unknown) {
     error = e instanceof Error ? e.message : 'Failed to load data'
@@ -29,7 +48,7 @@ export default async function ClientPage({ params }: { params: { id: string } })
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
       {/* Header */}
-      <header className="border-b border-[rgba(201,151,58,0.15)] bg-[#0A0A0A] sticky top-0 z-10 backdrop-blur-sm">
+      <header className="border-b border-[rgba(201,151,58,0.15)] bg-[#0A0A0A] sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <DMLogo />
@@ -40,10 +59,7 @@ export default async function ClientPage({ params }: { params: { id: string } })
               <p className="text-gray-500 text-[10px] tracking-widest uppercase">Client Reporting Portal</p>
             </div>
           </div>
-          <Link
-            href="/"
-            className="text-[11px] text-gray-500 hover:text-[#C9973A] transition-colors flex items-center gap-1"
-          >
+          <Link href="/" className="text-[11px] text-gray-500 hover:text-[#C9973A] transition-colors">
             ← All Clients
           </Link>
         </div>
@@ -51,7 +67,7 @@ export default async function ClientPage({ params }: { params: { id: string } })
 
       {/* Client hero */}
       <div className="border-b border-[rgba(201,151,58,0.1)] bg-[#0D0D0D]">
-        <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="max-w-6xl mx-auto px-6 py-6">
           <p className="text-[10px] text-[#C9973A] uppercase tracking-[0.2em] mb-2">
             {client.type === 'organic' ? 'Organic · Facebook Page' : 'Paid Media · Meta Ads'}
             {client.hasLeadGen && ' · Lead Generation'}
@@ -68,7 +84,24 @@ export default async function ClientPage({ params }: { params: { id: string } })
               <span className="text-[11px] text-gray-500">{dateLabel}</span>
             </div>
           </div>
-          <p className="text-sm text-gray-600 mt-1">Last 30 days</p>
+
+          {/* Date preset selector */}
+          <div className="flex flex-wrap gap-2 mt-5">
+            {PRESETS.map((preset) => (
+              <Link
+                key={preset.value}
+                href={`/client/${client.id}?period=${preset.value}`}
+                className={`text-[11px] px-3 py-1.5 rounded-full border transition-all ${
+                  preset.value === period
+                    ? 'bg-[#C9973A] border-[#C9973A] text-black font-semibold'
+                    : 'border-[rgba(201,151,58,0.2)] text-gray-400 hover:border-[rgba(201,151,58,0.5)] hover:text-[#C9973A]'
+                }`}
+              >
+                {preset.label}
+              </Link>
+            ))}
+          </div>
+          <p className="text-[11px] text-gray-600 mt-2">Showing: {currentPreset.label}</p>
         </div>
       </div>
 
@@ -81,9 +114,6 @@ export default async function ClientPage({ params }: { params: { id: string } })
             </div>
             <p className="text-red-400 font-medium mb-1">Unable to load data</p>
             <p className="text-gray-600 text-sm">{error}</p>
-            <p className="text-gray-700 text-xs mt-3">
-              Check that META_ACCESS_TOKEN is set in Vercel environment variables.
-            </p>
           </div>
         ) : (
           <DashboardClient
@@ -91,6 +121,7 @@ export default async function ClientPage({ params }: { params: { id: string } })
             summary={summary}
             campaigns={campaigns}
             ads={ads}
+            period={currentPreset.label}
           />
         )}
       </main>
