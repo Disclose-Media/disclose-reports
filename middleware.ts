@@ -9,12 +9,13 @@ export function middleware(request: NextRequest) {
   const isAuthenticated = auth && secret && auth === secret
   const isLoginPage = pathname === '/login'
   const isSharePage = pathname.startsWith('/share/')
+  const isDebugApi = pathname.startsWith('/api/debug-')
 
   if (isAuthenticated && isLoginPage) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
-  if (isSharePage) return NextResponse.next()
+  if (isSharePage || isDebugApi) return NextResponse.next()
 
   if (!isAuthenticated && !isLoginPage) {
     const url = new URL('/login', request.url)
