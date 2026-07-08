@@ -670,7 +670,7 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
         />
       )}
 
-      {hasOrganic && (
+      {client.type === 'organic' && hasOrganic && (
         <OrganicSection
           pageInsights={pageInsights}
           igInsights={igInsights}
@@ -678,7 +678,7 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
         />
       )}
 
-      {posts.length > 0 && <ContentTable posts={posts} />}
+      {client.type === 'organic' && posts.length > 0 && <ContentTable posts={posts} />}
 
       {client.type === 'paid' && (
         campaigns.length === 0 ? (
