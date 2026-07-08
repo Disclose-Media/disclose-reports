@@ -1,16 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --gold: #C9973A;
-  --gold-light: #E8B86D;
-  --gold-dim: rgba(201,151,58,0.15);
-  --dm-dark: #0A0A0A;
-  --dm-dark2: #141414;
-  --dm-dark3: #1E1E1E;
-  --dm-border: rgba(201,151,58,0.2);
+  --gold: #C8972D;
+  --gold-light: #F0D080;
+  --gold-dark: #8B6320;
+  --dm-black: #111111;
+  --dm-offwhite: #F8F6F2;
+  --dm-lightgrey: #E8E4DC;
+  --dm-charcoal: #444444;
+  --chrome: #111111;
+  --chrome-border: #1A1A1A;
 }
 
 * {
@@ -18,29 +20,55 @@
 }
 
 body {
-  background: #0A0A0A;
-  color: #E8E8E8;
+  background: #F8F6F2;
+  color: #111111;
   font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Gold gradient text utility */
+.font-heading {
+  font-family: 'Montserrat', system-ui, sans-serif;
+}
+
+/* Gold gradient text */
 .gold-text {
-  background: linear-gradient(135deg, #C9973A 0%, #E8B86D 50%, #C9973A 100%);
+  background: linear-gradient(135deg, #C8972D 0%, #F0D080 50%, #C8972D 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Subtle gold glow */
-.gold-glow {
-  box-shadow: 0 0 20px rgba(201,151,58,0.15);
+/* Gold rule divider */
+.gold-rule {
+  height: 1.5px;
+  background: #C8972D;
 }
 
-/* Card border shimmer */
-.card-border {
-  border: 1px solid rgba(201,151,58,0.15);
+/* Card system — from brand guidelines */
+.card {
+  background: #FFFFFF;
+  border: 1px solid #E8E4DC;
+  border-radius: 8px;
 }
 
-.card-border:hover {
-  border-color: rgba(201,151,58,0.4);
+.card-dark {
+  background: #111111;
+  border: 1px solid #1A1A1A;
+  border-radius: 8px;
+}
+
+.card-gold {
+  background: #FFFFFF;
+  border: 1px solid #C8972D;
+  border-radius: 8px;
+}
+
+/* Label style from brand guidelines — 11px tracked caps gold */
+.brand-label {
+  font-family: 'Montserrat', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #C8972D;
 }

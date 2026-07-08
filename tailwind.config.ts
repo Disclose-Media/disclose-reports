@@ -9,18 +9,34 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        gold: '#C9973A',
-        'gold-light': '#E8B86D',
-        'gold-dim': 'rgba(201,151,58,0.15)',
-        'dm-dark': '#0A0A0A',
-        'dm-dark2': '#141414',
-        'dm-dark3': '#1E1E1E',
-        'dm-dark4': '#282828',
-        'dm-border': 'rgba(201,151,58,0.2)',
+        // Disclose Media Brand Colors — exact from brand guidelines
+        gold: '#C8972D',
+        'gold-light': '#F0D080',
+        'gold-dark': '#8B6320',
+        'gold-bronze': '#7A5010',
+        'dm-black': '#111111',
+        'dm-white': '#FFFFFF',
+        'dm-offwhite': '#F8F6F2',
+        'dm-lightgrey': '#E8E4DC',
+        'dm-midgrey': '#AAAAAA',
+        'dm-darkgrey': '#888888',
+        'dm-charcoal': '#444444',
+        // Sidebar chrome
+        'chrome': '#111111',
+        'chrome-border': '#1A1A1A',
+        'chrome-hover': '#1C1C1C',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         heading: ['Montserrat', 'system-ui', 'sans-serif'],
+      },
+      letterSpacing: {
+        'brand': '-0.02em',
+        'label': '0.18em',
+        'wide-label': '0.15em',
+      },
+      borderRadius: {
+        'card': '8px',
       },
     },
   },

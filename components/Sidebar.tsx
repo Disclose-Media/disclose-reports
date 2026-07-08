@@ -19,52 +19,79 @@ export function Sidebar() {
       <Link
         href={`/client/${client.id}?period=${period}`}
         onClick={() => setMobileOpen(false)}
-        className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${
+        className={`group flex items-center gap-2.5 px-3 py-2 rounded-md text-[11px] font-medium transition-all duration-150 ${
           isActive
-            ? 'bg-[rgba(201,151,58,0.15)] text-[#C9973A] border border-[rgba(201,151,58,0.3)]'
-            : 'text-gray-500 hover:text-gray-200 hover:bg-[#1E1E1E]'
+            ? 'bg-[rgba(200,151,45,0.12)] text-[#C8972D] border-l-2 border-[#C8972D] pl-[10px]'
+            : 'text-[#888888] hover:text-[#AAAAAA] hover:bg-[#1C1C1C] border-l-2 border-transparent'
         }`}
+        style={{ fontFamily: 'Inter, sans-serif' }}
       >
-        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-[#C9973A]' : 'bg-gray-700'}`} />
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${
+          isActive ? 'bg-[#C8972D]' : 'bg-[#2A2A2A] group-hover:bg-[#444444]'
+        }`} />
         <span className="truncate">{client.name}</span>
       </Link>
     )
   }
 
   const sidebarContent = (
-    <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className="px-4 py-5 border-b border-[rgba(201,151,58,0.15)]">
-        <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-2.5">
-          <DMLogo />
-          <div>
-            <p className="text-white text-xs font-bold tracking-wider" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-              DISCLOSE MEDIA
-            </p>
-            <p className="text-[9px] text-gray-600 tracking-widest uppercase">Reporting Portal</p>
-          </div>
+    <div className="flex flex-col h-full bg-[#111111]">
+      {/* Logo & brand */}
+      <div className="px-4 pt-6 pb-5">
+        <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-3">
+          <img
+            src="/dm-logo-white.png"
+            alt="Disclose Media"
+            className="h-8 w-auto object-contain"
+          />
         </Link>
+        <div className="mt-4">
+          <p
+            className="text-[#FFFFFF] text-[11px] font-bold tracking-[0.12em] uppercase"
+            style={{ fontFamily: 'Montserrat, sans-serif' }}
+          >
+            Disclose Media
+          </p>
+          <p
+            className="text-[9px] tracking-[0.18em] uppercase mt-0.5"
+            style={{ fontFamily: 'Montserrat, sans-serif', color: '#C8972D' }}
+          >
+            Reporting Portal
+          </p>
+        </div>
       </div>
 
+      {/* Gold rule */}
+      <div className="mx-4 mb-4" style={{ height: '1.5px', background: 'rgba(200,151,45,0.25)' }} />
+
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+      <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-5">
         {/* Home */}
         <Link
           href="/"
           onClick={() => setMobileOpen(false)}
-          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${
+          className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-[11px] font-medium transition-all duration-150 border-l-2 ${
             pathname === '/'
-              ? 'bg-[rgba(201,151,58,0.15)] text-[#C9973A] border border-[rgba(201,151,58,0.3)]'
-              : 'text-gray-500 hover:text-gray-200 hover:bg-[#1E1E1E]'
+              ? 'bg-[rgba(200,151,45,0.12)] text-[#C8972D] border-[#C8972D] pl-[10px]'
+              : 'text-[#888888] hover:text-[#AAAAAA] hover:bg-[#1C1C1C] border-transparent'
           }`}
+          style={{ fontFamily: 'Inter, sans-serif' }}
         >
-          <span className="text-[10px]">⊞</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+            <rect x="0" y="0" width="5" height="5" rx="1" />
+            <rect x="7" y="0" width="5" height="5" rx="1" />
+            <rect x="0" y="7" width="5" height="5" rx="1" />
+            <rect x="7" y="7" width="5" height="5" rx="1" />
+          </svg>
           <span>All Clients</span>
         </Link>
 
-        {/* Paid */}
+        {/* Paid Media */}
         <div>
-          <p className="text-[9px] text-gray-700 uppercase tracking-[0.15em] px-3 mb-2">
+          <p
+            className="text-[9px] uppercase tracking-[0.18em] px-3 mb-2"
+            style={{ fontFamily: 'Montserrat, sans-serif', color: '#C8972D', fontWeight: 600 }}
+          >
             Paid Media
           </p>
           <div className="space-y-0.5">
@@ -73,21 +100,36 @@ export function Sidebar() {
         </div>
 
         {/* Organic */}
-        <div>
-          <p className="text-[9px] text-gray-700 uppercase tracking-[0.15em] px-3 mb-2">
-            Organic
-          </p>
-          <div className="space-y-0.5">
-            {organicClients.map((c) => <NavItem key={c.id} client={c} />)}
+        {organicClients.length > 0 && (
+          <div>
+            <p
+              className="text-[9px] uppercase tracking-[0.18em] px-3 mb-2"
+              style={{ fontFamily: 'Montserrat, sans-serif', color: '#C8972D', fontWeight: 600 }}
+            >
+              Organic
+            </p>
+            <div className="space-y-0.5">
+              {organicClients.map((c) => <NavItem key={c.id} client={c} />)}
+            </div>
           </div>
-        </div>
+        )}
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t border-[rgba(201,151,58,0.1)]">
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
-          <span className="text-[9px] text-gray-600 uppercase tracking-wider">Live Data</span>
+      <div className="px-4 py-4 border-t border-[#1A1A1A]">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span className="text-[9px] text-[#555555] uppercase tracking-[0.15em]" style={{ fontFamily: 'Inter, sans-serif' }}>
+              Live
+            </span>
+          </div>
+          <span className="text-[9px] text-[#333333]" style={{ fontFamily: 'Inter, sans-serif' }}>
+            Meta Ads API
+          </span>
         </div>
       </div>
     </div>
@@ -95,14 +137,15 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile toggle button */}
+      {/* Mobile toggle */}
       <button
         onClick={() => setMobileOpen(!mobileOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 bg-[#141414] border border-[rgba(201,151,58,0.2)] rounded-lg p-2 text-[#C9973A]"
+        className="lg:hidden fixed top-4 left-4 z-50 bg-[#111111] border border-[#1A1A1A] rounded-lg p-2.5 text-[#C8972D] shadow-lg"
+        aria-label="Open menu"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <rect y="2" width="16" height="1.5" rx="0.75" fill="currentColor" />
-          <rect y="7.25" width="16" height="1.5" rx="0.75" fill="currentColor" />
+          <rect y="7.25" width="11" height="1.5" rx="0.75" fill="currentColor" />
           <rect y="12.5" width="16" height="1.5" rx="0.75" fill="currentColor" />
         </svg>
       </button>
@@ -110,31 +153,20 @@ export function Sidebar() {
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/60 z-40"
+          className="lg:hidden fixed inset-0 bg-black/70 z-40 backdrop-blur-sm"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* Mobile sidebar */}
-      <div className={`lg:hidden fixed left-0 top-0 bottom-0 w-56 bg-[#0D0D0D] border-r border-[rgba(201,151,58,0.15)] z-50 transition-transform duration-200 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className={`lg:hidden fixed left-0 top-0 bottom-0 w-56 z-50 transition-transform duration-200 ease-out ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {sidebarContent}
       </div>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:flex flex-col w-52 shrink-0 bg-[#0D0D0D] border-r border-[rgba(201,151,58,0.15)] min-h-screen fixed left-0 top-0 bottom-0">
+      <div className="hidden lg:block w-52 shrink-0 bg-[#111111] min-h-screen fixed left-0 top-0 bottom-0 border-r border-[#1A1A1A]">
         {sidebarContent}
       </div>
     </>
-  )
-}
-
-function DMLogo() {
-  return (
-    <svg width="30" height="30" viewBox="0 0 40 40" fill="none">
-      <rect width="40" height="40" rx="6" fill="#141414" />
-      <polygon points="20,4 36,13 36,27 20,36 4,27 4,13" fill="none" stroke="#C9973A" strokeWidth="1.5" />
-      <polygon points="20,10 30,15.5 30,24.5 20,30 10,24.5 10,15.5" fill="#C9973A" opacity="0.2" />
-      <text x="20" y="23" textAnchor="middle" fontSize="9" fontWeight="700" fill="#C9973A" fontFamily="Montserrat, sans-serif">DM</text>
-    </svg>
   )
 }
