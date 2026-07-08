@@ -28,8 +28,8 @@ export function ShareButton({ shareUrl }: { shareUrl: string }) {
       onClick={handleCopy}
       className={`print:hidden flex items-center gap-2 px-4 py-2 text-[11px] font-bold rounded-[6px] border transition-all duration-150 ${
         copied
-          ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-          : 'bg-white border-[#E8E4DC] text-[#888888] hover:border-[#C8972D] hover:text-[#C8972D]'
+          ? 'bg-emerald-900/30 border-emerald-700/40 text-emerald-400'
+          : 'bg-transparent border-[#2A2A2A] text-[#888888] hover:border-[#C8972D] hover:text-[#C8972D]'
       }`}
       style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '0.04em' }}
     >
