@@ -208,6 +208,25 @@ export function OrganicSection({ windsorOrganic, igInsights = null }: Props) {
   if (!windsorOrganic) return null
 
   const { summary: fb, daily } = windsorOrganic
+  const hasData = fb.views > 0 || fb.viewers > 0 || fb.visits > 0 || fb.follows > 0
+
+  if (!hasData) {
+    return (
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div style={{ width: '2px', height: '16px', background: '#C8972D', borderRadius: '1px' }} />
+          <h2 className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#888888]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            Organic Performance
+          </h2>
+        </div>
+        <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-8 text-center">
+          <p className="text-[11px] font-semibold text-[#888888] mb-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>No data for this period</p>
+          <p className="text-[11px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>Try selecting a different date range above</p>
+        </div>
+      </div>
+    )
+  }
+
   const engagementRate = fb.viewers > 0 ? ((fb.interactions / fb.viewers) * 100).toFixed(1) : '0.0'
   const hasBothPlatforms = igInsights !== null
 
