@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getClient } from '@/lib/clients'
-import { getCampaigns, getAds, getAccountSummary, type DatePreset } from '@/lib/meta'
+import { getCampaigns, getAds, getAccountSummary, getAdThumbnails, type DatePreset } from '@/lib/meta'
 import { DashboardClient } from './DashboardClient'
 import { ExportButton } from '@/components/ExportButton'
 
@@ -31,13 +31,15 @@ export default async function ClientPage({
   let summary = null
   let campaigns: Awaited<ReturnType<typeof getCampaigns>> = []
   let ads: Awaited<ReturnType<typeof getAds>> = []
+  let thumbnails: Record<string, string> = {}
   let error = null
 
   try {
-    ;[summary, campaigns, ads] = await Promise.all([
+    ;[summary, campaigns, ads, thumbnails] = await Promise.all([
       getAccountSummary(client.accountId, period),
       getCampaigns(client.accountId, period),
       getAds(client.accountId, period),
+      getAdThumbnails(client.accountId),
     ])
   } catch (e: unknown) {
     error = e instanceof Error ? e.message : 'Failed to load data'
@@ -144,6 +146,7 @@ export default async function ClientPage({
             summary={summary}
             campaigns={campaigns}
             ads={ads}
+            thumbnails={thumbnails}
             period={currentPreset.label}
           />
         )}

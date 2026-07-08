@@ -33,6 +33,7 @@ export type CampaignInsight = {
 export type AdInsight = CampaignInsight & {
   campaign_id: string
   adset_id: string
+  thumbnail_url?: string
 }
 
 async function graphFetch(path: string, params: Record<string, string>) {
@@ -157,6 +158,24 @@ export async function getAds(
       date_stop: String(r.date_stop || ''),
     } as AdInsight
   })
+}
+
+export async function getAdThumbnails(accountId: string): Promise<Record<string, string>> {
+  try {
+    const data = await graphFetch(`act_${accountId}/ads`, {
+      fields: 'id,creative{thumbnail_url}',
+      limit: '100',
+    })
+    const map: Record<string, string> = {}
+    for (const ad of data.data || []) {
+      if (ad.creative?.thumbnail_url) {
+        map[String(ad.id)] = ad.creative.thumbnail_url
+      }
+    }
+    return map
+  } catch {
+    return {}
+  }
 }
 
 export async function getAccountSummary(

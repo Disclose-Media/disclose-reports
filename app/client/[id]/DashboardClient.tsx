@@ -9,6 +9,7 @@ type Props = {
   summary: Record<string, string> | null
   campaigns: CampaignInsight[]
   ads: AdInsight[]
+  thumbnails: Record<string, string>
   period: string
 }
 
@@ -135,7 +136,7 @@ function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
   )
 }
 
-function CampaignSection({ campaign, ads }: { campaign: CampaignInsight; ads: AdInsight[] }) {
+function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsight; ads: AdInsight[]; thumbnails: Record<string, string> }) {
   const [open, setOpen] = useState(true)
   const [sortKey, setSortKey] = useState<SortKey>('spend')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -337,6 +338,8 @@ function CampaignSection({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-[#E8E4DC]">
+                      {/* Thumbnail col — no sort */}
+                      <th className="py-3 pl-4 pr-2 bg-white w-14" />
                       {([
                         { label: 'Ad', key: 'name' as SortKey, align: 'left' },
                         { label: 'Spend', key: 'spend' as SortKey, align: 'right' },
@@ -378,6 +381,27 @@ function CampaignSection({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
                           key={ad.id}
                           className={`border-b border-[#F0EDE8] hover:bg-[#FBF9F5] transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FAFAF8]'}`}
                         >
+                          {/* Creative thumbnail */}
+                          <td className="pl-4 pr-2 py-2 w-14">
+                            {thumbnails[ad.id] ? (
+                              <div className="w-10 h-10 rounded-[4px] overflow-hidden border border-[#E8E4DC] bg-[#F8F6F2] shrink-0">
+                                <img
+                                  src={thumbnails[ad.id]}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-10 h-10 rounded-[4px] border border-[#E8E4DC] bg-[#F0EDE8] flex items-center justify-center shrink-0">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                  <rect x="1" y="3" width="12" height="8" rx="1" stroke="#CCCCCC" strokeWidth="1.2"/>
+                                  <circle cx="4.5" cy="6" r="1" fill="#CCCCCC"/>
+                                  <path d="M1 9.5l3-2.5 2.5 2 2.5-2.5 3 3" stroke="#CCCCCC" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </div>
+                            )}
+                          </td>
                           <td
                             className="py-3 px-4 font-semibold text-[#C8972D] text-xs max-w-[200px]"
                             style={{ fontFamily: 'Inter, sans-serif' }}
@@ -616,7 +640,7 @@ function NarrativeSection({ title, icon, color, text }: { title: string; icon: s
   )
 }
 
-export function DashboardClient({ client, summary, campaigns, ads, period }: Props) {
+export function DashboardClient({ client, summary, campaigns, ads, thumbnails, period }: Props) {
   const totalSpend = parseFloat(summary?.amount_spent || '0')
   const totalLeads = campaigns.reduce((s, c) => s + (parseInt(c.lead || '0') || 0), 0)
   const cpl = totalLeads > 0 ? totalSpend / totalLeads : 0
@@ -660,7 +684,7 @@ export function DashboardClient({ client, summary, campaigns, ads, period }: Pro
           {campaigns.map((campaign) => {
             const campaignAds = ads.filter((a) => a.campaign_id === campaign.id)
             return (
-              <CampaignSection key={campaign.id} campaign={campaign} ads={campaignAds} />
+              <CampaignSection key={campaign.id} campaign={campaign} ads={campaignAds} thumbnails={thumbnails} />
             )
           })}
         </div>
