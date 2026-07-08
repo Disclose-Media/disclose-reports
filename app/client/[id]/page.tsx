@@ -67,14 +67,14 @@ export default async function ClientPage({
         <img src="/dm-logo-white.png" alt="Disclose Media" style={{ height: '40px', filter: 'invert(1)' }} />
       </div>
 
-      {/* Client hero — dark chrome */}
-      <div className="print:hidden bg-[#111111] px-8 pt-8 pb-6">
+      {/* Client hero — white */}
+      <div className="print:hidden bg-white border-b border-[#E8E4DC] px-8 pt-7 pb-6">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-4">
-          <Link href="/" className="text-[10px] text-[#777777] hover:text-[#AAAAAA] transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
+          <Link href="/" className="text-[10px] text-[#AAAAAA] hover:text-[#C8972D] transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
             All Clients
           </Link>
-          <span className="text-[#555555]">›</span>
+          <span className="text-[#CCCCCC]">›</span>
           <span className="text-[10px] text-[#888888]" style={{ fontFamily: 'Inter, sans-serif' }}>
             {client.name}
           </span>
@@ -88,23 +88,23 @@ export default async function ClientPage({
           {client.hasLeadGen && ' · Lead Generation'}
         </p>
 
-        <div className="flex items-end justify-between flex-wrap gap-4 mb-6">
+        <div className="flex items-end justify-between flex-wrap gap-4 mb-5">
           <h1
-            className="text-[26px] font-extrabold text-white leading-tight"
+            className="text-[26px] font-extrabold text-[#111111] leading-tight"
             style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.02em' }}
           >
             {client.name}
           </h1>
           <div className="flex items-center gap-3">
             <ExportButton clientName={client.name} period={currentPreset.label} />
-            <span className="flex items-center gap-2 text-[10px] text-emerald-400 border border-emerald-900/40 bg-emerald-900/20 px-3 py-1.5 rounded-full" style={{ fontFamily: 'Inter, sans-serif' }}>
+            <span className="flex items-center gap-2 text-[10px] text-emerald-700 border border-emerald-200 bg-emerald-50 px-3 py-1.5 rounded-full" style={{ fontFamily: 'Inter, sans-serif' }}>
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
               </span>
               Live
             </span>
-            <span className="text-[11px] text-[#888888]" style={{ fontFamily: 'Inter, sans-serif' }}>{dateLabel}</span>
+            <span className="text-[11px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>{dateLabel}</span>
           </div>
         </div>
 
@@ -116,8 +116,8 @@ export default async function ClientPage({
               href={`/client/${client.id}?period=${preset.value}`}
               className={`text-[11px] px-3.5 py-1.5 rounded-full border transition-all duration-150 ${
                 preset.value === period
-                  ? 'bg-[#C8972D] border-[#C8972D] text-[#111111] font-bold'
-                  : 'border-[#2A2A2A] text-[#666666] hover:border-[#C8972D] hover:text-[#C8972D]'
+                  ? 'bg-[#C8972D] border-[#C8972D] text-white font-bold'
+                  : 'border-[#E8E4DC] text-[#888888] hover:border-[#C8972D] hover:text-[#C8972D]'
               }`}
               style={{ fontFamily: 'Inter, sans-serif' }}
             >

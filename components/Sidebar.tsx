@@ -19,15 +19,15 @@ export function Sidebar() {
       <Link
         href={`/client/${client.id}?period=${period}`}
         onClick={() => setMobileOpen(false)}
-        className={`group flex items-center gap-2.5 px-3 py-2 rounded-md text-[11px] font-medium transition-all duration-150 ${
+        className={`group flex items-center gap-2.5 px-3 py-2 rounded-md text-[11px] font-medium transition-all duration-150 border-l-2 ${
           isActive
-            ? 'bg-[rgba(200,151,45,0.12)] text-[#C8972D] border-l-2 border-[#C8972D] pl-[10px]'
-            : 'text-[#888888] hover:text-[#AAAAAA] hover:bg-[#1C1C1C] border-l-2 border-transparent'
+            ? 'bg-[rgba(200,151,45,0.08)] text-[#C8972D] border-[#C8972D] pl-[10px]'
+            : 'text-[#888888] hover:text-[#111111] hover:bg-[#F8F6F2] border-transparent'
         }`}
         style={{ fontFamily: 'Inter, sans-serif' }}
       >
         <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${
-          isActive ? 'bg-[#C8972D]' : 'bg-[#2A2A2A] group-hover:bg-[#444444]'
+          isActive ? 'bg-[#C8972D]' : 'bg-[#D8D4CC] group-hover:bg-[#AAAAAA]'
         }`} />
         <span className="truncate">{client.name}</span>
       </Link>
@@ -35,45 +35,42 @@ export function Sidebar() {
   }
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-[#111111]">
+    <div className="flex flex-col h-full bg-white border-r border-[#E8E4DC]">
       {/* Logo & brand */}
-      <div className="px-4 pt-6 pb-5">
+      <div className="px-5 pt-6 pb-5 border-b border-[#E8E4DC]">
         <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-3">
           <img
-            src="/dm-logo-white.png"
+            src="/dm-logo-dark.png"
             alt="Disclose Media"
-            className="h-8 w-auto object-contain"
+            className="h-7 w-auto object-contain"
           />
         </Link>
-        <div className="mt-4">
+        <div className="mt-3">
           <p
-            className="text-[#FFFFFF] text-[11px] font-bold tracking-[0.12em] uppercase"
+            className="text-[#111111] text-[11px] font-bold tracking-[0.12em] uppercase"
             style={{ fontFamily: 'Montserrat, sans-serif' }}
           >
             Disclose Media
           </p>
           <p
             className="text-[9px] tracking-[0.18em] uppercase mt-0.5"
-            style={{ fontFamily: 'Montserrat, sans-serif', color: '#C8972D' }}
+            style={{ fontFamily: 'Montserrat, sans-serif', color: '#C8972D', fontWeight: 600 }}
           >
             Reporting Portal
           </p>
         </div>
       </div>
 
-      {/* Gold rule */}
-      <div className="mx-4 mb-4" style={{ height: '1.5px', background: 'rgba(200,151,45,0.25)' }} />
-
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-5">
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
         {/* Home */}
         <Link
           href="/"
           onClick={() => setMobileOpen(false)}
           className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-[11px] font-medium transition-all duration-150 border-l-2 ${
             pathname === '/'
-              ? 'bg-[rgba(200,151,45,0.12)] text-[#C8972D] border-[#C8972D] pl-[10px]'
-              : 'text-[#888888] hover:text-[#AAAAAA] hover:bg-[#1C1C1C] border-transparent'
+              ? 'bg-[rgba(200,151,45,0.08)] text-[#C8972D] border-[#C8972D] pl-[10px]'
+              : 'text-[#888888] hover:text-[#111111] hover:bg-[#F8F6F2] border-transparent'
           }`}
           style={{ fontFamily: 'Inter, sans-serif' }}
         >
@@ -116,18 +113,18 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-4 border-t border-[#1A1A1A]">
+      <div className="px-4 py-4 border-t border-[#E8E4DC]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
             </span>
-            <span className="text-[9px] text-[#555555] uppercase tracking-[0.15em]" style={{ fontFamily: 'Inter, sans-serif' }}>
+            <span className="text-[9px] text-[#AAAAAA] uppercase tracking-[0.15em]" style={{ fontFamily: 'Inter, sans-serif' }}>
               Live
             </span>
           </div>
-          <span className="text-[9px] text-[#333333]" style={{ fontFamily: 'Inter, sans-serif' }}>
+          <span className="text-[9px] text-[#CCCCCC]" style={{ fontFamily: 'Inter, sans-serif' }}>
             Meta Ads API
           </span>
         </div>
@@ -140,7 +137,7 @@ export function Sidebar() {
       {/* Mobile toggle */}
       <button
         onClick={() => setMobileOpen(!mobileOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 bg-[#111111] border border-[#1A1A1A] rounded-lg p-2.5 text-[#C8972D] shadow-lg"
+        className="lg:hidden fixed top-4 left-4 z-50 bg-white border border-[#E8E4DC] rounded-lg p-2.5 text-[#C8972D] shadow-sm"
         aria-label="Open menu"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -153,7 +150,7 @@ export function Sidebar() {
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/70 z-40 backdrop-blur-sm"
+          className="lg:hidden fixed inset-0 bg-black/40 z-40 backdrop-blur-sm"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -164,7 +161,7 @@ export function Sidebar() {
       </div>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:block w-52 shrink-0 bg-[#111111] min-h-screen fixed left-0 top-0 bottom-0 border-r border-[#1A1A1A]">
+      <div className="hidden lg:block w-52 shrink-0 min-h-screen fixed left-0 top-0 bottom-0">
         {sidebarContent}
       </div>
     </>

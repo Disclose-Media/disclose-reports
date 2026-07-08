@@ -88,21 +88,21 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#F8F6F2]">
-      {/* Page hero — dark chrome */}
-      <div className="bg-[#111111] px-8 py-10">
+      {/* Page hero — white */}
+      <div className="bg-white border-b border-[#E8E4DC] px-8 py-8">
         <p
-          className="text-[11px] uppercase tracking-[0.18em] mb-3"
+          className="text-[10px] uppercase tracking-[0.18em] mb-2"
           style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#C8972D' }}
         >
           Performance Intelligence
         </p>
         <h1
-          className="text-[28px] font-extrabold text-white leading-tight"
+          className="text-[26px] font-extrabold text-[#111111] leading-tight"
           style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.02em' }}
         >
           Client Dashboards
         </h1>
-        <p className="text-[13px] text-[#888888] mt-2" style={{ fontFamily: 'Inter, sans-serif' }}>
+        <p className="text-[13px] text-[#AAAAAA] mt-1.5" style={{ fontFamily: 'Inter, sans-serif' }}>
           Select a client to view their live performance report
         </p>
       </div>
