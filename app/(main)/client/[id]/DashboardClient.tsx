@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { Client } from '@/lib/clients'
-import type { CampaignInsight, AdInsight } from '@/lib/meta'
+import type { CampaignInsight, AdInsight, PageInsightsSummary, IgInsightsSummary } from '@/lib/meta'
+import { OrganicSection } from '@/components/OrganicSection'
 
 type Props = {
   client: Client
@@ -11,6 +12,8 @@ type Props = {
   ads: AdInsight[]
   thumbnails: Record<string, string>
   period: string
+  pageInsights?: PageInsightsSummary[]
+  igInsights?: IgInsightsSummary | null
 }
 
 function fmt(n: string | number | undefined, decimals = 0) {
@@ -640,54 +643,68 @@ function NarrativeSection({ title, icon, color, text }: { title: string; icon: s
   )
 }
 
-export function DashboardClient({ client, summary, campaigns, ads, thumbnails, period }: Props) {
+export function DashboardClient({ client, summary, campaigns, ads, thumbnails, period, pageInsights = [], igInsights = null }: Props) {
   const totalSpend = parseFloat(summary?.amount_spent || '0')
   const totalLeads = campaigns.reduce((s, c) => s + (parseInt(c.lead || '0') || 0), 0)
   const cpl = totalLeads > 0 ? totalSpend / totalLeads : 0
+  const hasPaid = client.type === 'paid' && campaigns.length > 0
+  const hasOrganic = pageInsights.length > 0 || igInsights !== null
 
   return (
     <>
-      <SummaryBar
-        period={period}
-        items={[
-          { label: 'Total Spend', value: fmtDollar(totalSpend), gold: true },
-          { label: 'Impressions', value: fmt(summary?.impressions) },
-          { label: 'Reach', value: fmt(summary?.reach) },
-          { label: 'Clicks', value: fmt(summary?.clicks) },
-          { label: 'Avg CTR', value: `${parseFloat(summary?.ctr || '0').toFixed(2)}%` },
-          { label: 'Avg CPM', value: `$${parseFloat(summary?.cpm || '0').toFixed(2)}` },
-          { label: 'Total Leads', value: totalLeads > 0 ? String(totalLeads) : '—', green: totalLeads > 0 },
-          { label: 'Cost Per Lead', value: cpl > 0 ? fmtDollar(cpl) : '—', gold: cpl > 0 },
-        ]}
-      />
+      {hasPaid && (
+        <SummaryBar
+          period={period}
+          items={[
+            { label: 'Total Spend', value: fmtDollar(totalSpend), gold: true },
+            { label: 'Impressions', value: fmt(summary?.impressions) },
+            { label: 'Reach', value: fmt(summary?.reach) },
+            { label: 'Clicks', value: fmt(summary?.clicks) },
+            { label: 'Avg CTR', value: `${parseFloat(summary?.ctr || '0').toFixed(2)}%` },
+            { label: 'Avg CPM', value: `$${parseFloat(summary?.cpm || '0').toFixed(2)}` },
+            { label: 'Total Leads', value: totalLeads > 0 ? String(totalLeads) : '—', green: totalLeads > 0 },
+            { label: 'Cost Per Lead', value: cpl > 0 ? fmtDollar(cpl) : '—', gold: cpl > 0 },
+          ]}
+        />
+      )}
 
-      {campaigns.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E8E4DC] rounded-[8px]">
-          <p className="text-[#AAAAAA] text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
-            No active campaigns in this period.
-          </p>
-        </div>
-      ) : (
-        <div>
-          <div className="flex items-center gap-3 mb-5">
-            <div style={{ width: '2px', height: '14px', background: '#C8972D', borderRadius: '1px' }} />
-            <h2
-              className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#888888]"
-              style={{ fontFamily: 'Montserrat, sans-serif' }}
-            >
-              Campaigns
-            </h2>
-            <span className="text-[10px] text-[#AAAAAA] bg-white border border-[#E8E4DC] px-2 py-0.5 rounded-full" style={{ fontFamily: 'Inter, sans-serif' }}>
-              {campaigns.length}
-            </span>
+      {hasOrganic && (
+        <OrganicSection
+          pageInsights={pageInsights}
+          igInsights={igInsights}
+          facebookPageIds={client.facebookPageIds}
+        />
+      )}
+
+      {client.type === 'paid' && (
+        campaigns.length === 0 ? (
+          <div className="text-center py-16 bg-white border border-[#E8E4DC] rounded-[8px]">
+            <p className="text-[#AAAAAA] text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
+              No active campaigns in this period.
+            </p>
           </div>
-          {campaigns.map((campaign) => {
-            const campaignAds = ads.filter((a) => a.campaign_id === campaign.id)
-            return (
-              <CampaignSection key={campaign.id} campaign={campaign} ads={campaignAds} thumbnails={thumbnails} />
-            )
-          })}
-        </div>
+        ) : (
+          <div>
+            <div className="flex items-center gap-3 mb-5">
+              <div style={{ width: '2px', height: '14px', background: '#C8972D', borderRadius: '1px' }} />
+              <h2
+                className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#888888]"
+                style={{ fontFamily: 'Montserrat, sans-serif' }}
+              >
+                Paid Campaigns
+              </h2>
+              <span className="text-[10px] text-[#AAAAAA] bg-white border border-[#E8E4DC] px-2 py-0.5 rounded-full" style={{ fontFamily: 'Inter, sans-serif' }}>
+                {campaigns.length}
+              </span>
+            </div>
+            {campaigns.map((campaign) => {
+              const campaignAds = ads.filter((a) => a.campaign_id === campaign.id)
+              return (
+                <CampaignSection key={campaign.id} campaign={campaign} ads={campaignAds} thumbnails={thumbnails} />
+              )
+            })}
+          </div>
+        )
       )}
     </>
   )

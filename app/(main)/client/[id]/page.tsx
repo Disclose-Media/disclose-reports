@@ -1,7 +1,11 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getClient } from '@/lib/clients'
-import { getCampaigns, getAds, getAccountSummary, getAdThumbnails, type DatePreset } from '@/lib/meta'
+import {
+  getCampaigns, getAds, getAccountSummary, getAdThumbnails,
+  getPageInsights, getIgInsights, getLinkedIgAccount,
+  type DatePreset, type PageInsightsSummary, type IgInsightsSummary,
+} from '@/lib/meta'
 import { DashboardClient } from './DashboardClient'
 import { ExportButton } from '@/components/ExportButton'
 import { ShareButton } from '@/components/ShareButton'
@@ -33,15 +37,33 @@ export default async function ClientPage({
   let campaigns: Awaited<ReturnType<typeof getCampaigns>> = []
   let ads: Awaited<ReturnType<typeof getAds>> = []
   let thumbnails: Record<string, string> = {}
+  let pageInsights: PageInsightsSummary[] = []
+  let igInsights: IgInsightsSummary | null = null
   let error = null
 
   try {
-    ;[summary, campaigns, ads, thumbnails] = await Promise.all([
-      getAccountSummary(client.accountId, period),
-      getCampaigns(client.accountId, period),
-      getAds(client.accountId, period),
-      getAdThumbnails(client.accountId),
+    const hasPaid = client.type === 'paid' && !!client.accountId
+    const pageIds = client.facebookPageIds || []
+
+    // Discover linked IG account from first page
+    const igUserId = pageIds.length > 0 ? await getLinkedIgAccount(pageIds[0]) : null
+
+    const results = await Promise.all([
+      hasPaid ? getAccountSummary(client.accountId, period) : Promise.resolve(null),
+      hasPaid ? getCampaigns(client.accountId, period) : Promise.resolve([]),
+      hasPaid ? getAds(client.accountId, period) : Promise.resolve([]),
+      hasPaid ? getAdThumbnails(client.accountId) : Promise.resolve({}),
+      ...pageIds.map((pid) => getPageInsights(pid, period)),
+      igUserId ? getIgInsights(igUserId, period) : Promise.resolve(null),
     ])
+
+    summary = results[0] as typeof summary
+    campaigns = results[1] as Awaited<ReturnType<typeof getCampaigns>>
+    ads = results[2] as Awaited<ReturnType<typeof getAds>>
+    thumbnails = results[3] as Record<string, string>
+    // results[4 .. 4+pageIds.length-1] = page insights
+    pageInsights = results.slice(4, 4 + pageIds.length) as PageInsightsSummary[]
+    igInsights = (results[4 + pageIds.length] as IgInsightsSummary | null) ?? null
   } catch (e: unknown) {
     error = e instanceof Error ? e.message : 'Failed to load data'
   }
@@ -150,6 +172,8 @@ export default async function ClientPage({
             ads={ads}
             thumbnails={thumbnails}
             period={currentPreset.label}
+            pageInsights={pageInsights}
+            igInsights={igInsights}
           />
         )}
       </main>

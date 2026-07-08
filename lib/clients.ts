@@ -2,7 +2,8 @@ export type Client = {
   id: string
   name: string
   accountId: string
-  pageId?: string
+  facebookPageIds?: string[]
+  igUserId?: string
   type: 'paid' | 'organic'
   status: 'active' | 'closed'
   currency: string
@@ -16,6 +17,7 @@ export const CLIENTS: Client[] = [
     id: 'co-kids',
     name: 'Co Kids Group',
     accountId: '248251059419736',
+    facebookPageIds: ['135504167189961', '560442774095123', '1333597723368342'],
     type: 'paid',
     status: 'active',
     currency: 'NZD',
@@ -27,6 +29,7 @@ export const CLIENTS: Client[] = [
     id: 'creative-hub',
     name: 'The Creative Hub',
     accountId: '102242766540563',
+    facebookPageIds: ['200736236642517'],
     type: 'paid',
     status: 'active',
     currency: 'NZD',
@@ -37,6 +40,7 @@ export const CLIENTS: Client[] = [
     id: 'south-sea',
     name: 'South Sea Cruises',
     accountId: '5156689774363967',
+    facebookPageIds: ['111021936185'],
     type: 'paid',
     status: 'active',
     currency: 'NZD',
@@ -47,6 +51,7 @@ export const CLIENTS: Client[] = [
     id: 'cascade',
     name: 'Cascade Creek Retreat',
     accountId: '362659505064113',
+    facebookPageIds: ['437554069630323'],
     type: 'paid',
     status: 'active',
     currency: 'NZD',
@@ -55,8 +60,9 @@ export const CLIENTS: Client[] = [
   },
   {
     id: 'karaka',
-    name: 'Karaka Ad Account',
+    name: 'DoubleTree by Hilton Auckland Karaka',
     accountId: '1842427852623651',
+    facebookPageIds: ['104961075212031'],
     type: 'paid',
     status: 'active',
     currency: 'NZD',
@@ -67,6 +73,7 @@ export const CLIENTS: Client[] = [
     id: 'pocket-bar',
     name: 'Pocket Bar',
     accountId: '1695711684136476',
+    facebookPageIds: ['539469452885415'],
     type: 'paid',
     status: 'active',
     currency: 'NZD',
@@ -77,6 +84,7 @@ export const CLIENTS: Client[] = [
     id: 'hilton-nz',
     name: 'Hilton New Zealand',
     accountId: '250039821854564',
+    facebookPageIds: ['170839166261244'],
     type: 'paid',
     status: 'active',
     currency: 'NZD',
@@ -87,6 +95,7 @@ export const CLIENTS: Client[] = [
     id: 'hilton-fiji',
     name: 'Hilton Fiji Beach Resort and Spa',
     accountId: '647548016018133',
+    facebookPageIds: ['52013960754'],
     type: 'paid',
     status: 'active',
     currency: 'NZD',
@@ -96,8 +105,8 @@ export const CLIENTS: Client[] = [
   {
     id: 'mai-sunset',
     name: 'Mai Sunset Beach Resort',
-    accountId: '996924450165919',
-    pageId: '',
+    accountId: '',
+    facebookPageIds: ['996924450165919'],
     type: 'organic',
     status: 'active',
     currency: 'NZD',

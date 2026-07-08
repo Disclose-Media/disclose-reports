@@ -178,6 +178,119 @@ export async function getAdThumbnails(accountId: string): Promise<Record<string,
   }
 }
 
+// ── Organic / Page Insights ──────────────────────────────────────────────────
+
+export type PageInsightsSummary = {
+  views: number
+  viewers: number
+  interactions: number
+  linkClicks: number
+  visits: number
+  follows: number
+}
+
+export type IgInsightsSummary = {
+  views: number
+  reach: number
+  profileVisits: number
+  follows: number
+  totalFollowers: number
+  username: string
+}
+
+function presetToSinceUntil(preset: DatePreset): { since: number; until: number } {
+  const now = new Date()
+  const until = Math.floor(now.getTime() / 1000)
+  const daysAgo = (d: number) => Math.floor((now.getTime() - d * 86400 * 1000) / 1000)
+  switch (preset) {
+    case 'today': return { since: daysAgo(1), until }
+    case 'yesterday': return { since: daysAgo(2), until: daysAgo(1) }
+    case 'last_7d': return { since: daysAgo(7), until }
+    case 'last_14d': return { since: daysAgo(14), until }
+    case 'last_30d': return { since: daysAgo(30), until }
+    case 'last_90d': return { since: daysAgo(90), until }
+    case 'this_month': {
+      const s = new Date(now.getFullYear(), now.getMonth(), 1)
+      return { since: Math.floor(s.getTime() / 1000), until }
+    }
+    case 'last_month': {
+      const s = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      const e = new Date(now.getFullYear(), now.getMonth(), 0)
+      return { since: Math.floor(s.getTime() / 1000), until: Math.floor(e.getTime() / 1000) }
+    }
+    default: return { since: daysAgo(30), until }
+  }
+}
+
+function sumMetric(data: unknown[], name: string): number {
+  const m = (data || []).find((m: unknown) => (m as { name: string }).name === name) as
+    | { values: { value: number | string }[] }
+    | undefined
+  if (!m) return 0
+  return (m.values || []).reduce((sum, v) => sum + (Number(v.value) || 0), 0)
+}
+
+export async function getPageInsights(
+  pageId: string,
+  period: DatePreset = 'last_30d'
+): Promise<PageInsightsSummary> {
+  const { since, until } = presetToSinceUntil(period)
+  const [dailyData, reachData] = await Promise.all([
+    graphFetch(`${pageId}/insights`, {
+      metric: 'page_impressions,page_post_engagements,page_website_clicks,page_fan_adds_unique,page_views_total',
+      period: 'day',
+      since: String(since),
+      until: String(until),
+    }).catch(() => ({ data: [] })),
+    graphFetch(`${pageId}/insights`, {
+      metric: 'page_impressions_unique',
+      period: 'days_28',
+    }).catch(() => ({ data: [] })),
+  ])
+  return {
+    views: sumMetric(dailyData.data, 'page_impressions'),
+    viewers: (reachData.data as { values: { value: number }[] }[])?.[0]?.values?.slice(-1)[0]?.value || 0,
+    interactions: sumMetric(dailyData.data, 'page_post_engagements'),
+    linkClicks: sumMetric(dailyData.data, 'page_website_clicks'),
+    visits: sumMetric(dailyData.data, 'page_views_total'),
+    follows: sumMetric(dailyData.data, 'page_fan_adds_unique'),
+  }
+}
+
+export async function getLinkedIgAccount(pageId: string): Promise<string | null> {
+  try {
+    const data = await graphFetch(pageId, { fields: 'instagram_business_account' })
+    return (data as { instagram_business_account?: { id: string } }).instagram_business_account?.id || null
+  } catch {
+    return null
+  }
+}
+
+export async function getIgInsights(
+  igUserId: string,
+  period: DatePreset = 'last_30d'
+): Promise<IgInsightsSummary> {
+  const { since, until } = presetToSinceUntil(period)
+  const [dailyData, accountData] = await Promise.all([
+    graphFetch(`${igUserId}/insights`, {
+      metric: 'impressions,reach,profile_views,follower_count',
+      period: 'day',
+      since: String(since),
+      until: String(until),
+    }).catch(() => ({ data: [] })),
+    graphFetch(igUserId, { fields: 'followers_count,username' }).catch(() => ({})),
+  ])
+  const acc = accountData as { followers_count?: number; username?: string }
+  return {
+    views: sumMetric(dailyData.data, 'impressions'),
+    reach: sumMetric(dailyData.data, 'reach'),
+    profileVisits: sumMetric(dailyData.data, 'profile_views'),
+    follows: sumMetric(dailyData.data, 'follower_count'),
+    totalFollowers: acc.followers_count || 0,
+    username: acc.username || '',
+  }
+}
+
 export async function getAccountSummary(
   accountId: string,
   datePreset: DatePreset = 'last_30d'
