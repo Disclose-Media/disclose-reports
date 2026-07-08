@@ -63,7 +63,7 @@ export async function getWindsorOrganicData(
   url.searchParams.set('api_key', KEY)
   url.searchParams.set(
     'fields',
-    'date,page_impressions,page_impressions_unique,page_post_engagements,post_clicks,page_views_total,page_daily_follows,page_fans_daily'
+    'date,account_id,page_impressions,page_impressions_unique,page_post_engagements,post_clicks,page_views_total,page_daily_follows,page_fans_daily'
   )
   url.searchParams.set('date_from', dateFrom)
   url.searchParams.set('date_to', dateTo)
@@ -85,6 +85,8 @@ export async function getWindsorOrganicData(
     for (const row of rows) {
       const date = String(row.date ?? '')
       if (!date) continue
+      // Filter to only rows for the requested page
+      if (row.account_id != null && String(row.account_id) !== pageId) continue
       if (!byDate.has(date)) {
         byDate.set(date, { impressions: 0, reach: 0, engagements: 0, linkClicks: 0, visits: 0, follows: 0, pageLikes: 0 })
       }
