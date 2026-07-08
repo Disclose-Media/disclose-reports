@@ -103,7 +103,7 @@ export async function getWindsorOrganicData(
       .map(([date, v]) => ({ date, impressions: v.impressions, reach: v.reach, engagements: v.engagements }))
 
     let views = 0, viewers = 0, interactions = 0, linkClicks = 0, visits = 0, follows = 0, totalPageLikes = 0
-    for (const [, v] of byDate) {
+    for (const v of Array.from(byDate.values())) {
       views        += v.impressions
       viewers      += v.reach
       interactions += v.engagements
