@@ -49,90 +49,145 @@ async function graphFetch(path: string, params: Record<string, string>) {
   return res.json()
 }
 
+const INSIGHT_FIELDS = [
+  'campaign_id',
+  'campaign_name',
+  'adset_id',
+  'adset_name',
+  'ad_id',
+  'ad_name',
+  'spend',
+  'impressions',
+  'reach',
+  'clicks',
+  'cpm',
+  'cpc',
+  'ctr',
+  'actions',
+  'cost_per_action_type',
+  'date_start',
+  'date_stop',
+].join(',')
+
+function extractActions(actions: { action_type: string; value: string }[] | undefined, type: string): string {
+  return actions?.find((a) => a.action_type === type)?.value || '0'
+}
+
+function extractCostPerAction(cpa: { action_type: string; value: string }[] | undefined, type: string): string {
+  return cpa?.find((a) => a.action_type === type)?.value || '0'
+}
+
 export async function getCampaigns(
   accountId: string,
   datePreset: DatePreset = 'last_30d'
 ): Promise<CampaignInsight[]> {
-  const fields = [
-    'name',
-    'status',
-    'amount_spent',
-    'impressions',
-    'reach',
-    'clicks',
-    'cpm',
-    'cpc',
-    'ctr',
-    'results',
-    'cost_per_result',
-    'lead',
-    'cost_per_action_type:lead',
-  ].join(',')
-
-  const data = await graphFetch(`act_${accountId}/campaigns`, {
-    fields,
+  const data = await graphFetch(`act_${accountId}/insights`, {
+    fields: INSIGHT_FIELDS,
     date_preset: datePreset,
     level: 'campaign',
     limit: '50',
   })
 
-  return (data.data || []).filter((c: CampaignInsight) => c.amount_spent && c.amount_spent !== '0')
+  return (data.data || [])
+    .filter((r: Record<string, unknown>) => parseFloat(String(r.spend || '0')) > 0)
+    .map((r: Record<string, unknown>) => {
+      const actions = r.actions as { action_type: string; value: string }[] | undefined
+      const cpa = r.cost_per_action_type as { action_type: string; value: string }[] | undefined
+      const lpv = extractActions(actions, 'landing_page_view')
+      const leads = extractActions(actions, 'lead')
+      const cplpv = extractCostPerAction(cpa, 'landing_page_view')
+      const cpl = extractCostPerAction(cpa, 'lead')
+      return {
+        id: String(r.campaign_id),
+        name: String(r.campaign_name),
+        status: 'ACTIVE',
+        amount_spent: String(r.spend || '0'),
+        impressions: String(r.impressions || '0'),
+        reach: String(r.reach || '0'),
+        clicks: String(r.clicks || '0'),
+        cpm: String(r.cpm || '0'),
+        cpc: String(r.cpc || '0'),
+        ctr: String(r.ctr || '0'),
+        results: lpv !== '0' ? { value: lpv } : undefined,
+        cost_per_result: cplpv !== '0' ? { value: cplpv } : undefined,
+        lead: leads,
+        cost_per_action_type_lead: cpl,
+        date_start: String(r.date_start || ''),
+        date_stop: String(r.date_stop || ''),
+      } as CampaignInsight
+    })
 }
 
 export async function getAds(
   accountId: string,
   datePreset: DatePreset = 'last_30d'
 ): Promise<AdInsight[]> {
-  const fields = [
-    'name',
-    'campaign_id',
-    'adset_id',
-    'amount_spent',
-    'impressions',
-    'reach',
-    'clicks',
-    'cpm',
-    'cpc',
-    'ctr',
-    'results',
-    'cost_per_result',
-    'lead',
-    'cost_per_action_type:lead',
-  ].join(',')
-
-  const data = await graphFetch(`act_${accountId}/ads`, {
-    fields,
+  const data = await graphFetch(`act_${accountId}/insights`, {
+    fields: INSIGHT_FIELDS,
     date_preset: datePreset,
     level: 'ad',
     limit: '100',
-    filtering: JSON.stringify([{ field: 'ad.effective_status', operator: 'IN', value: ['ACTIVE', 'PAUSED'] }]),
   })
 
-  return data.data || []
+  return (data.data || []).map((r: Record<string, unknown>) => {
+    const actions = r.actions as { action_type: string; value: string }[] | undefined
+    const cpa = r.cost_per_action_type as { action_type: string; value: string }[] | undefined
+    const lpv = extractActions(actions, 'landing_page_view')
+    const leads = extractActions(actions, 'lead')
+    const cplpv = extractCostPerAction(cpa, 'landing_page_view')
+    const cpl = extractCostPerAction(cpa, 'lead')
+    return {
+      id: String(r.ad_id),
+      name: String(r.ad_name),
+      campaign_id: String(r.campaign_id),
+      adset_id: String(r.adset_id),
+      status: 'ACTIVE',
+      amount_spent: String(r.spend || '0'),
+      impressions: String(r.impressions || '0'),
+      reach: String(r.reach || '0'),
+      clicks: String(r.clicks || '0'),
+      cpm: String(r.cpm || '0'),
+      cpc: String(r.cpc || '0'),
+      ctr: String(r.ctr || '0'),
+      results: lpv !== '0' ? { value: lpv } : undefined,
+      cost_per_result: cplpv !== '0' ? { value: cplpv } : undefined,
+      lead: leads,
+      cost_per_action_type_lead: cpl,
+      date_start: String(r.date_start || ''),
+      date_stop: String(r.date_stop || ''),
+    } as AdInsight
+  })
 }
 
 export async function getAccountSummary(
   accountId: string,
   datePreset: DatePreset = 'last_30d'
 ) {
-  const fields = [
-    'amount_spent',
-    'impressions',
-    'reach',
-    'clicks',
-    'cpm',
-    'cpc',
-    'ctr',
-    'lead',
-    'results',
-    'cost_per_result',
-  ].join(',')
-
   const data = await graphFetch(`act_${accountId}/insights`, {
-    fields,
+    fields: [
+      'spend',
+      'impressions',
+      'reach',
+      'clicks',
+      'cpm',
+      'cpc',
+      'ctr',
+      'actions',
+      'cost_per_action_type',
+    ].join(','),
     date_preset: datePreset,
     level: 'account',
   })
 
-  return data.data?.[0] || null
+  const r = data.data?.[0]
+  if (!r) return null
+  return {
+    amount_spent: r.spend || '0',
+    impressions: r.impressions || '0',
+    reach: r.reach || '0',
+    clicks: r.clicks || '0',
+    cpm: r.cpm || '0',
+    cpc: r.cpc || '0',
+    ctr: r.ctr || '0',
+  }
 }
