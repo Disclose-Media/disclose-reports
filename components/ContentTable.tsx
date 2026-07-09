@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { PostItem } from '@/lib/meta'
+import type { WindsorPost } from '@/lib/windsor'
 
 type SortKey = 'date' | 'reach' | 'views' | 'likes' | 'shares' | 'saves' | 'comments'
 type SortDir = 'asc' | 'desc'
@@ -35,8 +35,8 @@ function PlatformIcon({ platform }: { platform: 'facebook' | 'instagram' }) {
   )
 }
 
-function TypeBadge({ type }: { type: PostItem['type'] }) {
-  const colours: Record<PostItem['type'], string> = {
+function TypeBadge({ type }: { type: WindsorPost['type'] }) {
+  const colours: Record<WindsorPost['type'], string> = {
     reel: 'bg-purple-50 text-purple-700 border-purple-200',
     video: 'bg-blue-50 text-blue-700 border-blue-200',
     photo: 'bg-[#F8F6F2] text-[#888888] border-[#E8E4DC]',
@@ -60,7 +60,7 @@ function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
   )
 }
 
-export function ContentTable({ posts }: { posts: PostItem[] }) {
+export function ContentTable({ posts }: { posts: WindsorPost[] }) {
   const [sortKey, setSortKey] = useState<SortKey>('date')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [filter, setFilter] = useState<'all' | 'facebook' | 'instagram'>('all')
@@ -72,9 +72,9 @@ export function ContentTable({ posts }: { posts: PostItem[] }) {
     else { setSortKey(key); setSortDir('desc') }
   }
 
-  const getValue = (p: PostItem, key: SortKey): number | string => {
+  const getValue = (p: WindsorPost, key: SortKey): number | string => {
     if (key === 'date') return p.publishedAt
-    return p[key as keyof PostItem] as number
+    return p[key as keyof WindsorPost] as number
   }
 
   const filtered = filter === 'all' ? posts : posts.filter(p => p.platform === filter)
@@ -194,7 +194,7 @@ export function ContentTable({ posts }: { posts: PostItem[] }) {
                     {cols.map(col => (
                       <td key={col.key} className="px-3 py-3 whitespace-nowrap">
                         <span className={`text-[12px] font-semibold ${col.key === 'reach' ? 'text-[#C8972D]' : 'text-[#111111]'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                          {fmt(post[col.key as keyof PostItem] as number)}
+                          {fmt(post[col.key as keyof WindsorPost] as number)}
                         </span>
                       </td>
                     ))}

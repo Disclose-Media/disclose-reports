@@ -3,6 +3,102 @@ import type { DatePreset } from './meta'
 const BASE = 'https://connectors.windsor.ai'
 const KEY = process.env.WINDSOR_API_KEY!
 
+export type WindsorPost = {
+  id: string
+  platform: 'facebook' | 'instagram'
+  type: 'photo' | 'video' | 'reel' | 'story' | 'text'
+  caption: string
+  thumbnailUrl: string
+  publishedAt: string
+  permalink: string
+  reach: number
+  views: number
+  likes: number
+  comments: number
+  shares: number
+  saves: number
+}
+
+export async function getWindsorFacebookPosts(pageId: string, period: DatePreset = 'last_30d'): Promise<WindsorPost[]> {
+  const { dateFrom, dateTo } = presetToDates(period)
+  const url = new URL(`${BASE}/facebook_organic`)
+  url.searchParams.set('api_key', KEY)
+  url.searchParams.set('fields', 'account_id,post_id,post_message,post_created_time,full_picture,permalink_url,media_type,post_impressions_unique,post_impressions,post_reactions_total,post_clicks,post_engagements')
+  url.searchParams.set('date_from', dateFrom)
+  url.searchParams.set('date_to', dateTo)
+  url.searchParams.set('_account_id', pageId)
+  try {
+    const res = await fetch(url.toString(), { next: { revalidate: 300 } })
+    if (!res.ok) return []
+    const json = await res.json()
+    const rows: Record<string, unknown>[] = json.data ?? json.result ?? (Array.isArray(json) ? json : [])
+    const seen = new Set<string>()
+    const posts: WindsorPost[] = []
+    for (const row of rows) {
+      if (row.account_id != null && String(row.account_id) !== pageId) continue
+      const id = String(row.post_id ?? '')
+      if (!id || seen.has(id)) continue
+      seen.add(id)
+      const mediaType = String(row.media_type ?? '').toLowerCase()
+      const type = mediaType === 'video' ? 'video' : mediaType === 'photo' ? 'photo' : 'text'
+      posts.push({
+        id, platform: 'facebook', type,
+        caption: String(row.post_message ?? ''),
+        thumbnailUrl: String(row.full_picture ?? ''),
+        publishedAt: String(row.post_created_time ?? ''),
+        permalink: String(row.permalink_url ?? ''),
+        reach: Number(row.post_impressions_unique) || 0,
+        views: Number(row.post_impressions) || 0,
+        likes: Number(row.post_reactions_total) || 0,
+        comments: 0,
+        shares: 0,
+        saves: 0,
+      })
+    }
+    return posts.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+  } catch { return [] }
+}
+
+export async function getWindsorInstagramPosts(igAccountId: string, period: DatePreset = 'last_30d'): Promise<WindsorPost[]> {
+  const { dateFrom, dateTo } = presetToDates(period)
+  const url = new URL(`${BASE}/instagram`)
+  url.searchParams.set('api_key', KEY)
+  url.searchParams.set('fields', 'account_id,media_id,media_caption,timestamp,media_url,media_thumbnail_url,media_permalink,media_type,media_reach,media_views,media_like_count,media_comments_count,media_saved,media_shares')
+  url.searchParams.set('date_from', dateFrom)
+  url.searchParams.set('date_to', dateTo)
+  url.searchParams.set('_account_id', igAccountId)
+  try {
+    const res = await fetch(url.toString(), { next: { revalidate: 300 } })
+    if (!res.ok) return []
+    const json = await res.json()
+    const rows: Record<string, unknown>[] = json.data ?? json.result ?? (Array.isArray(json) ? json : [])
+    const seen = new Set<string>()
+    const posts: WindsorPost[] = []
+    for (const row of rows) {
+      if (row.account_id != null && String(row.account_id) !== igAccountId) continue
+      const id = String(row.media_id ?? '')
+      if (!id || seen.has(id)) continue
+      seen.add(id)
+      const mediaType = String(row.media_type ?? '').toUpperCase()
+      const type = mediaType === 'REEL' ? 'reel' : mediaType === 'VIDEO' ? 'video' : 'photo'
+      posts.push({
+        id, platform: 'instagram', type,
+        caption: String(row.media_caption ?? ''),
+        thumbnailUrl: String(row.media_thumbnail_url ?? row.media_url ?? ''),
+        publishedAt: String(row.timestamp ?? ''),
+        permalink: String(row.media_permalink ?? ''),
+        reach: Number(row.media_reach) || 0,
+        views: Number(row.media_views) || 0,
+        likes: Number(row.media_like_count) || 0,
+        comments: Number(row.media_comments_count) || 0,
+        shares: Number(row.media_shares) || 0,
+        saves: Number(row.media_saved) || 0,
+      })
+    }
+    return posts.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+  } catch { return [] }
+}
+
 export type WindsorInstagramSummary = {
   views: number
   reach: number
