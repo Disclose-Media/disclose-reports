@@ -214,12 +214,13 @@ function InstagramSection({ windsorInstagram }: { windsorInstagram: WindsorInsta
           <p className="text-[10px] uppercase tracking-[0.18em]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#C8972D' }}>Period Totals</p>
           {ig.totalFollowers > 0 && <span className="text-[10px] text-[#555555]" style={{ fontFamily: 'Inter, sans-serif' }}>{fmt(ig.totalFollowers)} followers</span>}
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 divide-x divide-y divide-[#1E1E1E] sm:divide-y-0">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 divide-x divide-y divide-[#1E1E1E] sm:divide-y-0">
           <KpiTile label="Views" value={fmt(ig.views)} />
           <KpiTile label="Reach" value={fmt(ig.reach)} />
           <KpiTile label="Interactions" value={fmt(ig.interactions)} sub={`${engagementRate}% eng. rate`} />
+          <KpiTile label="Link Clicks" value={fmt(ig.linkClicks)} />
+          <KpiTile label="Profile Visits" value={fmt(ig.profileViews)} />
           <KpiTile label="New Follows" value={fmt(ig.newFollows)} />
-          <KpiTile label="Total Followers" value={fmt(ig.totalFollowers)} />
         </div>
       </div>
 
@@ -227,7 +228,8 @@ function InstagramSection({ windsorInstagram }: { windsorInstagram: WindsorInsta
       <SummaryBlurb text={
         `Your Instagram ${ig.username ? `(@${ig.username}) ` : ''}reached ${fmt(ig.reach)} unique accounts with ${fmt(ig.views)} content views this period. ` +
         `Posts, reels and stories generated ${fmt(ig.interactions)} total interactions — ${fmt(ig.likes)} likes, ${fmt(ig.comments)} comments, ${fmt(ig.saves)} saves and ${fmt(ig.shares)} shares.` +
-        (ig.newFollows > 0 ? ` You gained ${fmt(ig.newFollows)} new follower${ig.newFollows === 1 ? '' : 's'}, bringing your total to ${fmt(ig.totalFollowers)}.` : ig.totalFollowers > 0 ? ` Total followers: ${fmt(ig.totalFollowers)}.` : '')
+        (ig.linkClicks > 0 || ig.profileViews > 0 ? ` The profile received ${fmt(ig.profileViews)} visits and ${fmt(ig.linkClicks)} link clicks.` : '') +
+        (ig.newFollows > 0 ? ` You gained ${fmt(ig.newFollows)} new follower${ig.newFollows === 1 ? '' : 's'}.` : '')
       } />
 
       {/* Trend chart */}
@@ -263,7 +265,6 @@ function InstagramSection({ windsorInstagram }: { windsorInstagram: WindsorInsta
             </span>
           )}
         </div>
-        <MetricRow label="Total Followers" value={ig.totalFollowers} />
         <MetricRow label="Views" value={ig.views} />
         <MetricRow label="Reach" value={ig.reach} />
         <MetricRow label="Interactions" value={ig.interactions} gold />
@@ -271,6 +272,8 @@ function InstagramSection({ windsorInstagram }: { windsorInstagram: WindsorInsta
         <MetricRow label="Comments" value={ig.comments} />
         <MetricRow label="Saves" value={ig.saves} />
         <MetricRow label="Shares" value={ig.shares} />
+        <MetricRow label="Link Clicks" value={ig.linkClicks} />
+        <MetricRow label="Profile Visits" value={ig.profileViews} />
         <MetricRow label="New Follows" value={ig.newFollows} green />
       </div>
     </div>

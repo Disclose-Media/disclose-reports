@@ -110,6 +110,8 @@ export type WindsorInstagramSummary = {
   newFollows: number
   totalFollowers: number
   accountsEngaged: number
+  linkClicks: number
+  profileViews: number
   username: string
 }
 
@@ -174,18 +176,23 @@ export async function getWindsorInstagramData(
 ): Promise<WindsorInstagramResult> {
   const { dateFrom, dateTo } = presetToDates(period)
 
+  // follower_count_1d only supports last 30 days — omit for older ranges
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  const includeFollowers = new Date(dateFrom) >= thirtyDaysAgo
+
   const url = new URL(`${BASE}/instagram`)
   url.searchParams.set('api_key', KEY)
   url.searchParams.set(
     'fields',
-    'date,account_id,account_name,views,reach_1d,total_interactions,likes,comments,saves,shares'
+    `date,account_id,account_name,views,reach_1d,total_interactions,likes,comments,saves,shares,profile_links_taps,profile_views${includeFollowers ? ',follower_count_1d' : ''}`
   )
   url.searchParams.set('date_from', dateFrom)
   url.searchParams.set('date_to', dateTo)
   url.searchParams.set('_account_id', igAccountId)
 
   const empty: WindsorInstagramResult = {
-    summary: { views: 0, reach: 0, interactions: 0, likes: 0, comments: 0, saves: 0, shares: 0, newFollows: 0, totalFollowers: 0, accountsEngaged: 0, username: '' },
+    summary: { views: 0, reach: 0, interactions: 0, likes: 0, comments: 0, saves: 0, shares: 0, newFollows: 0, totalFollowers: 0, accountsEngaged: 0, linkClicks: 0, profileViews: 0, username: '' },
     daily: [],
   }
 
@@ -195,7 +202,7 @@ export async function getWindsorInstagramData(
     const json = await res.json()
     const rows: Record<string, unknown>[] = json.data ?? json.result ?? (Array.isArray(json) ? json : [])
 
-    type DayAccum = { views: number; reach: number; interactions: number; likes: number; comments: number; saves: number; shares: number; newFollows: number; accountsEngaged: number }
+    type DayAccum = { views: number; reach: number; interactions: number; likes: number; comments: number; saves: number; shares: number; newFollows: number; linkClicks: number; profileViews: number }
     const byDate = new Map<string, DayAccum>()
     let totalFollowers = 0
     let username = ''
@@ -206,39 +213,41 @@ export async function getWindsorInstagramData(
       if (row.account_id != null && String(row.account_id) !== igAccountId) continue
       if (!username && row.account_name) username = String(row.account_name)
       if (!byDate.has(date)) {
-        byDate.set(date, { views: 0, reach: 0, interactions: 0, likes: 0, comments: 0, saves: 0, shares: 0, newFollows: 0, accountsEngaged: 0 })
+        byDate.set(date, { views: 0, reach: 0, interactions: 0, likes: 0, comments: 0, saves: 0, shares: 0, newFollows: 0, linkClicks: 0, profileViews: 0 })
       }
       const e = byDate.get(date)!
-      e.views          += Number(row.views) || 0
-      e.reach          += Number(row.reach_1d) || 0
-      e.interactions   += Number(row.total_interactions) || 0
-      e.likes          += Number(row.likes) || 0
-      e.comments       += Number(row.comments) || 0
-      e.saves          += Number(row.saves) || 0
-      e.shares         += Number(row.shares) || 0
-      e.newFollows     += Number(row.follower_count_1d) || 0
-      e.accountsEngaged += Number(row.accounts_engaged) || 0
+      e.views        += Number(row.views) || 0
+      e.reach        += Number(row.reach_1d) || 0
+      e.interactions += Number(row.total_interactions) || 0
+      e.likes        += Number(row.likes) || 0
+      e.comments     += Number(row.comments) || 0
+      e.saves        += Number(row.saves) || 0
+      e.shares       += Number(row.shares) || 0
+      e.newFollows   += Number(row.follower_count_1d) || 0
+      e.linkClicks   += Number(row.profile_links_taps) || 0
+      e.profileViews += Number(row.profile_views) || 0
     }
 
     const daily = Array.from(byDate.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, v]) => ({ date, views: v.views, reach: v.reach, interactions: v.interactions }))
 
-    let views = 0, reach = 0, interactions = 0, likes = 0, comments = 0, saves = 0, shares = 0, newFollows = 0, accountsEngaged = 0
+    let views = 0, reach = 0, interactions = 0, likes = 0, comments = 0, saves = 0, shares = 0, newFollows = 0, linkClicks = 0, profileViews = 0
     for (const v of Array.from(byDate.values())) {
-      views           += v.views
-      reach           += v.reach
-      interactions    += v.interactions
-      likes           += v.likes
-      comments        += v.comments
-      saves           += v.saves
-      shares          += v.shares
-      newFollows      += v.newFollows
-      accountsEngaged += v.accountsEngaged
+      views        += v.views
+      reach        += v.reach
+      interactions += v.interactions
+      likes        += v.likes
+      comments     += v.comments
+      saves        += v.saves
+      shares       += v.shares
+      newFollows   += v.newFollows
+      linkClicks   += v.linkClicks
+      profileViews += v.profileViews
     }
 
     return {
-      summary: { views, reach, interactions, likes, comments, saves, shares, newFollows, totalFollowers, accountsEngaged, username },
+      summary: { views, reach, interactions, likes, comments, saves, shares, newFollows, totalFollowers, accountsEngaged: 0, linkClicks, profileViews, username },
       daily,
     }
   } catch {
