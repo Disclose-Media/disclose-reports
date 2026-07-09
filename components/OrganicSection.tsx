@@ -306,10 +306,11 @@ function FacebookSection({ windsorOrganic }: { windsorOrganic: WindsorOrganicRes
 }
 
 function InstagramSection({ windsorInstagram }: { windsorInstagram: WindsorInstagramResult }) {
-  const { summary: ig, daily } = windsorInstagram
+  const { summary: ig, daily, hasThirtyDayData } = windsorInstagram
   const hasData = ig.views > 0 || ig.reach > 0 || ig.interactions > 0 || ig.newFollows > 0
 
   const engagementRate = ig.reach > 0 ? ((ig.interactions / ig.reach) * 100).toFixed(1) : '0.0'
+  const na = '—'
 
   if (!hasData) {
     return (
@@ -337,18 +338,23 @@ function InstagramSection({ windsorInstagram }: { windsorInstagram: WindsorInsta
           <KpiTile label="Views" value={fmt(ig.views)} />
           <KpiTile label="Reach" value={fmt(ig.reach)} />
           <KpiTile label="Interactions" value={fmt(ig.interactions)} sub={`${engagementRate}% eng. rate`} />
-          <KpiTile label="Link Clicks" value={fmt(ig.linkClicks)} />
-          <KpiTile label="Profile Visits" value={fmt(ig.profileViews)} />
-          <KpiTile label="New Follows" value={fmt(ig.newFollows)} />
+          <KpiTile label="Link Clicks" value={hasThirtyDayData ? fmt(ig.linkClicks) : na} />
+          <KpiTile label="Profile Visits" value={hasThirtyDayData ? fmt(ig.profileViews) : na} />
+          <KpiTile label="New Follows" value={hasThirtyDayData ? fmt(ig.newFollows) : na} />
         </div>
+        {!hasThirtyDayData && (
+          <p className="text-[10px] text-[#555555] px-6 pb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
+            * Link Clicks, Profile Visits and New Follows are only available for the last 30 days via the Instagram API.
+          </p>
+        )}
       </div>
 
       {/* Summary */}
       <SummaryBlurb text={
         `Your Instagram ${ig.username ? `(@${ig.username}) ` : ''}reached ${fmt(ig.reach)} unique accounts with ${fmt(ig.views)} content views this period. ` +
         `Posts, reels and stories generated ${fmt(ig.interactions)} total interactions — ${fmt(ig.likes)} likes, ${fmt(ig.comments)} comments, ${fmt(ig.saves)} saves and ${fmt(ig.shares)} shares.` +
-        (ig.linkClicks > 0 || ig.profileViews > 0 ? ` The profile received ${fmt(ig.profileViews)} visits and ${fmt(ig.linkClicks)} link clicks.` : '') +
-        (ig.newFollows > 0 ? ` You gained ${fmt(ig.newFollows)} new follower${ig.newFollows === 1 ? '' : 's'}.` : '')
+        (hasThirtyDayData && (ig.linkClicks > 0 || ig.profileViews > 0) ? ` The profile received ${fmt(ig.profileViews)} visits and ${fmt(ig.linkClicks)} link clicks.` : '') +
+        (hasThirtyDayData && ig.newFollows > 0 ? ` You gained ${fmt(ig.newFollows)} new follower${ig.newFollows === 1 ? '' : 's'}.` : '')
       } />
 
       {/* Trend chart */}
@@ -391,9 +397,9 @@ function InstagramSection({ windsorInstagram }: { windsorInstagram: WindsorInsta
         <MetricRow label="Comments" value={ig.comments} />
         <MetricRow label="Saves" value={ig.saves} />
         <MetricRow label="Shares" value={ig.shares} />
-        <MetricRow label="Link Clicks" value={ig.linkClicks} />
-        <MetricRow label="Profile Visits" value={ig.profileViews} />
-        <MetricRow label="New Follows" value={ig.newFollows} green />
+        <MetricRow label="Link Clicks" value={hasThirtyDayData ? ig.linkClicks : '—'} />
+        <MetricRow label="Profile Visits" value={hasThirtyDayData ? ig.profileViews : '—'} />
+        <MetricRow label="New Follows" value={hasThirtyDayData ? ig.newFollows : '—'} green />
       </div>
     </div>
   )

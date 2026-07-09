@@ -118,6 +118,7 @@ export type WindsorInstagramSummary = {
 export type WindsorInstagramResult = {
   summary: WindsorInstagramSummary
   daily: Array<{ date: string; views: number; reach: number; interactions: number }>
+  hasThirtyDayData: boolean
 }
 
 export type WindsorOrganicSummary = {
@@ -196,6 +197,7 @@ export async function getWindsorInstagramData(
   const empty: WindsorInstagramResult = {
     summary: { views: 0, reach: 0, interactions: 0, likes: 0, comments: 0, saves: 0, shares: 0, newFollows: 0, totalFollowers: 0, accountsEngaged: 0, linkClicks: 0, profileViews: 0, username: '' },
     daily: [],
+    hasThirtyDayData: includeFollowers,
   }
 
   try {
@@ -251,6 +253,7 @@ export async function getWindsorInstagramData(
     return {
       summary: { views, reach, interactions, likes, comments, saves, shares, newFollows, totalFollowers, accountsEngaged: 0, linkClicks, profileViews, username },
       daily,
+      hasThirtyDayData: includeFollowers,
     }
   } catch {
     return empty
