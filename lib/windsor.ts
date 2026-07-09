@@ -177,10 +177,9 @@ export async function getWindsorInstagramData(
 ): Promise<WindsorInstagramResult> {
   const { dateFrom, dateTo } = presetToDates(period)
 
-  // follower_count_1d only supports last 30 days — omit for older ranges
-  const thirtyDaysAgo = new Date()
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-  const includeFollowers = new Date(dateFrom) >= thirtyDaysAgo
+  // follower_count_1d, profile_links_taps, profile_views only support last 30 days
+  const thirtyDaysAgoStr = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const includeFollowers = dateFrom >= thirtyDaysAgoStr
 
   const url = new URL(`${BASE}/instagram`)
   url.searchParams.set('api_key', KEY)
