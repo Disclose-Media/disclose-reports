@@ -63,8 +63,8 @@ function TrendChart({ daily, labels: datasetLabels, colors }: {
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const chartRef = useRef<unknown>(null)
-  const l = datasetLabels ?? ['Impressions', 'Reach', 'Engagements']
-  const c = colors ?? ['rgba(200,151,45,0.9)', 'rgba(99,179,237,0.9)', 'rgba(16,185,129,0.9)']
+  const [l0, l1, l2] = datasetLabels ?? ['Impressions', 'Reach', 'Engagements']
+  const [c0, c1, c2] = colors ?? ['rgba(200,151,45,0.9)', 'rgba(99,179,237,0.9)', 'rgba(16,185,129,0.9)']
 
   useEffect(() => {
     if (!canvasRef.current || daily.length === 0) return
@@ -76,9 +76,9 @@ function TrendChart({ daily, labels: datasetLabels, colors }: {
         data: {
           labels: xLabels,
           datasets: [
-            { label: l[0], data: daily.map((d) => d.views), borderColor: c[0], backgroundColor: c[0].replace('0.9', '0.08'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, fill: true, tension: 0.4 },
-            { label: l[1], data: daily.map((d) => d.reach), borderColor: c[1], backgroundColor: c[1].replace('0.9', '0.06'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, fill: true, tension: 0.4 },
-            { label: l[2], data: daily.map((d) => d.interactions), borderColor: c[2], backgroundColor: c[2].replace('0.9', '0.06'), borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4, fill: false, tension: 0.4 },
+            { label: l0 ?? 'Impressions', data: daily.map((d) => d.views), borderColor: c0, backgroundColor: (c0 ?? '').replace('0.9', '0.08'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, fill: true, tension: 0.4 },
+            { label: l1 ?? 'Reach', data: daily.map((d) => d.reach), borderColor: c1, backgroundColor: (c1 ?? '').replace('0.9', '0.06'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, fill: true, tension: 0.4 },
+            { label: l2 ?? 'Engagements', data: daily.map((d) => d.interactions), borderColor: c2, backgroundColor: (c2 ?? '').replace('0.9', '0.06'), borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4, fill: false, tension: 0.4 },
           ],
         },
         options: {
@@ -105,7 +105,7 @@ function TrendChart({ daily, labels: datasetLabels, colors }: {
       })
     })
     return () => { if (chartRef.current) (chartRef.current as { destroy: () => void }).destroy() }
-  }, [daily, l, c])
+  }, [daily, l0, l1, l2, c0, c1, c2])
 
   return (
     <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-5 mb-5">
