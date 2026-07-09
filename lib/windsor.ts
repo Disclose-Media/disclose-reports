@@ -3,6 +3,25 @@ import type { DatePreset } from './meta'
 const BASE = 'https://connectors.windsor.ai'
 const KEY = process.env.WINDSOR_API_KEY!
 
+export type WindsorInstagramSummary = {
+  views: number
+  reach: number
+  interactions: number
+  likes: number
+  comments: number
+  saves: number
+  shares: number
+  newFollows: number
+  totalFollowers: number
+  accountsEngaged: number
+  username: string
+}
+
+export type WindsorInstagramResult = {
+  summary: WindsorInstagramSummary
+  daily: Array<{ date: string; views: number; reach: number; interactions: number }>
+}
+
 export type WindsorOrganicSummary = {
   views: number
   viewers: number
@@ -50,6 +69,86 @@ function presetToDates(preset: DatePreset): { dateFrom: string; dateTo: string }
       return { dateFrom: fmt(s), dateTo: fmt(e) }
     }
     default: return { dateFrom: daysAgo(30), dateTo: today }
+  }
+}
+
+export async function getWindsorInstagramData(
+  igAccountId: string,
+  period: DatePreset = 'last_30d'
+): Promise<WindsorInstagramResult> {
+  const { dateFrom, dateTo } = presetToDates(period)
+
+  const url = new URL(`${BASE}/instagram`)
+  url.searchParams.set('api_key', KEY)
+  url.searchParams.set(
+    'fields',
+    'date,account_id,account_name,views,reach_1d,total_interactions,likes,comments,saves,shares,follower_count_1d,followers_count,accounts_engaged'
+  )
+  url.searchParams.set('date_from', dateFrom)
+  url.searchParams.set('date_to', dateTo)
+  url.searchParams.set('_account_id', igAccountId)
+
+  const empty: WindsorInstagramResult = {
+    summary: { views: 0, reach: 0, interactions: 0, likes: 0, comments: 0, saves: 0, shares: 0, newFollows: 0, totalFollowers: 0, accountsEngaged: 0, username: '' },
+    daily: [],
+  }
+
+  try {
+    const res = await fetch(url.toString(), { next: { revalidate: 300 } })
+    if (!res.ok) return empty
+    const json = await res.json()
+    const rows: Record<string, unknown>[] = json.data ?? json.result ?? (Array.isArray(json) ? json : [])
+
+    type DayAccum = { views: number; reach: number; interactions: number; likes: number; comments: number; saves: number; shares: number; newFollows: number; accountsEngaged: number }
+    const byDate = new Map<string, DayAccum>()
+    let totalFollowers = 0
+    let username = ''
+
+    for (const row of rows) {
+      const date = String(row.date ?? '')
+      if (!date) continue
+      if (row.account_id != null && String(row.account_id) !== igAccountId) continue
+      if (!username && row.account_name) username = String(row.account_name)
+      const fc = Number(row.followers_count) || 0
+      if (fc > totalFollowers) totalFollowers = fc
+      if (!byDate.has(date)) {
+        byDate.set(date, { views: 0, reach: 0, interactions: 0, likes: 0, comments: 0, saves: 0, shares: 0, newFollows: 0, accountsEngaged: 0 })
+      }
+      const e = byDate.get(date)!
+      e.views          += Number(row.views) || 0
+      e.reach          += Number(row.reach_1d) || 0
+      e.interactions   += Number(row.total_interactions) || 0
+      e.likes          += Number(row.likes) || 0
+      e.comments       += Number(row.comments) || 0
+      e.saves          += Number(row.saves) || 0
+      e.shares         += Number(row.shares) || 0
+      e.newFollows     += Number(row.follower_count_1d) || 0
+      e.accountsEngaged += Number(row.accounts_engaged) || 0
+    }
+
+    const daily = Array.from(byDate.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, v]) => ({ date, views: v.views, reach: v.reach, interactions: v.interactions }))
+
+    let views = 0, reach = 0, interactions = 0, likes = 0, comments = 0, saves = 0, shares = 0, newFollows = 0, accountsEngaged = 0
+    for (const v of Array.from(byDate.values())) {
+      views           += v.views
+      reach           += v.reach
+      interactions    += v.interactions
+      likes           += v.likes
+      comments        += v.comments
+      saves           += v.saves
+      shares          += v.shares
+      newFollows      += v.newFollows
+      accountsEngaged += v.accountsEngaged
+    }
+
+    return {
+      summary: { views, reach, interactions, likes, comments, saves, shares, newFollows, totalFollowers, accountsEngaged, username },
+      daily,
+    }
+  } catch {
+    return empty
   }
 }
 
