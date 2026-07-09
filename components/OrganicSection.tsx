@@ -188,7 +188,7 @@ function FacebookSection({ windsorOrganic }: { windsorOrganic: WindsorOrganicRes
 
 function InstagramSection({ windsorInstagram }: { windsorInstagram: WindsorInstagramResult }) {
   const { summary: ig, daily } = windsorInstagram
-  const hasData = ig.views > 0 || ig.reach > 0 || ig.interactions > 0 || ig.totalFollowers > 0
+  const hasData = ig.views > 0 || ig.reach > 0 || ig.interactions > 0 || ig.newFollows > 0
 
   if (!hasData) return null
 

@@ -6,7 +6,10 @@ import {
   getLinkedIgAccount, getIgInsights,
   type DatePreset, type IgInsightsSummary,
 } from '@/lib/meta'
-import { getWindsorOrganicData } from '@/lib/windsor'
+import {
+  getWindsorOrganicData, getWindsorInstagramData, getWindsorFacebookPosts, getWindsorInstagramPosts,
+  type WindsorInstagramResult, type WindsorPost,
+} from '@/lib/windsor'
 import { DashboardClient } from '@/app/(main)/client/[id]/DashboardClient'
 
 const PRESETS: { label: string; value: DatePreset }[] = [
@@ -38,23 +41,29 @@ export default async function SharePage({
   let thumbnails: Record<string, string> = {}
   let windsorOrganic = null
   let igInsights: IgInsightsSummary | null = null
+  let windsorInstagram: WindsorInstagramResult | null = null
+  let posts: WindsorPost[] = []
   let error = null
 
   try {
     const hasPaid = client.type === 'paid' && !!client.accountId
     const hasWindsor = !!client.windsorPageId
+    const isOrganic = client.type === 'organic'
 
-    const igUserId = hasWindsor && client.type === 'paid'
+    const paidIgUserId = client.type === 'paid' && hasWindsor
       ? await getLinkedIgAccount(client.windsorPageId!).catch(() => null)
       : null
 
-    const [summaryRes, campaignsRes, adsRes, thumbnailsRes, windsorRes, igRes] = await Promise.all([
+    const [summaryRes, campaignsRes, adsRes, thumbnailsRes, windsorRes, igRes, windsorIgRes, fbPostsRes, igPostsRes] = await Promise.all([
       hasPaid ? getAccountSummary(client.accountId, period) : Promise.resolve(null),
       hasPaid ? getCampaigns(client.accountId, period) : Promise.resolve([]),
       hasPaid ? getAds(client.accountId, period) : Promise.resolve([]),
       hasPaid ? getAdThumbnails(client.accountId) : Promise.resolve({}),
       hasWindsor ? getWindsorOrganicData(client.windsorPageId!, period) : Promise.resolve(null),
-      igUserId ? getIgInsights(igUserId, period).catch(() => null) : Promise.resolve(null),
+      paidIgUserId ? getIgInsights(paidIgUserId, period).catch(() => null) : Promise.resolve(null),
+      client.igUserId && isOrganic ? getWindsorInstagramData(client.igUserId, period) : Promise.resolve(null),
+      isOrganic && hasWindsor ? getWindsorFacebookPosts(client.windsorPageId!, period).catch(() => []) : Promise.resolve([]),
+      isOrganic && client.igUserId ? getWindsorInstagramPosts(client.igUserId, period).catch(() => []) : Promise.resolve([]),
     ])
 
     summary = summaryRes
@@ -63,6 +72,10 @@ export default async function SharePage({
     thumbnails = thumbnailsRes as Record<string, string>
     windsorOrganic = windsorRes
     igInsights = igRes as IgInsightsSummary | null
+    windsorInstagram = windsorIgRes as WindsorInstagramResult | null
+    posts = [...(fbPostsRes as WindsorPost[]), ...(igPostsRes as WindsorPost[])].sort(
+      (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    )
   } catch (e: unknown) {
     error = e instanceof Error ? e.message : 'Failed to load data'
   }
@@ -153,6 +166,8 @@ export default async function SharePage({
             period={currentPreset.label}
             windsorOrganic={windsorOrganic}
             igInsights={igInsights}
+            windsorInstagram={windsorInstagram}
+            posts={posts}
           />
         )}
       </main>

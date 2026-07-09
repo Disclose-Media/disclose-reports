@@ -178,7 +178,7 @@ export async function getWindsorInstagramData(
   url.searchParams.set('api_key', KEY)
   url.searchParams.set(
     'fields',
-    'date,account_id,account_name,views,reach_1d,total_interactions,likes,comments,saves,shares,follower_count_1d,followers_count,accounts_engaged'
+    'date,account_id,account_name,views,reach_1d,total_interactions,likes,comments,saves,shares,follower_count_1d,accounts_engaged'
   )
   url.searchParams.set('date_from', dateFrom)
   url.searchParams.set('date_to', dateTo)
@@ -205,8 +205,6 @@ export async function getWindsorInstagramData(
       if (!date) continue
       if (row.account_id != null && String(row.account_id) !== igAccountId) continue
       if (!username && row.account_name) username = String(row.account_name)
-      const fc = Number(row.followers_count) || 0
-      if (fc > totalFollowers) totalFollowers = fc
       if (!byDate.has(date)) {
         byDate.set(date, { views: 0, reach: 0, interactions: 0, likes: 0, comments: 0, saves: 0, shares: 0, newFollows: 0, accountsEngaged: 0 })
       }
