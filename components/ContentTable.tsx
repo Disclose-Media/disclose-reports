@@ -36,15 +36,15 @@ function PlatformIcon({ platform }: { platform: 'facebook' | 'instagram' }) {
 }
 
 function TypeBadge({ type }: { type: WindsorPost['type'] }) {
-  const colours: Record<WindsorPost['type'], string> = {
-    reel: 'bg-purple-50 text-purple-700 border-purple-200',
-    video: 'bg-blue-50 text-blue-700 border-blue-200',
+  const styles: Record<WindsorPost['type'], string> = {
+    reel:  'bg-[#111111] text-[#C8972D] border-[#2A2A2A]',
+    video: 'bg-[#111111] text-[#888888] border-[#2A2A2A]',
     photo: 'bg-[#F8F6F2] text-[#888888] border-[#E8E4DC]',
-    story: 'bg-pink-50 text-pink-700 border-pink-200',
-    text: 'bg-[#F8F6F2] text-[#AAAAAA] border-[#E8E4DC]',
+    story: 'bg-[#F8F6F2] text-[#888888] border-[#E8E4DC]',
+    text:  'bg-[#F8F6F2] text-[#AAAAAA] border-[#E8E4DC]',
   }
   return (
-    <span className={`text-[9px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded border ${colours[type]}`}
+    <span className={`text-[8px] font-bold uppercase tracking-[0.15em] px-2 py-0.5 rounded-full border ${styles[type]}`}
       style={{ fontFamily: 'Montserrat, sans-serif' }}>
       {type}
     </span>
@@ -178,9 +178,21 @@ export function ContentTable({ posts }: { posts: WindsorPost[] }) {
                           </div>
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[11px] text-[#111111] font-medium truncate max-w-[240px]" style={{ fontFamily: 'Inter, sans-serif' }}>
-                            {caption}
-                          </p>
+                          {post.permalink ? (
+                            <a
+                              href={post.permalink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[11px] text-[#111111] font-medium truncate max-w-[240px] hover:text-[#C8972D] transition-colors block"
+                              style={{ fontFamily: 'Inter, sans-serif' }}
+                            >
+                              {caption}
+                            </a>
+                          ) : (
+                            <p className="text-[11px] text-[#111111] font-medium truncate max-w-[240px]" style={{ fontFamily: 'Inter, sans-serif' }}>
+                              {caption}
+                            </p>
+                          )}
                           <div className="flex items-center gap-1.5 mt-1">
                             <TypeBadge type={post.type} />
                           </div>
