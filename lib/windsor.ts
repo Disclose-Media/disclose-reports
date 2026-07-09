@@ -190,7 +190,7 @@ export async function getWindsorInstagramData(
   }
 
   try {
-    const res = await fetch(url.toString(), { next: { revalidate: 300 } })
+    const res = await fetch(url.toString(), { cache: 'no-store' })
     if (!res.ok) return empty
     const json = await res.json()
     const rows: Record<string, unknown>[] = json.data ?? json.result ?? (Array.isArray(json) ? json : [])
