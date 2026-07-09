@@ -361,27 +361,18 @@ export async function getWindsorIgAudience(igAccountId: string): Promise<Windsor
 export async function getWindsorFbAudience(pageId: string): Promise<WindsorFbAudienceData> {
   const empty: WindsorFbAudienceData = { totalFans: 0, topCities: [], topCountries: [] }
   try {
-    // Fetch page_fans first to identify this specific page's fan count.
-    // Windsor lifetime metrics may return rows from all connected pages mixed together,
-    // so we use page_fans as a discriminator to filter out other clients' pages.
-    const fansRows = await windsorLifetimeFetch('facebook_organic', 'page_fans', pageId)
-    const totalFans = fansRows.length > 0 ? Number(fansRows[0].page_fans) || 0 : 0
-
+    // Windsor returns all connected pages mixed — include account_id and filter client-side
     const [cityRows, countryRows] = await Promise.all([
-      windsorLifetimeFetch('facebook_organic', 'page_fans,page_fans_city_name,page_fans_city_value', pageId),
-      windsorLifetimeFetch('facebook_organic', 'page_fans,page_fans_country_name,page_fans_country_value', pageId),
+      windsorLifetimeFetch('facebook_organic', 'account_id,page_fans,page_fans_city_name,page_fans_city_value', pageId),
+      windsorLifetimeFetch('facebook_organic', 'account_id,page_fans,page_fans_country_name,page_fans_country_value', pageId),
     ])
 
-    const topCities = toLocations(
-      cityRows
-        .filter(r => Number(r.page_fans) === totalFans && r.page_fans_city_name)
-        .map(r => ({ name: String(r.page_fans_city_name), value: Number(r.page_fans_city_value) || 0 }))
-    )
-    const topCountries = toLocations(
-      countryRows
-        .filter(r => Number(r.page_fans) === totalFans && r.page_fans_country_name)
-        .map(r => ({ name: COUNTRY_NAMES[String(r.page_fans_country_name)] ?? String(r.page_fans_country_name), value: Number(r.page_fans_country_value) || 0 }))
-    )
+    const myCity = cityRows.filter(r => String(r.account_id) === pageId)
+    const myCountry = countryRows.filter(r => String(r.account_id) === pageId)
+    const totalFans = myCity.length > 0 ? Number(myCity[0].page_fans) || 0 : 0
+
+    const topCities = toLocations(myCity.map(r => ({ name: String(r.page_fans_city_name ?? ''), value: Number(r.page_fans_city_value) || 0 })))
+    const topCountries = toLocations(myCountry.map(r => ({ name: COUNTRY_NAMES[String(r.page_fans_country_name ?? '')] ?? String(r.page_fans_country_name ?? ''), value: Number(r.page_fans_country_value) || 0 })))
 
     return { totalFans, topCities, topCountries }
   } catch { return empty }
