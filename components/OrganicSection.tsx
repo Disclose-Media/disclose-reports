@@ -146,7 +146,7 @@ function FacebookSection({ windsorOrganic }: { windsorOrganic: WindsorOrganicRes
       </div>
 
       {/* Trend chart */}
-      {daily.length > 0 && <TrendChart daily={daily} />}
+      {daily.length > 0 && <TrendChart daily={daily.map(d => ({ date: d.date, views: d.impressions, reach: d.reach, interactions: d.engagements }))} />}
 
       {/* Metrics card */}
       <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-5">
