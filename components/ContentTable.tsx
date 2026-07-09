@@ -88,8 +88,8 @@ export function ContentTable({ posts }: { posts: WindsorPost[] }) {
   const hasIg = posts.some(p => p.platform === 'instagram')
 
   const cols: { key: SortKey; label: string }[] = [
-    { key: 'reach', label: 'Reach' },
     { key: 'views', label: 'Views' },
+    { key: 'reach', label: 'Reach' },
     { key: 'likes', label: 'Likes' },
     { key: 'comments', label: 'Comments' },
     { key: 'shares', label: 'Shares' },
@@ -205,7 +205,7 @@ export function ContentTable({ posts }: { posts: WindsorPost[] }) {
                     </td>
                     {cols.map(col => (
                       <td key={col.key} className="px-3 py-3 whitespace-nowrap">
-                        <span className={`text-[12px] font-semibold ${col.key === 'reach' ? 'text-[#C8972D]' : 'text-[#111111]'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                        <span className={`text-[12px] font-semibold ${col.key === 'views' ? 'text-[#C8972D]' : 'text-[#111111]'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>
                           {fmt(post[col.key as keyof WindsorPost] as number)}
                         </span>
                       </td>
