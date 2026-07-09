@@ -361,14 +361,27 @@ export async function getWindsorIgAudience(igAccountId: string): Promise<Windsor
 export async function getWindsorFbAudience(pageId: string): Promise<WindsorFbAudienceData> {
   const empty: WindsorFbAudienceData = { totalFans: 0, topCities: [], topCountries: [] }
   try {
+    // Fetch page_fans first to identify this specific page's fan count.
+    // Windsor lifetime metrics may return rows from all connected pages mixed together,
+    // so we use page_fans as a discriminator to filter out other clients' pages.
+    const fansRows = await windsorLifetimeFetch('facebook_organic', 'page_fans', pageId)
+    const totalFans = fansRows.length > 0 ? Number(fansRows[0].page_fans) || 0 : 0
+
     const [cityRows, countryRows] = await Promise.all([
       windsorLifetimeFetch('facebook_organic', 'page_fans,page_fans_city_name,page_fans_city_value', pageId),
       windsorLifetimeFetch('facebook_organic', 'page_fans,page_fans_country_name,page_fans_country_value', pageId),
     ])
 
-    const totalFans = cityRows.length > 0 ? Number(cityRows[0].page_fans) || 0 : 0
-    const topCities = toLocations(cityRows.map(r => ({ name: String(r.page_fans_city_name ?? ''), value: Number(r.page_fans_city_value) || 0 })))
-    const topCountries = toLocations(countryRows.map(r => ({ name: COUNTRY_NAMES[String(r.page_fans_country_name ?? '')] ?? String(r.page_fans_country_name ?? ''), value: Number(r.page_fans_country_value) || 0 })))
+    const topCities = toLocations(
+      cityRows
+        .filter(r => Number(r.page_fans) === totalFans && r.page_fans_city_name)
+        .map(r => ({ name: String(r.page_fans_city_name), value: Number(r.page_fans_city_value) || 0 }))
+    )
+    const topCountries = toLocations(
+      countryRows
+        .filter(r => Number(r.page_fans) === totalFans && r.page_fans_country_name)
+        .map(r => ({ name: COUNTRY_NAMES[String(r.page_fans_country_name)] ?? String(r.page_fans_country_name), value: Number(r.page_fans_country_value) || 0 }))
+    )
 
     return { totalFans, topCities, topCountries }
   } catch { return empty }
