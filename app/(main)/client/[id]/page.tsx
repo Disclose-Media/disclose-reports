@@ -46,11 +46,12 @@ export default async function ClientPage({
     const hasPaid = client.type === 'paid' && !!client.accountId
     const hasWindsor = !!client.windsorPageId
 
-    // Only try to discover linked IG for paid clients in BM (e.g. Cascade Creek)
-    // Personal page accounts (organic-only) are not accessible via system user token
-    const igUserId = hasWindsor && client.type === 'paid'
-      ? await getLinkedIgAccount(client.windsorPageId!).catch(() => null)
-      : null
+    // For paid clients, discover IG via BM link. For organic clients, use igUserId if set directly.
+    const igUserId = client.igUserId
+      ? client.igUserId
+      : (hasWindsor && client.type === 'paid'
+          ? await getLinkedIgAccount(client.windsorPageId!).catch(() => null)
+          : null)
 
     const [summaryRes, campaignsRes, adsRes, thumbnailsRes, windsorRes, igRes] = await Promise.all([
       hasPaid ? getAccountSummary(client.accountId, period) : Promise.resolve(null),

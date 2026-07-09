@@ -103,6 +103,7 @@ export const CLIENTS: Client[] = [
     name: 'Cascade Creek Retreat',
     accountId: '',
     windsorPageId: '437554069630323',
+    igUserId: '17841407870908848',
     type: 'organic',
     status: 'active',
     currency: 'NZD',
