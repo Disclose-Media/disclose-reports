@@ -671,11 +671,6 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
         />
       )}
 
-      {/* TEMP DEBUG — remove after confirming */}
-      <div style={{fontSize:10,color:'#999',marginBottom:8}}>
-        IG debug: {windsorInstagram ? `views=${windsorInstagram.summary.views} reach=${windsorInstagram.summary.reach}` : 'NULL'}
-      </div>
-
       {windsorOrganic && (
         <OrganicSection windsorOrganic={windsorOrganic} igInsights={igInsights} windsorInstagram={windsorInstagram} />
       )}

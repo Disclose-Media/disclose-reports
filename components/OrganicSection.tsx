@@ -190,9 +190,19 @@ function InstagramSection({ windsorInstagram }: { windsorInstagram: WindsorInsta
   const { summary: ig, daily } = windsorInstagram
   const hasData = ig.views > 0 || ig.reach > 0 || ig.interactions > 0 || ig.newFollows > 0
 
-  if (!hasData) return null
-
   const engagementRate = ig.reach > 0 ? ((ig.interactions / ig.reach) * 100).toFixed(1) : '0.0'
+
+  if (!hasData) {
+    return (
+      <div className="mb-10">
+        <SectionHeader title="Organic Performance · Instagram" />
+        <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-8 text-center">
+          <p className="text-[11px] font-semibold text-[#888888] mb-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>No Instagram data for this period</p>
+          <p className="text-[11px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>Try selecting a different date range above</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="mb-10">
