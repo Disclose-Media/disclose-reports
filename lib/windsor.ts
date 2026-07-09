@@ -178,7 +178,7 @@ export async function getWindsorInstagramData(
   url.searchParams.set('api_key', KEY)
   url.searchParams.set(
     'fields',
-    'date,account_id,account_name,views,reach_1d,total_interactions,likes,comments,saves,shares,follower_count_1d'
+    'date,account_id,account_name,views,reach_1d,total_interactions,likes,comments,saves,shares'
   )
   url.searchParams.set('date_from', dateFrom)
   url.searchParams.set('date_to', dateTo)
