@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import type { WindsorOrganicResult, WindsorInstagramResult } from '@/lib/windsor'
+import type { WindsorOrganicResult, WindsorInstagramResult, WindsorIgAudienceData, WindsorFbAudienceData, AudienceGenderAge, AudienceLocation } from '@/lib/windsor'
 import type { IgInsightsSummary } from '@/lib/meta'
 
 type Props = {
   windsorOrganic: WindsorOrganicResult | null
   igInsights?: IgInsightsSummary | null
   windsorInstagram?: WindsorInstagramResult | null
+  igAudience?: WindsorIgAudienceData | null
+  fbAudience?: WindsorFbAudienceData | null
 }
 
 function fmt(n: number): string {
@@ -125,6 +127,123 @@ function SummaryBlurb({ text }: { text: string }) {
   return (
     <div className="bg-white border border-[#E8E4DC] rounded-[8px] px-5 py-4 mb-5">
       <p className="text-[12px] leading-relaxed text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{text}</p>
+    </div>
+  )
+}
+
+function LocationList({ items, color }: { items: AudienceLocation[]; color: string }) {
+  return (
+    <div className="space-y-2.5">
+      {items.slice(0, 6).map(({ name, pct }) => (
+        <div key={name}>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[11px] text-[#444444] truncate pr-2" style={{ fontFamily: 'Inter, sans-serif' }}>{name}</span>
+            <span className="text-[10px] text-[#888888] shrink-0" style={{ fontFamily: 'Inter, sans-serif' }}>{pct}%</span>
+          </div>
+          <div className="h-1 bg-[#F0EEE9] rounded-full overflow-hidden">
+            <div style={{ width: `${Math.min(pct, 100)}%`, background: color, height: '100%', borderRadius: '9999px' }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function GenderAgeBars({ genderAge }: { genderAge: AudienceGenderAge[] }) {
+  const totalGa = genderAge.reduce((s, r) => s + r.women + r.men, 0)
+  const maxPct = Math.max(...genderAge.map(r => Math.max(
+    totalGa > 0 ? (r.women / totalGa) * 100 : 0,
+    totalGa > 0 ? (r.men / totalGa) * 100 : 0,
+  )))
+  return (
+    <div className="space-y-1.5">
+      {genderAge.map(({ ageGroup, women, men }) => {
+        const wPct = totalGa > 0 ? (women / totalGa) * 100 : 0
+        const mPct = totalGa > 0 ? (men / totalGa) * 100 : 0
+        const wBar = maxPct > 0 ? (wPct / maxPct) * 100 : 0
+        const mBar = maxPct > 0 ? (mPct / maxPct) * 100 : 0
+        return (
+          <div key={ageGroup} className="flex items-center gap-2">
+            <span className="text-[9px] text-[#AAAAAA] w-9 text-right shrink-0" style={{ fontFamily: 'Inter, sans-serif' }}>{ageGroup}</span>
+            <div className="flex-1 flex justify-end">
+              <div style={{ width: `${wBar}%`, background: '#D4909B', height: '8px', borderRadius: '2px 0 0 2px', transition: 'width 0.3s' }} />
+            </div>
+            <div className="w-px bg-[#E8E4DC] h-4 shrink-0" />
+            <div className="flex-1 flex justify-start">
+              <div style={{ width: `${mBar}%`, background: '#5B8DEF', height: '8px', borderRadius: '0 2px 2px 0', transition: 'width 0.3s' }} />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function AudienceCard({
+  platform, totalCount, womenPct, menPct, genderAge, topCities, topCountries,
+}: {
+  platform: 'instagram' | 'facebook'
+  totalCount: number
+  womenPct?: number
+  menPct?: number
+  genderAge?: AudienceGenderAge[]
+  topCities: AudienceLocation[]
+  topCountries: AudienceLocation[]
+}) {
+  const isIg = platform === 'instagram'
+  const title = isIg ? 'Audience · Instagram' : 'Audience · Facebook'
+  const followersLabel = isIg ? 'Total Followers' : 'Total Page Fans'
+
+  return (
+    <div className="mb-10">
+      <SectionHeader title={title} />
+      <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-5">
+        {/* Total count */}
+        <div className="mb-5 pb-5 border-b border-[#F0EEE9] flex items-end gap-4">
+          <div>
+            <p className="text-[9px] uppercase tracking-[0.15em] text-[#AAAAAA] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>{followersLabel}</p>
+            <p className="text-[28px] font-bold text-[#111111] leading-none" style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.02em' }}>
+              {totalCount.toLocaleString('en-NZ')}
+            </p>
+          </div>
+          {isIg && womenPct != null && menPct != null && (
+            <div className="flex items-center gap-4 pb-0.5">
+              <span className="flex items-center gap-1.5 text-[10px] text-[#666666]" style={{ fontFamily: 'Inter, sans-serif' }}>
+                <span className="inline-block w-2 h-2 rounded-sm" style={{ background: '#D4909B' }} />
+                Women {womenPct}%
+              </span>
+              <span className="flex items-center gap-1.5 text-[10px] text-[#666666]" style={{ fontFamily: 'Inter, sans-serif' }}>
+                <span className="inline-block w-2 h-2 rounded-sm" style={{ background: '#5B8DEF' }} />
+                Men {menPct}%
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Gender/age (IG only) */}
+        {isIg && genderAge && genderAge.length > 0 && (
+          <div className="mb-5 pb-5 border-b border-[#F0EEE9]">
+            <p className="text-[9px] uppercase tracking-[0.15em] text-[#AAAAAA] font-bold mb-3" style={{ fontFamily: 'Montserrat, sans-serif' }}>Age & Gender</p>
+            <GenderAgeBars genderAge={genderAge} />
+          </div>
+        )}
+
+        {/* Cities + Countries */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {topCities.length > 0 && (
+            <div>
+              <p className="text-[9px] uppercase tracking-[0.15em] text-[#AAAAAA] font-bold mb-3" style={{ fontFamily: 'Montserrat, sans-serif' }}>Top Cities</p>
+              <LocationList items={topCities} color="#C8972D" />
+            </div>
+          )}
+          {topCountries.length > 0 && (
+            <div>
+              <p className="text-[9px] uppercase tracking-[0.15em] text-[#AAAAAA] font-bold mb-3" style={{ fontFamily: 'Montserrat, sans-serif' }}>Top Countries</p>
+              <LocationList items={topCountries} color="#5B8DEF" />
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -280,7 +399,7 @@ function InstagramSection({ windsorInstagram }: { windsorInstagram: WindsorInsta
   )
 }
 
-export function OrganicSection({ windsorOrganic, igInsights = null, windsorInstagram = null }: Props) {
+export function OrganicSection({ windsorOrganic, igInsights = null, windsorInstagram = null, igAudience = null, fbAudience = null }: Props) {
   if (!windsorOrganic) return null
 
   const { summary: fb } = windsorOrganic
@@ -304,7 +423,13 @@ export function OrganicSection({ windsorOrganic, igInsights = null, windsorInsta
   return (
     <div>
       <FacebookSection windsorOrganic={windsorOrganic} />
+      {fbAudience && fbAudience.totalFans > 0 && (
+        <AudienceCard platform="facebook" totalCount={fbAudience.totalFans} topCities={fbAudience.topCities} topCountries={fbAudience.topCountries} />
+      )}
       {windsorInstagram && <InstagramSection windsorInstagram={windsorInstagram} />}
+      {igAudience && igAudience.totalFollowers > 0 && (
+        <AudienceCard platform="instagram" totalCount={igAudience.totalFollowers} womenPct={igAudience.womenPct} menPct={igAudience.menPct} genderAge={igAudience.genderAge} topCities={igAudience.topCities} topCountries={igAudience.topCountries} />
+      )}
       {legacyIg && (
         <div className="mb-10">
           <SectionHeader title="Organic Performance · Instagram" />

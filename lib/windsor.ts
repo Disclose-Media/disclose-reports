@@ -255,6 +255,120 @@ export async function getWindsorInstagramData(
   }
 }
 
+// --- Audience types ---
+
+export type AudienceGenderAge = { ageGroup: string; women: number; men: number }
+export type AudienceLocation = { name: string; value: number; pct: number }
+
+export type WindsorIgAudienceData = {
+  totalFollowers: number
+  womenPct: number
+  menPct: number
+  genderAge: AudienceGenderAge[]
+  topCities: AudienceLocation[]
+  topCountries: AudienceLocation[]
+}
+
+export type WindsorFbAudienceData = {
+  totalFans: number
+  topCities: AudienceLocation[]
+  topCountries: AudienceLocation[]
+}
+
+const COUNTRY_NAMES: Record<string, string> = {
+  NZ: 'New Zealand', AU: 'Australia', GB: 'United Kingdom', US: 'United States',
+  CA: 'Canada', DE: 'Germany', FR: 'France', JP: 'Japan', SG: 'Singapore',
+  BR: 'Brazil', IN: 'India', IT: 'Italy', ES: 'Spain', NL: 'Netherlands',
+  SE: 'Sweden', TH: 'Thailand', ZA: 'South Africa', IE: 'Ireland',
+  RU: 'Russia', AR: 'Argentina', MY: 'Malaysia', ID: 'Indonesia',
+  PT: 'Portugal', FJ: 'Fiji', DK: 'Denmark', HK: 'Hong Kong',
+  NG: 'Nigeria', TR: 'Turkey', CO: 'Colombia', CL: 'Chile',
+  AT: 'Austria', WS: 'Samoa', PH: 'Philippines', VN: 'Vietnam',
+  PL: 'Poland', RO: 'Romania', CZ: 'Czech Republic', GR: 'Greece',
+  MX: 'Mexico', NC: 'New Caledonia', PF: 'French Polynesia',
+  SA: 'Saudi Arabia', AE: 'UAE', BE: 'Belgium', LK: 'Sri Lanka',
+  KH: 'Cambodia', TW: 'Taiwan', BY: 'Belarus', ME: 'Montenegro',
+  UG: 'Uganda', IL: 'Israel', GH: 'Ghana', UA: 'Ukraine',
+  HU: 'Hungary', FI: 'Finland', TN: 'Tunisia', CY: 'Cyprus',
+  KW: 'Kuwait',
+}
+
+async function windsorLifetimeFetch(connector: string, fields: string, accountId: string): Promise<Record<string, unknown>[]> {
+  const url = new URL(`${BASE}/${connector}`)
+  url.searchParams.set('api_key', KEY)
+  url.searchParams.set('fields', fields)
+  url.searchParams.set('_account_id', accountId)
+  try {
+    const res = await fetch(url.toString(), { cache: 'no-store' })
+    if (!res.ok) return []
+    const json = await res.json()
+    return (json.data ?? json.result ?? (Array.isArray(json) ? json : [])) as Record<string, unknown>[]
+  } catch { return [] }
+}
+
+function toLocations(arr: { name: string; value: number }[], top = 8): AudienceLocation[] {
+  const sorted = arr.filter(r => r.name && r.value > 0).sort((a, b) => b.value - a.value).slice(0, top)
+  const total = sorted.reduce((s, r) => s + r.value, 0)
+  return sorted.map(r => ({ name: r.name, value: r.value, pct: total > 0 ? Math.round((r.value / total) * 1000) / 10 : 0 }))
+}
+
+export async function getWindsorIgAudience(igAccountId: string): Promise<WindsorIgAudienceData> {
+  const empty: WindsorIgAudienceData = { totalFollowers: 0, womenPct: 0, menPct: 0, genderAge: [], topCities: [], topCountries: [] }
+  try {
+    const [gaRows, cityRows, countryRows] = await Promise.all([
+      windsorLifetimeFetch('instagram', 'followers_count,audience_gender_age_name,audience_gender_age_size', igAccountId),
+      windsorLifetimeFetch('instagram', 'city,audience_city_size', igAccountId),
+      windsorLifetimeFetch('instagram', 'audience_country_name,audience_country_size', igAccountId),
+    ])
+
+    let totalFollowers = 0
+    const gaMap = new Map<string, { women: number; men: number }>()
+
+    for (const row of gaRows) {
+      if (row.followers_count != null) totalFollowers = Number(row.followers_count) || 0
+      if (row.audience_gender_age_name != null) {
+        const [gender, age] = String(row.audience_gender_age_name).split('.')
+        if (!age) continue
+        if (!gaMap.has(age)) gaMap.set(age, { women: 0, men: 0 })
+        const e = gaMap.get(age)!
+        const size = Number(row.audience_gender_age_size) || 0
+        if (gender === 'F') e.women += size
+        else if (gender === 'M') e.men += size
+      }
+    }
+
+    const AGE_ORDER = ['13-17', '18-24', '25-34', '35-44', '45-54', '55-64', '65+']
+    const genderAge: AudienceGenderAge[] = AGE_ORDER.filter(a => gaMap.has(a)).map(a => ({ ageGroup: a, women: gaMap.get(a)!.women, men: gaMap.get(a)!.men }))
+
+    let totalWomen = 0, totalMen = 0
+    for (const { women, men } of genderAge) { totalWomen += women; totalMen += men }
+    const gTotal = totalWomen + totalMen
+    const womenPct = gTotal > 0 ? Math.round((totalWomen / gTotal) * 1000) / 10 : 0
+    const menPct = gTotal > 0 ? Math.round((totalMen / gTotal) * 1000) / 10 : 0
+
+    const topCities = toLocations(cityRows.map(r => ({ name: String(r.city ?? ''), value: Number(r.audience_city_size) || 0 })))
+    const topCountries = toLocations(countryRows.map(r => ({ name: COUNTRY_NAMES[String(r.audience_country_name ?? '')] ?? String(r.audience_country_name ?? ''), value: Number(r.audience_country_size) || 0 })))
+
+    return { totalFollowers, womenPct, menPct, genderAge, topCities, topCountries }
+  } catch { return empty }
+}
+
+export async function getWindsorFbAudience(pageId: string): Promise<WindsorFbAudienceData> {
+  const empty: WindsorFbAudienceData = { totalFans: 0, topCities: [], topCountries: [] }
+  try {
+    const [cityRows, countryRows] = await Promise.all([
+      windsorLifetimeFetch('facebook_organic', 'page_fans,page_fans_city_name,page_fans_city_value', pageId),
+      windsorLifetimeFetch('facebook_organic', 'page_fans,page_fans_country_name,page_fans_country_value', pageId),
+    ])
+
+    const totalFans = cityRows.length > 0 ? Number(cityRows[0].page_fans) || 0 : 0
+    const topCities = toLocations(cityRows.map(r => ({ name: String(r.page_fans_city_name ?? ''), value: Number(r.page_fans_city_value) || 0 })))
+    const topCountries = toLocations(countryRows.map(r => ({ name: COUNTRY_NAMES[String(r.page_fans_country_name ?? '')] ?? String(r.page_fans_country_name ?? ''), value: Number(r.page_fans_country_value) || 0 })))
+
+    return { totalFans, topCities, topCountries }
+  } catch { return empty }
+}
+
 export async function getWindsorOrganicData(
   pageId: string,
   period: DatePreset = 'last_30d'

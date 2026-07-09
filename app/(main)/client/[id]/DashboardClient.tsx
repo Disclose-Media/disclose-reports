@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Client } from '@/lib/clients'
 import type { CampaignInsight, AdInsight, IgInsightsSummary } from '@/lib/meta'
-import type { WindsorOrganicResult, WindsorInstagramResult, WindsorPost } from '@/lib/windsor'
+import type { WindsorOrganicResult, WindsorInstagramResult, WindsorPost, WindsorIgAudienceData, WindsorFbAudienceData } from '@/lib/windsor'
 import { OrganicSection } from '@/components/OrganicSection'
 import { ContentTable } from '@/components/ContentTable'
 
@@ -17,6 +17,8 @@ type Props = {
   windsorOrganic?: WindsorOrganicResult | null
   igInsights?: IgInsightsSummary | null
   windsorInstagram?: WindsorInstagramResult | null
+  igAudience?: WindsorIgAudienceData | null
+  fbAudience?: WindsorFbAudienceData | null
   posts?: WindsorPost[]
 }
 
@@ -647,7 +649,7 @@ function NarrativeSection({ title, icon, color, text }: { title: string; icon: s
   )
 }
 
-export function DashboardClient({ client, summary, campaigns, ads, thumbnails, period, windsorOrganic = null, igInsights = null, windsorInstagram = null, posts = [] as WindsorPost[] }: Props) {
+export function DashboardClient({ client, summary, campaigns, ads, thumbnails, period, windsorOrganic = null, igInsights = null, windsorInstagram = null, igAudience = null, fbAudience = null, posts = [] as WindsorPost[] }: Props) {
   const totalSpend = parseFloat(summary?.amount_spent || '0')
   const totalLeads = campaigns.reduce((s, c) => s + (parseInt(c.lead || '0') || 0), 0)
   const cpl = totalLeads > 0 ? totalSpend / totalLeads : 0
@@ -672,7 +674,7 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
       )}
 
       {windsorOrganic && (
-        <OrganicSection windsorOrganic={windsorOrganic} igInsights={igInsights} windsorInstagram={windsorInstagram} />
+        <OrganicSection windsorOrganic={windsorOrganic} igInsights={igInsights} windsorInstagram={windsorInstagram} igAudience={igAudience} fbAudience={fbAudience} />
       )}
 
       {client.type === 'organic' && posts.length > 0 && <ContentTable posts={posts} />}

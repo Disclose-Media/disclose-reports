@@ -6,7 +6,7 @@ import {
   getLinkedIgAccount, getIgInsights,
   type DatePreset, type IgInsightsSummary,
 } from '@/lib/meta'
-import { getWindsorOrganicData, getWindsorInstagramData, getWindsorFacebookPosts, getWindsorInstagramPosts, type WindsorInstagramResult, type WindsorPost } from '@/lib/windsor'
+import { getWindsorOrganicData, getWindsorInstagramData, getWindsorFacebookPosts, getWindsorInstagramPosts, getWindsorIgAudience, getWindsorFbAudience, type WindsorInstagramResult, type WindsorPost, type WindsorIgAudienceData, type WindsorFbAudienceData } from '@/lib/windsor'
 import { DashboardClient } from './DashboardClient'
 import { ExportButton } from '@/components/ExportButton'
 import { ShareButton } from '@/components/ShareButton'
@@ -41,6 +41,8 @@ export default async function ClientPage({
   let windsorOrganic = null
   let igInsights: IgInsightsSummary | null = null
   let windsorInstagram: WindsorInstagramResult | null = null
+  let igAudience: WindsorIgAudienceData | null = null
+  let fbAudience: WindsorFbAudienceData | null = null
   let posts: WindsorPost[] = []
   let error = null
 
@@ -53,7 +55,7 @@ export default async function ClientPage({
       ? await getLinkedIgAccount(client.windsorPageId!).catch(() => null)
       : null
 
-    const [summaryRes, campaignsRes, adsRes, thumbnailsRes, windsorRes, igRes, windsorIgRes, fbPostsRes, igPostsRes] = await Promise.all([
+    const [summaryRes, campaignsRes, adsRes, thumbnailsRes, windsorRes, igRes, windsorIgRes, fbPostsRes, igPostsRes, igAudienceRes, fbAudienceRes] = await Promise.all([
       hasPaid ? getAccountSummary(client.accountId, period) : Promise.resolve(null),
       hasPaid ? getCampaigns(client.accountId, period) : Promise.resolve([]),
       hasPaid ? getAds(client.accountId, period) : Promise.resolve([]),
@@ -63,6 +65,8 @@ export default async function ClientPage({
       client.igUserId && isOrganic ? getWindsorInstagramData(client.igUserId, period) : Promise.resolve(null),
       isOrganic && hasWindsor ? getWindsorFacebookPosts(client.windsorPageId!, period).catch(() => []) : Promise.resolve([]),
       isOrganic && client.igUserId ? getWindsorInstagramPosts(client.igUserId, period).catch(() => []) : Promise.resolve([]),
+      isOrganic && client.igUserId ? getWindsorIgAudience(client.igUserId).catch(() => null) : Promise.resolve(null),
+      isOrganic && hasWindsor ? getWindsorFbAudience(client.windsorPageId!).catch(() => null) : Promise.resolve(null),
     ])
 
     summary = summaryRes
@@ -72,6 +76,8 @@ export default async function ClientPage({
     windsorOrganic = windsorRes
     igInsights = igRes as IgInsightsSummary | null
     windsorInstagram = windsorIgRes as WindsorInstagramResult | null
+    igAudience = igAudienceRes as WindsorIgAudienceData | null
+    fbAudience = fbAudienceRes as WindsorFbAudienceData | null
     posts = [...(fbPostsRes as WindsorPost[]), ...(igPostsRes as WindsorPost[])].sort(
       (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
     )
@@ -183,6 +189,8 @@ export default async function ClientPage({
             windsorOrganic={windsorOrganic}
             igInsights={igInsights}
             windsorInstagram={windsorInstagram}
+            igAudience={igAudience}
+            fbAudience={fbAudience}
             posts={posts}
           />
         )}
