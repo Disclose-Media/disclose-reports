@@ -6,8 +6,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const apiKey = process.env.WINDSOR_API_KEY
   if (!apiKey) return NextResponse.json({ error: 'WINDSOR_API_KEY not set' })
 
-  const dateFrom = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-  const dateTo = new Date().toISOString().slice(0, 10)
+  const dateFrom = request.nextUrl.searchParams.get('from') ?? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const dateTo = request.nextUrl.searchParams.get('to') ?? new Date().toISOString().slice(0, 10)
 
   const url = new URL('https://connectors.windsor.ai/instagram')
   url.searchParams.set('api_key', apiKey)
