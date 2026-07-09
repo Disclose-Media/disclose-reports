@@ -121,6 +121,14 @@ function TrendChart({ daily, labels: datasetLabels, colors }: {
   )
 }
 
+function SummaryBlurb({ text }: { text: string }) {
+  return (
+    <div className="bg-white border border-[#E8E4DC] rounded-[8px] px-5 py-4 mb-5">
+      <p className="text-[12px] leading-relaxed text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{text}</p>
+    </div>
+  )
+}
+
 function FacebookSection({ windsorOrganic }: { windsorOrganic: WindsorOrganicResult }) {
   const { summary: fb, daily } = windsorOrganic
   const engagementRate = fb.viewers > 0 ? ((fb.interactions / fb.viewers) * 100).toFixed(1) : '0.0'
@@ -144,6 +152,13 @@ function FacebookSection({ windsorOrganic }: { windsorOrganic: WindsorOrganicRes
           <KpiTile label="New Follows" value={fmt(fb.follows)} />
         </div>
       </div>
+
+      {/* Summary */}
+      <SummaryBlurb text={
+        `Your Facebook Page reached ${fmt(fb.viewers)} unique people with ${fmt(fb.views)} impressions this period. ` +
+        `Content generated ${fmt(fb.interactions)} interactions (${engagementRate}% engagement rate), ${fmt(fb.linkClicks)} link clicks, and ${fmt(fb.visits)} page visits.` +
+        (fb.follows > 0 ? ` The page gained ${fmt(fb.follows)} new follower${fb.follows === 1 ? '' : 's'}.` : '')
+      } />
 
       {/* Trend chart */}
       {daily.length > 0 && <TrendChart daily={daily.map(d => ({ date: d.date, views: d.impressions, reach: d.reach, interactions: d.engagements }))} />}
@@ -197,6 +212,13 @@ function InstagramSection({ windsorInstagram }: { windsorInstagram: WindsorInsta
           <KpiTile label="Total Followers" value={fmt(ig.totalFollowers)} />
         </div>
       </div>
+
+      {/* Summary */}
+      <SummaryBlurb text={
+        `Your Instagram ${ig.username ? `(@${ig.username}) ` : ''}reached ${fmt(ig.reach)} unique accounts with ${fmt(ig.views)} content views this period. ` +
+        `Posts, reels and stories generated ${fmt(ig.interactions)} total interactions — ${fmt(ig.likes)} likes, ${fmt(ig.comments)} comments, ${fmt(ig.saves)} saves and ${fmt(ig.shares)} shares.` +
+        (ig.newFollows > 0 ? ` You gained ${fmt(ig.newFollows)} new follower${ig.newFollows === 1 ? '' : 's'}, bringing your total to ${fmt(ig.totalFollowers)}.` : ig.totalFollowers > 0 ? ` Total followers: ${fmt(ig.totalFollowers)}.` : '')
+      } />
 
       {/* Trend chart */}
       {daily.length > 0 && (
