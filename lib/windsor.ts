@@ -183,9 +183,11 @@ export async function getWindsorInstagramData(
 
   const url = new URL(`${BASE}/instagram`)
   url.searchParams.set('api_key', KEY)
+  // profile_links_taps, profile_views, and follower_count_1d all only support last 30 days
+  const thirtyDayExtras = includeFollowers ? ',profile_links_taps,profile_views,follower_count_1d' : ''
   url.searchParams.set(
     'fields',
-    `date,account_id,account_name,views,reach_1d,total_interactions,likes,comments,saves,shares,profile_links_taps,profile_views${includeFollowers ? ',follower_count_1d' : ''}`
+    `date,account_id,account_name,views,reach_1d,total_interactions,likes,comments,saves,shares${thirtyDayExtras}`
   )
   url.searchParams.set('date_from', dateFrom)
   url.searchParams.set('date_to', dateTo)
