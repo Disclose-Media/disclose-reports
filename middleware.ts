@@ -5,10 +5,9 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const auth = request.cookies.get('dm-auth')?.value
   const isLoginPage = pathname === '/login'
-  const isSharePage = pathname.startsWith('/share/')
-  const isDebugApi = pathname.startsWith('/api/debug-')
+  const isPublic = pathname.startsWith('/share/') || pathname.startsWith('/api/')
 
-  if (isSharePage || isDebugApi) return NextResponse.next()
+  if (isPublic) return NextResponse.next()
 
   if (!auth && !isLoginPage) {
     const url = new URL('/login', request.url)
