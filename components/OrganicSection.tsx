@@ -438,7 +438,19 @@ export function OrganicSection({ windsorOrganic, igInsights = null, windsorInsta
       {fbAudience && fbAudience.totalFans > 0 && (
         <AudienceCard platform="facebook" totalCount={fbAudience.totalFans} topCities={fbAudience.topCities} topCountries={fbAudience.topCountries} />
       )}
-      {windsorInstagram && <InstagramSection windsorInstagram={windsorInstagram} igInsights={igInsights} />}
+      {windsorInstagram
+        ? <InstagramSection windsorInstagram={windsorInstagram} igInsights={igInsights} />
+        : igInsights && igInsights.reach > 0 && (
+            <InstagramSection
+              windsorInstagram={{
+                summary: { views: igInsights.views, reach: igInsights.reach, interactions: 0, likes: 0, comments: 0, saves: 0, shares: 0, newFollows: igInsights.follows, totalFollowers: igInsights.totalFollowers, accountsEngaged: 0, linkClicks: igInsights.linkClicks, profileViews: igInsights.profileVisits, username: igInsights.username },
+                daily: [],
+                hasThirtyDayData: true,
+              }}
+              igInsights={igInsights}
+            />
+          )
+      }
       {igAudience && igAudience.totalFollowers > 0 && (
         <AudienceCard platform="instagram" totalCount={igAudience.totalFollowers} womenPct={igAudience.womenPct} menPct={igAudience.menPct} genderAge={igAudience.genderAge} topCities={igAudience.topCities} topCountries={igAudience.topCountries} />
       )}

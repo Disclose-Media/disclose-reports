@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { getClientByToken } from '@/lib/clients'
 import {
   getCampaigns, getAds, getAccountSummary, getAdThumbnails,
-  getLinkedIgAccount, getIgInsights,
+  getLinkedIgAccount, getIgInsights, getPageInsights,
   type DatePreset, type IgInsightsSummary,
 } from '@/lib/meta'
 import {
@@ -82,7 +82,20 @@ export default async function SharePage({
     campaigns = campaignsRes as Awaited<ReturnType<typeof getCampaigns>>
     ads = adsRes as Awaited<ReturnType<typeof getAds>>
     thumbnails = thumbnailsRes as Record<string, string>
-    windsorOrganic = windsorRes
+    const windsorHasData = windsorRes && (windsorRes.summary.views > 0 || windsorRes.summary.viewers > 0 || windsorRes.summary.visits > 0)
+    if (!windsorHasData && isOrganic && client.windsorPageId) {
+      const metaFb = await getPageInsights(client.windsorPageId, period).catch(() => null)
+      if (metaFb && (metaFb.views > 0 || metaFb.viewers > 0 || metaFb.visits > 0)) {
+        windsorOrganic = {
+          summary: { views: metaFb.views, viewers: metaFb.viewers, interactions: metaFb.interactions, linkClicks: metaFb.linkClicks, visits: metaFb.visits, follows: metaFb.follows, totalPageLikes: 0 },
+          daily: [],
+        }
+      } else {
+        windsorOrganic = windsorRes
+      }
+    } else {
+      windsorOrganic = windsorRes
+    }
     igInsights = igRes as IgInsightsSummary | null
     windsorInstagram = windsorIgRes as WindsorInstagramResult | null
     igAudience = igAudienceRes as WindsorIgAudienceData | null
