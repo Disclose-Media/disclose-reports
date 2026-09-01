@@ -531,7 +531,7 @@ function CampaignSection({ campaign, ads, thumbnails, clientName, period }: { ca
   )
 }
 
-function buildNarrative(campaign: CampaignInsight, ads: AdInsight[]): { overview: string; highlights: string; opportunities: string; recommendation: string } {
+function buildNarrative(campaign: CampaignInsight, ads: AdInsight[]): { overview: string; highlights: string; opportunities: string } {
   const leads = parseInt(campaign.lead || '0') || 0
   const lpvMatch = campaign.results?.value?.match(/^(\d+)/)
   const lpv = lpvMatch ? parseInt(lpvMatch[1]) : 0
@@ -604,21 +604,7 @@ function buildNarrative(campaign: CampaignInsight, ads: AdInsight[]): { overview
     ? oppParts[0].charAt(0).toUpperCase() + oppParts[0].slice(1) + (oppParts.length > 1 ? '. Additionally, ' + oppParts.slice(1).join('. ') : '') + '.'
     : 'This campaign is well positioned. Continuing to monitor performance and test incrementally will compound results over time.'
 
-  // Recommendation
-  let recommendation = ''
-  if (leads > 0 && topAdByLeads && parseInt(topAdByLeads.lead || '0') > 0) {
-    recommendation = `Increase daily budget allocation to "${topAdByLeads.name}" to capitalise on its proven lead generation performance, while introducing one new creative variant to keep the audience engaged and test further improvements.`
-  } else if (lpv > 0 && leads === 0) {
-    recommendation = `Prioritise a landing page review. The ad traffic is there, and a focused conversion rate optimisation test on the form or page layout is the highest-leverage action to start generating leads from the existing audience.`
-  } else if (ctr < 1.5 && ctr > 0) {
-    recommendation = `Launch a creative refresh test with at least two new ad variants. Prioritise strong hook copy in the first 3 seconds and a clear, benefit-led call to action to lift CTR and drive down cost per click.`
-  } else if (freq > 4) {
-    recommendation = `Expand the audience targeting. Lookalike audiences based on existing leads or page visitors are a natural next step that should reduce CPM, introduce new potential customers, and sustain campaign momentum.`
-  } else {
-    recommendation = `Maintain current momentum and schedule a creative refresh within the next two weeks to stay ahead of any audience fatigue. Regular reporting will ensure budget is always allocated to the highest-performing segments.`
-  }
-
-  return { overview, highlights, opportunities, recommendation }
+  return { overview, highlights, opportunities }
 }
 
 function CampaignSummary({ campaign, ads, obj, clientName, period }: { campaign: CampaignInsight; ads: AdInsight[]; obj: EffectiveObjective; clientName?: string; period?: string }) {
@@ -636,7 +622,7 @@ function CampaignSummary({ campaign, ads, obj, clientName, period }: { campaign:
   const reach = parseInt(campaign.reach || '0')
   const freq = impressions > 0 && reach > 0 ? impressions / reach : 0
   const fallback = buildNarrative(campaign, ads)
-  const [aiAnalysis, setAiAnalysis] = useState<{ overview: string; highlights: string; opportunities: string; recommendation: string } | null>(null)
+  const [aiAnalysis, setAiAnalysis] = useState<{ overview: string; highlights: string; opportunities: string } | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
   const fetchedRef = useRef(false)
   useEffect(() => {
@@ -653,7 +639,7 @@ function CampaignSummary({ campaign, ads, obj, clientName, period }: { campaign:
       .catch(() => {})
       .finally(() => setAiLoading(false))
   }, [campaign, ads, obj, clientName, period])
-  const { overview, highlights, opportunities, recommendation } = aiAnalysis ?? fallback
+  const { overview, highlights, opportunities } = aiAnalysis ?? fallback
 
   const clicks = parseInt(campaign.clicks || '0')
   const engRate = impressions > 0 ? (clicks / impressions) * 100 : 0
@@ -731,14 +717,6 @@ function CampaignSummary({ campaign, ads, obj, clientName, period }: { campaign:
               <NarrativeSection title="Overview" icon="○" color="#C8972D" text={overview} />
               <NarrativeSection title="What's Working" icon="↑" color="#059669" text={highlights} />
               <NarrativeSection title="Growth Opportunities" icon="◇" color="#C8972D" text={opportunities} />
-              <div className="bg-[#111111] rounded-[8px] p-4">
-                <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#C8972D] mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                  Recommendation
-                </p>
-                <p className="text-[13px] text-white leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
-                  {recommendation}
-                </p>
-              </div>
             </>
           )}
         </div>

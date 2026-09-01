@@ -49,18 +49,16 @@ Top ads:
 
 IMPORTANT: ${isLeadForm ? 'This is a Meta lead form campaign. Do NOT mention landing page conversion rates or landing page views — they are not applicable. Leads were captured via native Meta forms.' : 'This is a landing page campaign. You may reference the landing page conversion rate.'}
 
-Write a structured campaign analysis with exactly these 4 parts. Each part should be 1-2 sentences:
+Write a structured campaign analysis with exactly these 3 parts. Each part should be 1-2 sentences. Analyse only the data provided — do not make assumptions or recommendations.
 
 OVERVIEW: What did this campaign achieve? State the key outcome (leads, traffic, reach) with exact numbers and spend efficiency.
 
-HIGHLIGHTS: What worked well? Name the best performing ad and metric. Be specific.
+HIGHLIGHTS: What worked well based on the data? Name the best performing ad and metric. Be specific.
 
-OPPORTUNITIES: What could be improved? Identify the single highest-leverage opportunity.
-
-RECOMMENDATION: One clear, actionable next step. Specific enough to execute immediately.
+OPPORTUNITIES: What does the data suggest could be improved? Identify the single highest-leverage opportunity visible in the numbers.
 
 Format your response as JSON:
-{"overview": "...", "highlights": "...", "opportunities": "...", "recommendation": "..."}`
+{"overview": "...", "highlights": "...", "opportunities": "..."}`
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
