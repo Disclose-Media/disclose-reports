@@ -6,10 +6,11 @@ import {
   getLinkedIgAccount, getIgInsights,
   type DatePreset, type IgInsightsSummary,
 } from '@/lib/meta'
-import { getWindsorOrganicData, getWindsorInstagramData, getWindsorFacebookPosts, getWindsorInstagramPosts, getWindsorIgAudience, getWindsorFbAudience, type WindsorInstagramResult, type WindsorPost, type WindsorIgAudienceData, type WindsorFbAudienceData } from '@/lib/windsor'
+import { getWindsorOrganicData, getWindsorInstagramData, getWindsorFacebookPosts, getWindsorInstagramPosts, getWindsorIgAudience, getWindsorFbAudience, type WindsorInstagramResult, type WindsorPost, type WindsorIgAudienceData, type WindsorFbAudienceData, type CustomRange } from '@/lib/windsor'
 import { DashboardClient } from './DashboardClient'
 import { ExportButton } from '@/components/ExportButton'
 import { ShareButton } from '@/components/ShareButton'
+import { PeriodSelector } from '@/components/PeriodSelector'
 
 const PRESETS: { label: string; value: DatePreset }[] = [
   { label: 'Today', value: 'today' },
@@ -26,13 +27,20 @@ export default async function ClientPage({
   searchParams,
 }: {
   params: { id: string }
-  searchParams: { period?: string }
+  searchParams: { period?: string; from?: string; to?: string }
 }) {
   const client = getClient(params.id)
   if (!client) notFound()
 
-  const period = (searchParams.period as DatePreset) || 'last_30d'
-  const currentPreset = PRESETS.find((p) => p.value === period) || PRESETS[3]
+  const rawPeriod = searchParams.period || 'last_30d'
+  const isCustom = rawPeriod === 'custom' && !!searchParams.from && !!searchParams.to
+  const period: DatePreset | CustomRange = isCustom
+    ? { from: searchParams.from!, to: searchParams.to! }
+    : (rawPeriod as DatePreset)
+  const currentPreset = PRESETS.find((p) => p.value === rawPeriod) || PRESETS[3]
+  const periodLabel = isCustom
+    ? `${searchParams.from} to ${searchParams.to}`
+    : currentPreset.label
 
   let summary = null
   let campaigns: Awaited<ReturnType<typeof getCampaigns>> = []
@@ -61,7 +69,7 @@ export default async function ClientPage({
       hasPaid ? getAds(client.accountId, period) : Promise.resolve([]),
       hasPaid ? getAdThumbnails(client.accountId) : Promise.resolve({}),
       hasWindsor ? getWindsorOrganicData(client.windsorPageId!, period) : Promise.resolve(null),
-      paidIgUserId ? getIgInsights(paidIgUserId, period).catch(() => null) : Promise.resolve(null),
+      paidIgUserId ? getIgInsights(paidIgUserId, period).catch(() => null) : (isOrganic && client.igUserId ? getIgInsights(client.igUserId, period).catch(() => null) : Promise.resolve(null)),
       client.igUserId && isOrganic ? getWindsorInstagramData(client.igUserId, period) : Promise.resolve(null),
       isOrganic && hasWindsor ? getWindsorFacebookPosts(client.windsorPageId!, period).catch(() => []) : Promise.resolve([]),
       isOrganic && client.igUserId ? getWindsorInstagramPosts(client.igUserId, period).catch(() => []) : Promise.resolve([]),
@@ -101,7 +109,7 @@ export default async function ClientPage({
             {client.name}
           </h1>
           <p className="text-[11px] text-[#888888] mt-0.5" style={{ fontFamily: 'Inter, sans-serif' }}>
-            {currentPreset.label} · Generated {new Date().toLocaleDateString('en-NZ', { day: 'numeric', month: 'long', year: 'numeric' })}
+            {periodLabel} · Generated {new Date().toLocaleDateString('en-NZ', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
         <img src="/dm-logo-white.png" alt="Disclose Media" style={{ height: '40px', filter: 'invert(1)' }} />
@@ -149,21 +157,8 @@ export default async function ClientPage({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 print:hidden">
-          {PRESETS.map((preset) => (
-            <Link
-              key={preset.value}
-              href={`/client/${client.id}?period=${preset.value}`}
-              className={`text-[11px] px-3.5 py-1.5 rounded-full border transition-all duration-150 ${
-                preset.value === period
-                  ? 'bg-[#C8972D] border-[#C8972D] text-white font-bold'
-                  : 'border-[#2A2A2A] text-[#888888] hover:border-[#C8972D] hover:text-[#C8972D]'
-              }`}
-              style={{ fontFamily: 'Inter, sans-serif' }}
-            >
-              {preset.label}
-            </Link>
-          ))}
+        <div className="print:hidden">
+          <PeriodSelector period={rawPeriod} customFrom={searchParams.from} customTo={searchParams.to} />
         </div>
       </div>
 
@@ -185,7 +180,7 @@ export default async function ClientPage({
             campaigns={campaigns}
             ads={ads}
             thumbnails={thumbnails}
-            period={currentPreset.label}
+            period={periodLabel}
             windsorOrganic={windsorOrganic}
             igInsights={igInsights}
             windsorInstagram={windsorInstagram}
