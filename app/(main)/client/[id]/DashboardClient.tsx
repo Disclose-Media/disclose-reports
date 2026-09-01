@@ -375,7 +375,7 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
                   className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-all ${objectiveOverride === o ? 'bg-[#C8972D] text-white border-[#C8972D]' : 'bg-white text-[#888888] border-[#E8E4DC] hover:border-[#C8972D] hover:text-[#C8972D]'}`}
                   style={{ fontFamily: 'Inter, sans-serif' }}
                 >
-                  {o === 'auto' ? `Auto (${OBJECTIVE_LABELS[autoObj]})` : OBJECTIVE_LABELS[o]}
+                  {o === 'auto' ? `Main Objective (${OBJECTIVE_LABELS[autoObj]})` : OBJECTIVE_LABELS[o]}
                 </button>
               ))}
             </div>
