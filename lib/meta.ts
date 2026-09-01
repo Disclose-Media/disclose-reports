@@ -37,6 +37,7 @@ export type CampaignInsight = {
 export type AdInsight = CampaignInsight & {
   campaign_id: string
   adset_id: string
+  adset_name?: string
   thumbnail_url?: string
 }
 
@@ -165,6 +166,7 @@ export async function getAds(
       name: String(r.ad_name),
       campaign_id: String(r.campaign_id),
       adset_id: String(r.adset_id),
+      adset_name: String(r.adset_name || ''),
       status: 'ACTIVE',
       amount_spent: String(r.spend || '0'),
       impressions: String(r.impressions || '0'),

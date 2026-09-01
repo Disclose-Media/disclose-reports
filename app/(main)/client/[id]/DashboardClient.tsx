@@ -285,11 +285,11 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
         ]
       : obj === 'engagement'
       ? [
-          { label: 'Clicks', key: 'clicks' },
-          { label: 'CTR', key: 'ctr' },
-          { label: 'CPC', key: 'cpc' },
-          { label: 'CPM', key: 'cpm' },
+          { label: 'Engagements', key: 'clicks' },
+          { label: 'Eng. Rate', key: 'ctr' },
+          { label: 'Cost/Eng.', key: 'cpc' },
           { label: 'Frequency', key: 'freq' },
+          { label: 'Reach', key: 'reach' },
         ]
       : [
           { label: 'Frequency', key: 'freq' },
@@ -418,7 +418,7 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
                     <tr className="border-b border-[#E8E4DC]">
                       <th className="py-3 pl-4 pr-2 bg-white w-14" />
                       {([
-                        { label: 'Ad', key: 'name' as SortKey, align: 'left' },
+                        { label: 'Ad / Ad Set', key: 'name' as SortKey, align: 'left' },
                         { label: 'Spend', key: 'spend' as SortKey, align: 'right' },
                         { label: 'Reach', key: 'reach' as SortKey, align: 'right' },
                         { label: 'Impressions', key: 'impressions' as SortKey, align: 'right' },
@@ -487,8 +487,11 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
                               </div>
                             )}
                           </td>
-                          <td className="py-3 px-4 font-semibold text-[#C8972D] text-xs max-w-[200px]" style={{ fontFamily: 'Inter, sans-serif' }}>
-                            <span className="truncate block">{ad.name}</span>
+                          <td className="py-3 px-4 text-xs max-w-[220px]" style={{ fontFamily: 'Inter, sans-serif' }}>
+                            <span className="truncate block font-semibold text-[#C8972D]">{ad.name}</span>
+                            {ad.adset_name && (
+                              <span className="truncate block text-[#888888] text-[10px] mt-0.5">{ad.adset_name}</span>
+                            )}
                           </td>
                           <td className="py-3 px-4 text-right text-xs font-semibold text-[#111111]" style={{ fontFamily: 'Inter, sans-serif' }}>${adSpend.toFixed(2)}</td>
                           <td className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{fmt(ad.reach)}</td>
