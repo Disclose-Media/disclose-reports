@@ -67,10 +67,9 @@ body {
 /* ── Print / PDF export ─────────────────────────────────────────── */
 @media print {
   @page {
-    margin: 16mm 14mm 14mm 14mm;
+    margin: 0;
     size: A4;
   }
-  @page :first { margin-top: 10mm; }
 
   * {
     -webkit-print-color-adjust: exact !important;
@@ -78,13 +77,28 @@ body {
     box-shadow: none !important;
   }
 
-  /* Base */
+  /* Base — body padding replaces @page margins (margin:0 kills browser URL/date headers) */
   html, body {
     background: #ffffff !important;
     color: #111111 !important;
     font-size: 10pt;
     width: 100%;
+    padding: 14mm 14mm !important;
   }
+
+  /* Prevent sections from splitting across pages */
+  .mb-6, .mb-8,
+  [class*="campaign-section"],
+  .card, .card-dark {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* KPI grids and chart blocks should stay together */
+  .grid { break-inside: avoid !important; page-break-inside: avoid !important; }
+
+  /* Force page break before each major campaign card */
+  .mb-8 + .mb-8 { break-before: auto; }
 
   /* Hide everything that isn't the report content */
   nav, aside, header,
