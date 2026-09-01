@@ -834,8 +834,8 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
         </>
       )}
 
-      {/* Google Ads */}
-      {hasGoogle && (
+      {/* Google Ads — only on dedicated google-type client pages */}
+      {hasGoogle && isGoogleOnly && (
         <GoogleAdsSection data={googleAdsData!} clientName={client.name} period={period} />
       )}
 

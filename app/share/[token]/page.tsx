@@ -163,8 +163,6 @@ export default async function SharePage({
             ? 'Organic · Facebook & Instagram'
             : client.type === 'google'
             ? 'Google Ads'
-            : client.googleAdsId
-            ? 'Meta Ads · Google Ads'
             : 'Meta Ads'}
           {client.windsorPageId && client.type === 'paid' && ' · Organic'}
           {client.hasLeadGen && ' · Lead Generation'}
