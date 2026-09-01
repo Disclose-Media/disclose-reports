@@ -75,29 +75,45 @@ export async function getWindsorInstagramPosts(igAccountId: string, period: Peri
     if (!res.ok) return []
     const json = await res.json()
     const rows: Record<string, unknown>[] = json.data ?? json.result ?? (Array.isArray(json) ? json : [])
-    const seen = new Set<string>()
-    const posts: WindsorPost[] = []
+    // Accumulate across all rows per media_id — Windsor may return multiple rows per post
+    const accum = new Map<string, {
+      type: string; caption: string; thumbnailUrl: string; publishedAt: string; permalink: string;
+      reach: number; views: number; likes: number; comments: number; shares: number; saves: number;
+    }>()
     for (const row of rows) {
       if (row.account_id != null && row.account_id !== '' && String(row.account_id) !== igAccountId) continue
       const id = String(row.media_id ?? '')
-      if (!id || seen.has(id)) continue
-      seen.add(id)
+      if (!id) continue
       const mediaType = String(row.media_type ?? '').toUpperCase()
       const type = mediaType === 'REEL' ? 'reel' : mediaType === 'VIDEO' ? 'video' : 'photo'
-      posts.push({
-        id, platform: 'instagram', type,
-        caption: String(row.media_caption ?? ''),
-        thumbnailUrl: String(row.media_thumbnail_url ?? row.media_url ?? ''),
-        publishedAt: String(row.timestamp ?? ''),
-        permalink: String(row.media_permalink ?? ''),
-        reach: Number(row.media_reach) || 0,
-        views: Number(row.media_views) || 0,
-        likes: Number(row.media_like_count) || 0,
-        comments: Number(row.media_comments_count) || 0,
-        shares: Number(row.media_shares) || 0,
-        saves: Number(row.media_saved) || 0,
-      })
+      if (!accum.has(id)) {
+        accum.set(id, {
+          type,
+          caption: String(row.media_caption ?? ''),
+          thumbnailUrl: String(row.media_thumbnail_url ?? row.media_url ?? ''),
+          publishedAt: String(row.timestamp ?? ''),
+          permalink: String(row.media_permalink ?? ''),
+          reach: 0, views: 0, likes: 0, comments: 0, shares: 0, saves: 0,
+        })
+      }
+      const e = accum.get(id)!
+      if (!e.thumbnailUrl && (row.media_thumbnail_url || row.media_url)) e.thumbnailUrl = String(row.media_thumbnail_url ?? row.media_url ?? '')
+      if (!e.publishedAt && row.timestamp) e.publishedAt = String(row.timestamp)
+      if (!e.permalink && row.media_permalink) e.permalink = String(row.media_permalink)
+      if (!e.caption && row.media_caption) e.caption = String(row.media_caption)
+      e.reach    = Math.max(e.reach,    Number(row.media_reach)          || 0)
+      e.views    = Math.max(e.views,    Number(row.media_views)          || 0)
+      e.likes    = Math.max(e.likes,    Number(row.media_like_count)     || 0)
+      e.comments = Math.max(e.comments, Number(row.media_comments_count) || 0)
+      e.shares   = Math.max(e.shares,   Number(row.media_shares)         || 0)
+      e.saves    = Math.max(e.saves,    Number(row.media_saved)          || 0)
     }
+    const posts: WindsorPost[] = Array.from(accum.entries()).map(([id, e]) => ({
+      id, platform: 'instagram' as const, type: e.type as WindsorPost['type'],
+      caption: e.caption, thumbnailUrl: e.thumbnailUrl, publishedAt: e.publishedAt,
+      permalink: e.permalink, reach: e.reach, views: e.views, likes: e.likes,
+      comments: e.comments, shares: e.shares, saves: e.saves,
+    }))
     return posts.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
   } catch { return [] }
 }
