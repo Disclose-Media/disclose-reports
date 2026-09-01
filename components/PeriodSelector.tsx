@@ -16,58 +16,62 @@ const PRESETS = [
 const DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
-function parseDate(s: string): Date | null {
-  if (!s) return null
-  const d = new Date(s + 'T00:00:00')
-  return isNaN(d.getTime()) ? null : d
+// Always use local date — never toISOString() which shifts NZ timezone back a day
+function fmtLocal(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
-function fmt(d: Date) {
-  return d.toISOString().slice(0, 10)
+function todayLocal(): string {
+  return fmtLocal(new Date())
+}
+
+function parseDate(s: string): Date | null {
+  if (!s) return null
+  // Parse as local date (avoid UTC shift)
+  const [y, m, d] = s.split('-').map(Number)
+  if (!y || !m || !d) return null
+  return new Date(y, m - 1, d)
 }
 
 function MiniCalendar({
   value,
+  rangeFrom,
+  rangeTo,
   min,
   max,
   onChange,
 }: {
   value: string
+  rangeFrom?: string
+  rangeTo?: string
   min?: string
   max?: string
   onChange: (v: string) => void
 }) {
-  const today = new Date()
+  const todayStr = todayLocal()
   const selected = parseDate(value)
   const [view, setView] = useState(() => {
-    const d = selected || today
+    const d = selected || new Date()
     return { year: d.getFullYear(), month: d.getMonth() }
   })
 
   const { year, month } = view
   const firstDay = new Date(year, month, 1)
-  // Monday-first: 0=Mon … 6=Sun
-  const startOffset = (firstDay.getDay() + 6) % 7
+  const startOffset = (firstDay.getDay() + 6) % 7 // Monday-first
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
   function prevMonth() {
-    setView(v => {
-      const m = v.month === 0 ? 11 : v.month - 1
-      const y = v.month === 0 ? v.year - 1 : v.year
-      return { year: y, month: m }
-    })
+    setView(v => v.month === 0 ? { year: v.year - 1, month: 11 } : { year: v.year, month: v.month - 1 })
   }
   function nextMonth() {
-    setView(v => {
-      const m = v.month === 11 ? 0 : v.month + 1
-      const y = v.month === 11 ? v.year + 1 : v.year
-      return { year: y, month: m }
-    })
+    setView(v => v.month === 11 ? { year: v.year + 1, month: 0 } : { year: v.year, month: v.month + 1 })
   }
 
   function pick(day: number) {
-    const d = new Date(year, month, day)
-    const s = fmt(d)
+    const s = fmtLocal(new Date(year, month, day))
     if (min && s < min) return
     if (max && s > max) return
     onChange(s)
@@ -79,14 +83,14 @@ function MiniCalendar({
   ]
   while (cells.length % 7 !== 0) cells.push(null)
 
+  // Range helpers
+  const hasRange = rangeFrom && rangeTo && rangeFrom <= rangeTo
+
   return (
     <div>
       {/* Month nav */}
       <div className="flex items-center justify-between mb-2">
-        <button
-          onClick={prevMonth}
-          className="w-6 h-6 flex items-center justify-center rounded text-[#888888] hover:text-[#C8972D] transition-colors"
-        >
+        <button onClick={prevMonth} className="w-6 h-6 flex items-center justify-center rounded text-[#888888] hover:text-[#C8972D] transition-colors">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <path d="M8 2L4 6l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
@@ -94,10 +98,7 @@ function MiniCalendar({
         <span className="text-[11px] font-bold text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>
           {MONTHS[month]} {year}
         </span>
-        <button
-          onClick={nextMonth}
-          className="w-6 h-6 flex items-center justify-center rounded text-[#888888] hover:text-[#C8972D] transition-colors"
-        >
+        <button onClick={nextMonth} className="w-6 h-6 flex items-center justify-center rounded text-[#888888] hover:text-[#C8972D] transition-colors">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
@@ -111,30 +112,54 @@ function MiniCalendar({
         ))}
       </div>
 
-      {/* Days */}
-      <div className="grid grid-cols-7 gap-y-0.5">
+      {/* Days grid — render row by row for range bar highlighting */}
+      <div className="grid grid-cols-7" style={{ rowGap: 2 }}>
         {cells.map((day, i) => {
           if (!day) return <div key={i} />
-          const dateStr = fmt(new Date(year, month, day))
+
+          const dateStr = fmtLocal(new Date(year, month, day))
           const isSelected = value === dateStr
-          const isToday = fmt(today) === dateStr
+          const isFrom = rangeFrom === dateStr
+          const isTo = rangeTo === dateStr
+          const isEndpoint = isFrom || isTo
+          const isToday = todayStr === dateStr
+          const inRange = hasRange && dateStr > rangeFrom! && dateStr < rangeTo!
           const disabled = (min && dateStr < min) || (max && dateStr > max)
+
+          // Column position within week row (0=Mon … 6=Sun)
+          const col = i % 7
+          const isFirstInRow = col === 0
+          const isLastInRow = col === 6
+
           return (
-            <button
-              key={i}
-              onClick={() => pick(day)}
-              disabled={!!disabled}
-              className={`
-                w-7 h-7 mx-auto flex items-center justify-center rounded-full text-[11px] transition-all
-                ${isSelected ? 'bg-[#C8972D] text-white font-bold' : ''}
-                ${!isSelected && isToday ? 'border border-[#C8972D] text-[#C8972D]' : ''}
-                ${!isSelected && !isToday && !disabled ? 'text-[#CCCCCC] hover:bg-[#2A2A2A] hover:text-white' : ''}
-                ${disabled ? 'text-[#444444] cursor-not-allowed' : 'cursor-pointer'}
-              `}
-              style={{ fontFamily: 'Inter, sans-serif' }}
-            >
-              {day}
-            </button>
+            <div key={i} className="relative flex items-center justify-center" style={{ height: 28 }}>
+              {/* Range bar behind the day circle */}
+              {(inRange || isEndpoint) && hasRange && (
+                <div
+                  className="absolute inset-y-0"
+                  style={{
+                    backgroundColor: 'rgba(200,151,45,0.18)',
+                    left: (isFrom || isFirstInRow) ? '50%' : 0,
+                    right: (isTo || isLastInRow) ? '50%' : 0,
+                  }}
+                />
+              )}
+              <button
+                onClick={() => pick(day)}
+                disabled={!!disabled}
+                className={`
+                  relative z-10 w-7 h-7 flex items-center justify-center rounded-full text-[11px] transition-all
+                  ${isSelected || isEndpoint ? 'bg-[#C8972D] text-white font-bold' : ''}
+                  ${!isEndpoint && isToday ? 'border border-[#C8972D] text-[#C8972D]' : ''}
+                  ${!isEndpoint && !isToday && inRange ? 'text-white font-medium' : ''}
+                  ${!isEndpoint && !isToday && !inRange && !disabled ? 'text-[#CCCCCC] hover:bg-[#2A2A2A] hover:text-white' : ''}
+                  ${disabled ? 'text-[#444444] cursor-not-allowed' : 'cursor-pointer'}
+                `}
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                {day}
+              </button>
+            </div>
           )
         })}
       </div>
@@ -153,8 +178,8 @@ export function PeriodSelector({ period, customFrom, customTo }: Props) {
   const pathname = usePathname()
   const isCustom = period === 'custom'
 
-  const today = new Date().toISOString().slice(0, 10)
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const today = todayLocal()
+  const thirtyDaysAgo = fmtLocal(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
 
   const [showPicker, setShowPicker] = useState(false)
   const [from, setFrom] = useState(customFrom || thirtyDaysAgo)
@@ -220,20 +245,15 @@ export function PeriodSelector({ period, customFrom, customTo }: Props) {
           }`}
           style={{ fontFamily: 'Inter, sans-serif' }}
         >
-          {isCustom && customFrom && customTo
-            ? `${customFrom} → ${customTo}`
-            : 'Custom'}
+          {isCustom && customFrom && customTo ? `${customFrom} → ${customTo}` : 'Custom'}
         </button>
 
         {showPicker && (
           <div
             className="absolute left-0 top-full mt-2 z-50 bg-[#111111] border border-[#2A2A2A] rounded-[8px] p-4 shadow-xl"
-            style={{ minWidth: '280px' }}
+            style={{ minWidth: '290px' }}
           >
-            <p
-              className="text-[9px] uppercase tracking-[0.18em] text-[#C8972D] font-bold mb-3"
-              style={{ fontFamily: 'Montserrat, sans-serif' }}
-            >
+            <p className="text-[9px] uppercase tracking-[0.18em] text-[#C8972D] font-bold mb-3" style={{ fontFamily: 'Montserrat, sans-serif' }}>
               Custom Date Range
             </p>
 
@@ -257,12 +277,25 @@ export function PeriodSelector({ period, customFrom, customTo }: Props) {
               })}
             </div>
 
-            {/* Calendar */}
+            {/* Calendar — always passes both from/to for range shading */}
             <div className="border border-[#222222] rounded-[6px] bg-[#161616] p-3 mb-3">
               {activeField === 'from' ? (
-                <MiniCalendar value={from} max={today} onChange={handleFromChange} />
+                <MiniCalendar
+                  value={from}
+                  rangeFrom={from}
+                  rangeTo={to}
+                  max={today}
+                  onChange={handleFromChange}
+                />
               ) : (
-                <MiniCalendar value={to} min={from} max={today} onChange={handleToChange} />
+                <MiniCalendar
+                  value={to}
+                  rangeFrom={from}
+                  rangeTo={to}
+                  min={from}
+                  max={today}
+                  onChange={handleToChange}
+                />
               )}
             </div>
 
