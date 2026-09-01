@@ -410,7 +410,7 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
           <KpiTile label="Views" value={fmt(ig.views)} />
           <KpiTile label="Reach" value={fmt(ig.reach)} />
           <KpiTile label="Interactions" value={fmt(ig.interactions)} />
-          <KpiTile label="Link Clicks" value={linkClicks !== null ? fmt(linkClicks) : na} />
+          <KpiTile label="Accounts Engaged" value={ig.accountsEngaged > 0 ? fmt(ig.accountsEngaged) : na} />
           <KpiTile label="Profile Visits" value={profileVisits !== null ? fmt(profileVisits) : na} />
           <KpiTile label="New Follows" value={hasThirtyDayData ? fmt(ig.newFollows) : na} />
         </div>
@@ -421,7 +421,7 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
         platform="instagram"
         clientName={clientName}
         period={period}
-        metrics={{ views: ig.views, reach: ig.reach, interactions: ig.interactions, likes: ig.likes, comments: ig.comments, saves: ig.saves, shares: ig.shares, engagementRate, profileViews: profileVisits ?? 0, linkClicks: linkClicks ?? 0, newFollows: ig.newFollows, username: ig.username }}
+        metrics={{ views: ig.views, reach: ig.reach, interactions: ig.interactions, accountsEngaged: ig.accountsEngaged, likes: ig.likes, comments: ig.comments, saves: ig.saves, shares: ig.shares, engagementRate, profileViews: profileVisits ?? 0, newFollows: ig.newFollows, username: ig.username }}
         fallback={`The Instagram account ${ig.username ? `(@${ig.username}) ` : ''}reached ${fmt(ig.reach)} unique accounts with ${fmt(ig.views)} content views this period. Posts, reels and stories generated ${fmt(ig.interactions)} total interactions — ${fmt(ig.likes)} likes, ${fmt(ig.comments)} comments, ${fmt(ig.saves)} saves and ${fmt(ig.shares)} shares.`}
       />
 
