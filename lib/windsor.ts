@@ -1,5 +1,8 @@
 import type { DatePreset } from './meta'
 
+export type CustomRange = { from: string; to: string }
+export type Period = DatePreset | CustomRange
+
 const BASE = 'https://connectors.windsor.ai'
 const KEY = process.env.WINDSOR_API_KEY!
 
@@ -19,8 +22,8 @@ export type WindsorPost = {
   saves: number
 }
 
-export async function getWindsorFacebookPosts(pageId: string, period: DatePreset = 'last_30d'): Promise<WindsorPost[]> {
-  const { dateFrom, dateTo } = presetToDates(period)
+export async function getWindsorFacebookPosts(pageId: string, period: Period = 'last_30d'): Promise<WindsorPost[]> {
+  const { dateFrom, dateTo } = periodToDates(period)
   const url = new URL(`${BASE}/facebook_organic`)
   url.searchParams.set('api_key', KEY)
   url.searchParams.set('fields', 'account_id,post_id,post_message,post_created_time,full_picture,permalink_url,media_type,post_impressions_unique,post_impressions,post_reactions_total,post_clicks,post_engagements')
@@ -59,8 +62,8 @@ export async function getWindsorFacebookPosts(pageId: string, period: DatePreset
   } catch { return [] }
 }
 
-export async function getWindsorInstagramPosts(igAccountId: string, period: DatePreset = 'last_30d'): Promise<WindsorPost[]> {
-  const { dateFrom, dateTo } = presetToDates(period)
+export async function getWindsorInstagramPosts(igAccountId: string, period: Period = 'last_30d'): Promise<WindsorPost[]> {
+  const { dateFrom, dateTo } = periodToDates(period)
   const url = new URL(`${BASE}/instagram`)
   url.searchParams.set('api_key', KEY)
   url.searchParams.set('fields', 'account_id,media_id,media_caption,timestamp,media_url,media_thumbnail_url,media_permalink,media_type,media_reach,media_views,media_like_count,media_comments_count,media_saved,media_shares')
@@ -143,7 +146,8 @@ export type WindsorOrganicResult = {
   daily: WindsorDailyPoint[]
 }
 
-function presetToDates(preset: DatePreset): { dateFrom: string; dateTo: string } {
+function periodToDates(period: Period): { dateFrom: string; dateTo: string } {
+  if (typeof period === 'object') return { dateFrom: period.from, dateTo: period.to }
   const now = new Date()
   const fmt = (d: Date) => d.toISOString().split('T')[0]
   const today = fmt(now)
@@ -152,7 +156,7 @@ function presetToDates(preset: DatePreset): { dateFrom: string; dateTo: string }
     d.setDate(d.getDate() - n)
     return fmt(d)
   }
-  switch (preset) {
+  switch (period) {
     case 'today': return { dateFrom: today, dateTo: today }
     case 'yesterday': return { dateFrom: daysAgo(1), dateTo: daysAgo(1) }
     case 'last_7d': return { dateFrom: daysAgo(7), dateTo: today }
@@ -173,9 +177,9 @@ function presetToDates(preset: DatePreset): { dateFrom: string; dateTo: string }
 
 export async function getWindsorInstagramData(
   igAccountId: string,
-  period: DatePreset = 'last_30d'
+  period: Period = 'last_30d'
 ): Promise<WindsorInstagramResult> {
-  const { dateFrom, dateTo } = presetToDates(period)
+  const { dateFrom, dateTo } = periodToDates(period)
 
   // follower_count_1d, profile_links_taps, profile_views only support last 30 days
   const thirtyDaysAgoStr = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
@@ -379,9 +383,9 @@ export async function getWindsorFbAudience(pageId: string): Promise<WindsorFbAud
 
 export async function getWindsorOrganicData(
   pageId: string,
-  period: DatePreset = 'last_30d'
+  period: Period = 'last_30d'
 ): Promise<WindsorOrganicResult> {
-  const { dateFrom, dateTo } = presetToDates(period)
+  const { dateFrom, dateTo } = periodToDates(period)
 
   const url = new URL(`${BASE}/facebook_organic`)
   url.searchParams.set('api_key', KEY)
