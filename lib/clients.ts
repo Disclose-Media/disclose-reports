@@ -20,7 +20,6 @@ export const CLIENTS: Client[] = [
     id: 'co-kids',
     name: 'Co Kids Group',
     accountId: '248251059419736',
-    googleAdsId: '304-753-3959',
     type: 'paid',
     status: 'active',
     currency: 'NZD',
@@ -72,7 +71,6 @@ export const CLIENTS: Client[] = [
     id: 'pocket-bar',
     name: 'Pocket Bar',
     accountId: '1695711684136476',
-    googleAdsId: '403-523-8447',
     type: 'paid',
     status: 'active',
     currency: 'NZD',
@@ -83,7 +81,6 @@ export const CLIENTS: Client[] = [
     id: 'hilton-nz',
     name: 'Hilton New Zealand',
     accountId: '250039821854564',
-    googleAdsId: '271-284-8258',
     type: 'paid',
     status: 'active',
     currency: 'NZD',
@@ -100,6 +97,18 @@ export const CLIENTS: Client[] = [
     hasLeadGen: false,
     shareToken: 'hfj-u7a4h2xq1f',
   },
+  // ── Google Ads-only clients ───────────────────────────────────────────────
+  {
+    id: 'co-kids-google',
+    name: 'Co Kids Group',
+    accountId: '',
+    googleAdsId: '304-753-3959',
+    type: 'google',
+    status: 'active',
+    currency: 'NZD',
+    hasLeadGen: false,
+    shareToken: 'ck-gads-r9w3m6vb2t',
+  },
   {
     id: 'blue-fitness',
     name: 'Blue Fitness (Merrithew)',
@@ -110,6 +119,28 @@ export const CLIENTS: Client[] = [
     currency: 'NZD',
     hasLeadGen: false,
     shareToken: 'bf-gads-m4x7p2wr9k',
+  },
+  {
+    id: 'pocket-bar-google',
+    name: 'Pocket Bar',
+    accountId: '',
+    googleAdsId: '403-523-8447',
+    type: 'google',
+    status: 'active',
+    currency: 'NZD',
+    hasLeadGen: false,
+    shareToken: 'pb-gads-k5n8j2xq4w',
+  },
+  {
+    id: 'hilton-nz-google',
+    name: 'Hilton New Zealand',
+    accountId: '',
+    googleAdsId: '271-284-8258',
+    type: 'google',
+    status: 'active',
+    currency: 'NZD',
+    hasLeadGen: false,
+    shareToken: 'hnz-gads-t2c7f9sd1p',
   },
 
   // ── Organic-only clients (Windsor facebook_organic) ───────────────────────
@@ -173,4 +204,4 @@ export function getClientByToken(token: string): Client | undefined {
 
 export const paidClients = CLIENTS.filter((c) => c.type === 'paid' && c.status === 'active')
 export const organicClients = CLIENTS.filter((c) => c.type === 'organic' && c.status === 'active')
-export const googleClients = CLIENTS.filter((c) => c.status === 'active' && !!c.googleAdsId)
+export const googleClients = CLIENTS.filter((c) => c.status === 'active' && c.type === 'google')

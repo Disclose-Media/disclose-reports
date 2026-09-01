@@ -99,7 +99,7 @@ export function Sidebar() {
             </p>
             <div className="space-y-0.5">
               {googleClients.map((c) => (
-                <NavItem key={`google-${c.id}`} client={c} hrefOverride={c.type !== 'google' ? `/client/${c.id}?period=${period}&tab=google` : undefined} />
+                <NavItem key={`google-${c.id}`} client={c} />
               ))}
             </div>
           </div>
