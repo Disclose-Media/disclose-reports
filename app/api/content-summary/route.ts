@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       reach: p.reach,
     }))
 
-  const prompt = `You are a social media strategist writing a concise performance summary for a client report.
+  const prompt = `You are a social media strategist writing a detailed content performance summary for a client report.
 
 Client: ${clientName}
 Platform: ${platform === 'facebook' ? 'Facebook' : 'Instagram'}
@@ -45,22 +45,23 @@ Period: ${period}
 Total posts analysed: ${posts.length}
 
 Top performing posts (by views):
-${topPosts.map((p, i) => `${i + 1}. "${p.caption}..." — ${p.views.toLocaleString()} views, ${p.reach.toLocaleString()} reach, ${p.likes} likes${p.comments ? `, ${p.comments} comments` : ''}${p.shares ? `, ${p.shares} shares` : ''} [${p.type}, ${p.date}]`).join('\n')}
+${topPosts.map((p, i) => `${i + 1}. "${p.caption}..." — ${p.views.toLocaleString()} views, ${p.reach.toLocaleString()} reach, ${p.likes} likes${p.comments ? `, ${p.comments} comments` : ''}${p.shares ? `, ${p.shares} shares` : ''}${p.saves ? `, ${p.saves} saves` : ''} [${p.type}, ${p.date}]`).join('\n')}
 
 Lowest performing posts:
 ${bottomPosts.map((p, i) => `${i + 1}. "${p.caption}..." — ${p.views.toLocaleString()} views, ${p.reach.toLocaleString()} reach`).join('\n')}
 
-Write a 3-sentence summary in this exact style (match the tone and structure precisely):
-1. Sentence 1: Name the top performer with a short caption quote, its reach and views numbers.
-2. Sentence 2: Describe the content themes across the rest of the period in one sentence.
-3. Sentence 3: Identify what format or theme performed best and give a single forward-looking recommendation for next month.
+Write a 4-5 sentence summary covering:
+1. The top performer: caption quote, exact views and reach numbers, and what made it stand out.
+2. The content themes and formats that drove the rest of the strong performers this period.
+3. What the lowest performing posts had in common — what theme or format didn't connect.
+4. The clearest content direction heading into the next period — be specific and actionable.
 
 Rules:
-- Write in third person about the content, not second person ("the page" not "your page")
-- Use exact numbers (e.g. "39,980 accounts" not "nearly 40,000")
-- Keep it to exactly 3 sentences, no bullet points, no headers
-- Be specific about content themes — don't be generic
-- End with a clear, actionable content direction for next period`
+- Write in third person ("the page", "the account", not "your page")
+- Use exact numbers always (e.g. "11,396 views" not "over 11K")
+- No bullet points, no headers — flowing paragraph prose only
+- Be specific about actual content themes from the captions — never be generic
+- End with one concrete, actionable recommendation for next month's content`
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -72,7 +73,7 @@ Rules:
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 300,
+        max_tokens: 500,
         messages: [{ role: 'user', content: prompt }],
       }),
     })

@@ -520,7 +520,7 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
           )}
 
           {/* Campaign Analysis */}
-          <CampaignSummary campaign={campaign} ads={ads} obj={obj} />
+          <CampaignSummary campaign={campaign} ads={ads} obj={obj} clientName={client.name} period={period} />
         </div>
       )}
     </div>
@@ -614,7 +614,7 @@ function buildNarrative(campaign: CampaignInsight, ads: AdInsight[]): { overview
   return { overview, highlights, opportunities, recommendation }
 }
 
-function CampaignSummary({ campaign, ads, obj }: { campaign: CampaignInsight; ads: AdInsight[]; obj: EffectiveObjective }) {
+function CampaignSummary({ campaign, ads, obj, clientName, period }: { campaign: CampaignInsight; ads: AdInsight[]; obj: EffectiveObjective; clientName?: string; period?: string }) {
   const ctr = parseFloat(campaign.ctr || '0')
   const cpm = parseFloat(campaign.cpm || '0')
   const cpc = parseFloat(campaign.cpc || '0')
@@ -628,7 +628,25 @@ function CampaignSummary({ campaign, ads, obj }: { campaign: CampaignInsight; ad
   const impressions = parseInt(campaign.impressions || '0')
   const reach = parseInt(campaign.reach || '0')
   const freq = impressions > 0 && reach > 0 ? impressions / reach : 0
-  const { overview, highlights, opportunities, recommendation } = buildNarrative(campaign, ads)
+  const fallback = buildNarrative(campaign, ads)
+  const [aiAnalysis, setAiAnalysis] = useState<{ overview: string; highlights: string; opportunities: string; recommendation: string } | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const fetchedRef = useRef(false)
+  useEffect(() => {
+    if (!clientName || fetchedRef.current) return
+    fetchedRef.current = true
+    setAiLoading(true)
+    fetch('/api/campaign-analysis', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ campaign, ads, objective: obj, clientName, period: period ?? 'Last 30 Days' }),
+    })
+      .then(r => r.json())
+      .then(({ analysis }) => { if (analysis) setAiAnalysis(analysis) })
+      .catch(() => {})
+      .finally(() => setAiLoading(false))
+  }, [campaign, ads, obj, clientName, period])
+  const { overview, highlights, opportunities, recommendation } = aiAnalysis ?? fallback
 
   const clicks = parseInt(campaign.clicks || '0')
   const engRate = impressions > 0 ? (clicks / impressions) * 100 : 0
@@ -696,17 +714,26 @@ function CampaignSummary({ campaign, ads, obj }: { campaign: CampaignInsight; ad
 
         {/* Narrative sections */}
         <div className="space-y-5">
-          <NarrativeSection title="Overview" icon="○" color="#C8972D" text={overview} />
-          <NarrativeSection title="What's Working" icon="↑" color="#059669" text={highlights} />
-          <NarrativeSection title="Growth Opportunities" icon="◇" color="#C8972D" text={opportunities} />
-          <div className="bg-[#111111] rounded-[8px] p-4">
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#C8972D] mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-              Recommendation
-            </p>
-            <p className="text-[13px] text-white leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
-              {recommendation}
-            </p>
-          </div>
+          {aiLoading && !aiAnalysis ? (
+            <div className="flex items-center gap-2 py-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#C8972D] animate-pulse" />
+              <span className="text-[11px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>Generating campaign analysis…</span>
+            </div>
+          ) : (
+            <>
+              <NarrativeSection title="Overview" icon="○" color="#C8972D" text={overview} />
+              <NarrativeSection title="What's Working" icon="↑" color="#059669" text={highlights} />
+              <NarrativeSection title="Growth Opportunities" icon="◇" color="#C8972D" text={opportunities} />
+              <div className="bg-[#111111] rounded-[8px] p-4">
+                <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#C8972D] mb-2" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  Recommendation
+                </p>
+                <p className="text-[13px] text-white leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  {recommendation}
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -795,7 +822,7 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
       )}
 
       {windsorOrganic && (
-        <OrganicSection windsorOrganic={windsorOrganic} igInsights={igInsights} windsorInstagram={windsorInstagram} igAudience={igAudience} fbAudience={fbAudience} />
+        <OrganicSection windsorOrganic={windsorOrganic} igInsights={igInsights} windsorInstagram={windsorInstagram} igAudience={igAudience} fbAudience={fbAudience} clientName={client.name} period={period} />
       )}
 
       {client.type === 'organic' && posts.length > 0 && <ContentTable posts={posts} clientName={client.name} period={period} />}

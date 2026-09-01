@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { WindsorOrganicResult, WindsorInstagramResult, WindsorIgAudienceData, WindsorFbAudienceData, AudienceGenderAge, AudienceLocation } from '@/lib/windsor'
 import type { IgInsightsSummary } from '@/lib/meta'
 
@@ -10,6 +10,8 @@ type Props = {
   windsorInstagram?: WindsorInstagramResult | null
   igAudience?: WindsorIgAudienceData | null
   fbAudience?: WindsorFbAudienceData | null
+  clientName?: string
+  period?: string
 }
 
 function fmt(n: number): string {
@@ -125,8 +127,62 @@ function TrendChart({ daily, labels: datasetLabels, colors }: {
 
 function SummaryBlurb({ text }: { text: string }) {
   return (
-    <div className="bg-white border border-[#E8E4DC] rounded-[8px] px-5 py-4 mb-5">
-      <p className="text-[12px] leading-relaxed text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{text}</p>
+    <div className="bg-white border border-[#E8E4DC] rounded-[8px] overflow-hidden mb-5">
+      <div className="flex items-center gap-2.5 px-5 py-3 border-b border-[#F0EEE9]">
+        <div style={{ width: '2px', height: '13px', background: '#C8972D', borderRadius: '1px' }} />
+        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#888888]" style={{ fontFamily: 'Montserrat, sans-serif' }}>Performance Snapshot</span>
+      </div>
+      <div className="px-5 py-4">
+        <p className="text-[12px] leading-relaxed text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{text}</p>
+      </div>
+    </div>
+  )
+}
+
+function AiSummaryBlurb({ platform, metrics, clientName, period, fallback }: {
+  platform: 'facebook' | 'instagram'
+  metrics: Record<string, number | string>
+  clientName?: string
+  period?: string
+  fallback: string
+}) {
+  const [summary, setSummary] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const fetched = useRef(false)
+
+  useEffect(() => {
+    if (!clientName || fetched.current) return
+    fetched.current = true
+    setLoading(true)
+    fetch('/api/organic-summary', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ platform, metrics, clientName, period: period ?? 'Last 30 Days' }),
+    })
+      .then(r => r.json())
+      .then(({ summary: s }) => setSummary(s))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [platform, metrics, clientName, period, fallback])
+
+  const text = summary ?? (!loading ? fallback : null)
+
+  return (
+    <div className="bg-white border border-[#E8E4DC] rounded-[8px] overflow-hidden mb-5">
+      <div className="flex items-center gap-2.5 px-5 py-3 border-b border-[#F0EEE9]">
+        <div style={{ width: '2px', height: '13px', background: '#C8972D', borderRadius: '1px' }} />
+        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#888888]" style={{ fontFamily: 'Montserrat, sans-serif' }}>Performance Snapshot</span>
+      </div>
+      <div className="px-5 py-4">
+        {loading && !text ? (
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#C8972D] animate-pulse" />
+            <span className="text-[11px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>Generating snapshot…</span>
+          </div>
+        ) : (
+          <p className="text-[12px] leading-relaxed text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{text}</p>
+        )}
+      </div>
     </div>
   )
 }
@@ -248,7 +304,7 @@ function AudienceCard({
   )
 }
 
-function FacebookSection({ windsorOrganic }: { windsorOrganic: WindsorOrganicResult }) {
+function FacebookSection({ windsorOrganic, clientName, period }: { windsorOrganic: WindsorOrganicResult; clientName?: string; period?: string }) {
   const { summary: fb, daily } = windsorOrganic
   const engagementRate = fb.viewers > 0 ? ((fb.interactions / fb.viewers) * 100).toFixed(1) : '0.0'
 
@@ -273,11 +329,13 @@ function FacebookSection({ windsorOrganic }: { windsorOrganic: WindsorOrganicRes
       </div>
 
       {/* Summary */}
-      <SummaryBlurb text={
-        `Your Facebook Page reached ${fmt(fb.viewers)} unique people with ${fmt(fb.views)} impressions this period. ` +
-        `Content generated ${fmt(fb.interactions)} interactions (${engagementRate}% engagement rate), ${fmt(fb.linkClicks)} link clicks, and ${fmt(fb.visits)} page visits.` +
-        (fb.follows > 0 ? ` The page gained ${fmt(fb.follows)} new follower${fb.follows === 1 ? '' : 's'}.` : '')
-      } />
+      <AiSummaryBlurb
+        platform="facebook"
+        clientName={clientName}
+        period={period}
+        metrics={{ views: fb.views, viewers: fb.viewers, interactions: fb.interactions, engagementRate, linkClicks: fb.linkClicks, visits: fb.visits, follows: fb.follows }}
+        fallback={`The Facebook Page reached ${fmt(fb.viewers)} unique people with ${fmt(fb.views)} impressions this period. Content generated ${fmt(fb.interactions)} interactions (${engagementRate}% engagement rate), ${fmt(fb.linkClicks)} link clicks, and ${fmt(fb.visits)} page visits.${fb.follows > 0 ? ` The page gained ${fmt(fb.follows)} new follower${fb.follows === 1 ? '' : 's'}.` : ''}`}
+      />
 
       {/* Trend chart */}
       {daily.length > 0 && <TrendChart daily={daily.map(d => ({ date: d.date, views: d.impressions, reach: d.reach, interactions: d.engagements }))} />}
@@ -305,7 +363,7 @@ function FacebookSection({ windsorOrganic }: { windsorOrganic: WindsorOrganicRes
   )
 }
 
-function InstagramSection({ windsorInstagram, igInsights }: { windsorInstagram: WindsorInstagramResult; igInsights?: IgInsightsSummary | null }) {
+function InstagramSection({ windsorInstagram, igInsights, clientName, period }: { windsorInstagram: WindsorInstagramResult; igInsights?: IgInsightsSummary | null; clientName?: string; period?: string }) {
   const { summary: ig, daily, hasThirtyDayData } = windsorInstagram
   const hasData = ig.views > 0 || ig.reach > 0 || ig.interactions > 0 || ig.newFollows > 0
 
@@ -356,12 +414,13 @@ function InstagramSection({ windsorInstagram, igInsights }: { windsorInstagram: 
       </div>
 
       {/* Summary */}
-      <SummaryBlurb text={
-        `Your Instagram ${ig.username ? `(@${ig.username}) ` : ''}reached ${fmt(ig.reach)} unique accounts with ${fmt(ig.views)} content views this period. ` +
-        `Posts, reels and stories generated ${fmt(ig.interactions)} total interactions — ${fmt(ig.likes)} likes, ${fmt(ig.comments)} comments, ${fmt(ig.saves)} saves and ${fmt(ig.shares)} shares.` +
-        (hasThirtyDayData && ((profileVisits ?? 0) > 0 || (linkClicks ?? 0) > 0) ? ` The profile received ${fmt(profileVisits ?? 0)} visits and ${fmt(linkClicks ?? 0)} link clicks.` : '') +
-        (hasThirtyDayData && ig.newFollows > 0 ? ` You gained ${fmt(ig.newFollows)} new follower${ig.newFollows === 1 ? '' : 's'}.` : '')
-      } />
+      <AiSummaryBlurb
+        platform="instagram"
+        clientName={clientName}
+        period={period}
+        metrics={{ views: ig.views, reach: ig.reach, interactions: ig.interactions, likes: ig.likes, comments: ig.comments, saves: ig.saves, shares: ig.shares, engagementRate, profileViews: profileVisits ?? 0, linkClicks: linkClicks ?? 0, newFollows: ig.newFollows, username: ig.username }}
+        fallback={`The Instagram account ${ig.username ? `(@${ig.username}) ` : ''}reached ${fmt(ig.reach)} unique accounts with ${fmt(ig.views)} content views this period. Posts, reels and stories generated ${fmt(ig.interactions)} total interactions — ${fmt(ig.likes)} likes, ${fmt(ig.comments)} comments, ${fmt(ig.saves)} saves and ${fmt(ig.shares)} shares.`}
+      />
 
       {/* Trend chart */}
       {daily.length > 0 && (
@@ -411,7 +470,7 @@ function InstagramSection({ windsorInstagram, igInsights }: { windsorInstagram: 
   )
 }
 
-export function OrganicSection({ windsorOrganic, igInsights = null, windsorInstagram = null, igAudience = null, fbAudience = null }: Props) {
+export function OrganicSection({ windsorOrganic, igInsights = null, windsorInstagram = null, igAudience = null, fbAudience = null, clientName, period }: Props) {
   if (!windsorOrganic) return null
 
   const { summary: fb } = windsorOrganic
@@ -434,12 +493,12 @@ export function OrganicSection({ windsorOrganic, igInsights = null, windsorInsta
 
   return (
     <div>
-      <FacebookSection windsorOrganic={windsorOrganic} />
+      <FacebookSection windsorOrganic={windsorOrganic} clientName={clientName} period={period} />
       {fbAudience && fbAudience.totalFans > 0 && (
         <AudienceCard platform="facebook" totalCount={fbAudience.totalFans} topCities={fbAudience.topCities} topCountries={fbAudience.topCountries} />
       )}
       {windsorInstagram
-        ? <InstagramSection windsorInstagram={windsorInstagram} igInsights={igInsights} />
+        ? <InstagramSection windsorInstagram={windsorInstagram} igInsights={igInsights} clientName={clientName} period={period} />
         : igInsights && igInsights.reach > 0 && (
             <InstagramSection
               windsorInstagram={{
@@ -448,6 +507,8 @@ export function OrganicSection({ windsorOrganic, igInsights = null, windsorInsta
                 hasThirtyDayData: true,
               }}
               igInsights={igInsights}
+              clientName={clientName}
+              period={period}
             />
           )
       }

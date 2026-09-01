@@ -243,17 +243,25 @@ export function ContentTable({ posts, clientName, period }: { posts: WindsorPost
 
       {/* AI content summary */}
       {filter !== 'all' && clientName && (
-        <div className="mt-3 px-4 py-3 bg-white border border-[#E8E4DC] rounded-[8px]">
-          {summaryLoading && !summaries[filter] ? (
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#C8972D] animate-pulse" />
-              <span className="text-[11px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>Generating content summary…</span>
-            </div>
-          ) : summaries[filter] ? (
-            <p className="text-[12px] text-[#444444] leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
-              {summaries[filter]}
-            </p>
-          ) : null}
+        <div className="mt-3 bg-white border border-[#E8E4DC] rounded-[8px] overflow-hidden">
+          <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[#F0EEE9]">
+            <div style={{ width: '2px', height: '13px', background: '#C8972D', borderRadius: '1px' }} />
+            <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#888888]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+              Content Summary
+            </span>
+          </div>
+          <div className="px-4 py-4">
+            {summaryLoading && !summaries[filter] ? (
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#C8972D] animate-pulse" />
+                <span className="text-[11px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>Generating content summary…</span>
+              </div>
+            ) : summaries[filter] ? (
+              <p className="text-[12px] text-[#444444] leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
+                {summaries[filter]}
+              </p>
+            ) : null}
+          </div>
         </div>
       )}
     </div>
