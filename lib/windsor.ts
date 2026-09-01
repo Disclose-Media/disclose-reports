@@ -38,7 +38,7 @@ export async function getWindsorFacebookPosts(pageId: string, period: Period = '
     const seen = new Set<string>()
     const posts: WindsorPost[] = []
     for (const row of rows) {
-      if (row.account_id != null && String(row.account_id) !== pageId) continue
+      if (row.account_id != null && row.account_id !== '' && String(row.account_id) !== pageId) continue
       const id = String(row.post_id ?? '')
       if (!id || seen.has(id)) continue
       seen.add(id)
@@ -78,7 +78,7 @@ export async function getWindsorInstagramPosts(igAccountId: string, period: Peri
     const seen = new Set<string>()
     const posts: WindsorPost[] = []
     for (const row of rows) {
-      if (row.account_id != null && String(row.account_id) !== igAccountId) continue
+      if (row.account_id != null && row.account_id !== '' && String(row.account_id) !== igAccountId) continue
       const id = String(row.media_id ?? '')
       if (!id || seen.has(id)) continue
       seen.add(id)
@@ -217,7 +217,7 @@ export async function getWindsorInstagramData(
     for (const row of rows) {
       const date = String(row.date ?? '')
       if (!date) continue
-      if (row.account_id != null && String(row.account_id) !== igAccountId) continue
+      if (row.account_id != null && row.account_id !== '' && String(row.account_id) !== igAccountId) continue
       if (!username && row.account_name) username = String(row.account_name)
       if (!byDate.has(date)) {
         byDate.set(date, { views: 0, reach: 0, interactions: 0, likes: 0, comments: 0, saves: 0, shares: 0, newFollows: 0, linkClicks: 0, profileViews: 0 })
@@ -398,9 +398,11 @@ export async function getWindsorOrganicData(
   url.searchParams.set('_account_id', pageId)
 
   try {
+    if (!KEY) throw new Error('WINDSOR_API_KEY not set')
     const res = await fetch(url.toString(), { next: { revalidate: 300 } })
     if (!res.ok) throw new Error(`Windsor error: ${res.status}`)
     const json = await res.json()
+    if (json.error) throw new Error(`Windsor API error: ${JSON.stringify(json.error)}`)
     const rows: Record<string, unknown>[] = json.data ?? json.result ?? (Array.isArray(json) ? json : [])
 
     // Windsor returns 2 rows per date (page metrics row + post metrics row) — merge by date
@@ -413,8 +415,8 @@ export async function getWindsorOrganicData(
     for (const row of rows) {
       const date = String(row.date ?? '')
       if (!date) continue
-      // Filter to only rows for the requested page
-      if (row.account_id != null && String(row.account_id) !== pageId) continue
+      // Filter to only rows for the requested page (skip if account_id present and mismatches)
+      if (row.account_id != null && row.account_id !== '' && String(row.account_id) !== pageId) continue
       if (!byDate.has(date)) {
         byDate.set(date, { impressions: 0, reach: 0, engagements: 0, linkClicks: 0, visits: 0, follows: 0, pageLikes: 0 })
       }

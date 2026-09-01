@@ -488,7 +488,7 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
           )}
 
           {/* Campaign Analysis */}
-          <CampaignSummary campaign={campaign} ads={ads} />
+          <CampaignSummary campaign={campaign} ads={ads} obj={obj} />
         </div>
       )}
     </div>
@@ -518,7 +518,7 @@ function buildNarrative(campaign: CampaignInsight, ads: AdInsight[]): { overview
     overview = `This campaign delivered ${leads} lead${leads > 1 ? 's' : ''} at an average cost of $${cpl.toFixed(2)} per lead, with a total investment of $${spend.toFixed(2)}. `
     if (lpv > 0) {
       const convRate = ((leads / lpv) * 100).toFixed(1)
-      overview += `Of the ${lpv} people who visited the landing page, ${convRate}% converted into leads — ${parseFloat(convRate) > 10 ? 'a strong result that reflects well on both the ad targeting and the landing page experience' : 'a solid foundation that gives us clear room to grow conversion further'}.`
+      overview += `Of the ${lpv} people who visited the landing page, ${convRate}% converted into leads. ${parseFloat(convRate) > 10 ? 'A strong result that reflects well on both the ad targeting and the landing page experience.' : 'A solid foundation that gives us clear room to grow conversion further.'}`
     }
   } else if (lpv > 0) {
     overview = `This campaign drove ${lpv} landing page views from a $${spend.toFixed(2)} investment, building meaningful pipeline awareness. The traffic quality and volume provide a strong base to build on.`
@@ -528,13 +528,13 @@ function buildNarrative(campaign: CampaignInsight, ads: AdInsight[]): { overview
 
   // Highlights paragraph
   const highlightParts: string[] = []
-  if (ctr >= 3) highlightParts.push(`Creative engagement is outstanding — a ${ctr.toFixed(2)}% click-through rate is more than double the Meta average, confirming the ad content is genuinely connecting with your audience`)
+  if (ctr >= 3) highlightParts.push(`Creative engagement is outstanding. A ${ctr.toFixed(2)}% click-through rate is more than double the Meta average, confirming the ad content is genuinely connecting with your audience`)
   else if (ctr >= 1.5) highlightParts.push(`A ${ctr.toFixed(2)}% click-through rate demonstrates solid audience engagement, sitting above the typical Meta benchmark`)
   else if (ctr > 0) highlightParts.push(`The campaign is generating consistent clicks at a ${ctr.toFixed(2)}% CTR, with good opportunity to amplify this through creative testing`)
 
   if (cpm > 0 && cpm < 10) highlightParts.push(`audience reach is highly cost-efficient at just $${cpm.toFixed(2)} CPM`)
   else if (cpm >= 10 && cpm < 20) highlightParts.push(`at $${cpm.toFixed(2)} CPM, the campaign is reaching audiences at a competitive rate for the NZ market`)
-  else if (cpm >= 20) highlightParts.push(`CPM of $${cpm.toFixed(2)} reflects a competitive auction environment — refining audience targeting could unlock further efficiencies`)
+  else if (cpm >= 20) highlightParts.push(`CPM of $${cpm.toFixed(2)} reflects a competitive auction environment. Refining audience targeting could unlock further efficiencies`)
 
   if (topAdByLeads && parseInt(topAdByLeads.lead || '0') > 0) {
     highlightParts.push(`"${topAdByLeads.name}" is the clear standout ad, accounting for ${topAdByLeads.lead} lead${parseInt(topAdByLeads.lead || '0') > 1 ? 's' : ''} and demonstrating exactly the kind of creative that performs`)
@@ -548,10 +548,10 @@ function buildNarrative(campaign: CampaignInsight, ads: AdInsight[]): { overview
 
   // Opportunities paragraph
   const oppParts: string[] = []
-  if (freq > 4) oppParts.push(`The audience frequency of ${freq.toFixed(1)}x is an opportunity to broaden reach — introducing new audience segments or refreshing creatives will keep engagement strong and unlock new potential customers`)
+  if (freq > 4) oppParts.push(`The audience frequency of ${freq.toFixed(1)}x is an opportunity to broaden reach. Introducing new audience segments or refreshing creatives will keep engagement strong and unlock new potential customers`)
   else if (freq > 0) oppParts.push(`Audience frequency is healthy at ${freq.toFixed(1)}x, meaning there is still meaningful headroom to increase reach before fatigue becomes a factor`)
 
-  if (leads === 0 && lpv > 0) oppParts.push(`with ${lpv} people already visiting the landing page, a conversion rate optimisation test — adjusting the headline, form, or call to action — could turn this existing traffic into qualified leads without additional spend`)
+  if (leads === 0 && lpv > 0) oppParts.push(`with ${lpv} people already visiting the landing page, a conversion rate optimisation test (adjusting the headline, form, or call to action) could turn this existing traffic into qualified leads without additional spend`)
 
   if (ctr > 0 && ctr < 1.5 && ads.length > 1) oppParts.push(`testing a new creative direction against the current top performer is a low-risk, high-upside move that could meaningfully lift CTR and reduce cost per result`)
 
@@ -563,7 +563,7 @@ function buildNarrative(campaign: CampaignInsight, ads: AdInsight[]): { overview
 
   const opportunities = oppParts.length > 0
     ? oppParts[0].charAt(0).toUpperCase() + oppParts[0].slice(1) + (oppParts.length > 1 ? '. Additionally, ' + oppParts.slice(1).join('. ') : '') + '.'
-    : 'This campaign is well positioned — continuing to monitor performance and test incrementally will compound results over time.'
+    : 'This campaign is well positioned. Continuing to monitor performance and test incrementally will compound results over time.'
 
   // Recommendation
   let recommendation = ''
@@ -582,12 +582,43 @@ function buildNarrative(campaign: CampaignInsight, ads: AdInsight[]): { overview
   return { overview, highlights, opportunities, recommendation }
 }
 
-function CampaignSummary({ campaign, ads }: { campaign: CampaignInsight; ads: AdInsight[] }) {
+function CampaignSummary({ campaign, ads, obj }: { campaign: CampaignInsight; ads: AdInsight[]; obj: EffectiveObjective }) {
   const ctr = parseFloat(campaign.ctr || '0')
   const cpm = parseFloat(campaign.cpm || '0')
   const cpc = parseFloat(campaign.cpc || '0')
   const leads = parseInt(campaign.lead || '0') || 0
+  const lpvMatch = campaign.results?.value?.match(/^(\d+)/)
+  const lpv = lpvMatch ? parseInt(lpvMatch[1]) : 0
+  const cplpvMatch = campaign.cost_per_result?.value?.match(/[\d.]+/)
+  const cplpv = cplpvMatch ? parseFloat(cplpvMatch[0]) : 0
+  const cplMatch = campaign.cost_per_action_type_lead?.match(/[\d.]+/)
+  const cpl = cplMatch ? parseFloat(cplMatch[0]) : 0
+  const impressions = parseInt(campaign.impressions || '0')
+  const reach = parseInt(campaign.reach || '0')
+  const freq = impressions > 0 && reach > 0 ? impressions / reach : 0
   const { overview, highlights, opportunities, recommendation } = buildNarrative(campaign, ads)
+
+  const analysisMetrics =
+    obj === 'leads'
+      ? [
+          { label: 'CTR', value: `${ctr.toFixed(2)}%`, hl: ctr >= 2 ? 'good' : ctr >= 1 ? 'neutral' : 'warn' },
+          { label: 'LPV', value: lpv > 0 ? lpv.toLocaleString() : '—', hl: lpv > 0 ? 'good' : 'neutral' },
+          { label: 'Leads', value: leads > 0 ? String(leads) : '—', hl: leads > 0 ? 'good' : 'neutral' },
+          { label: 'Cost Per Lead', value: cpl > 0 ? `$${cpl.toFixed(2)}` : '—', hl: 'neutral' },
+        ]
+      : obj === 'traffic'
+      ? [
+          { label: 'CTR', value: `${ctr.toFixed(2)}%`, hl: ctr >= 2 ? 'good' : ctr >= 1 ? 'neutral' : 'warn' },
+          { label: 'LPV', value: lpv > 0 ? lpv.toLocaleString() : '—', hl: lpv > 0 ? 'good' : 'neutral' },
+          { label: 'Cost Per LPV', value: cplpv > 0 ? `$${cplpv.toFixed(2)}` : '—', hl: cplpv > 0 && cplpv < 0.75 ? 'good' : cplpv > 1.5 ? 'warn' : 'neutral' },
+          { label: 'CPC', value: cpc > 0 ? `$${cpc.toFixed(2)}` : '—', hl: 'neutral' },
+        ]
+      : [
+          { label: 'CPM', value: `$${cpm.toFixed(2)}`, hl: cpm < 15 ? 'good' : cpm < 25 ? 'neutral' : 'warn' },
+          { label: 'Frequency', value: freq > 0 ? freq.toFixed(2) : '—', hl: freq > 4 ? 'warn' : freq > 0 ? 'good' : 'neutral' },
+          { label: 'CTR', value: `${ctr.toFixed(2)}%`, hl: ctr >= 2 ? 'good' : ctr >= 1 ? 'neutral' : 'warn' },
+          { label: 'CPC', value: cpc > 0 ? `$${cpc.toFixed(2)}` : '—', hl: 'neutral' },
+        ]
 
   return (
     <div className="bg-white border border-[#E8E4DC] rounded-[8px] overflow-hidden">
@@ -605,14 +636,9 @@ function CampaignSummary({ campaign, ads }: { campaign: CampaignInsight; ads: Ad
       </div>
 
       <div className="p-5">
-        {/* Key metrics row */}
+        {/* Key metrics row — matches selected objective */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          {[
-            { label: 'CTR', value: `${ctr.toFixed(2)}%`, hl: ctr >= 2 ? 'good' : ctr >= 1 ? 'neutral' : 'warn' },
-            { label: 'CPM', value: `$${cpm.toFixed(2)}`, hl: cpm < 15 ? 'good' : cpm < 25 ? 'neutral' : 'warn' },
-            { label: 'CPC', value: cpc > 0 ? `$${cpc.toFixed(2)}` : '—', hl: 'neutral' },
-            { label: 'Leads', value: leads > 0 ? String(leads) : '—', hl: leads > 0 ? 'good' : 'neutral' },
-          ].map((item) => (
+          {analysisMetrics.map((item) => (
             <div key={item.label} className="bg-[#F8F6F2] border border-[#E8E4DC] rounded-[6px] px-4 py-3">
               <p className="text-[9px] uppercase tracking-[0.12em] text-[#AAAAAA] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>
                 {item.label}
