@@ -821,7 +821,7 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
                 {campaigns.length}
               </span>
             </div>
-            {campaigns.map((campaign) => {
+            {[...campaigns].sort((a, b) => parseFloat(b.amount_spent || '0') - parseFloat(a.amount_spent || '0')).map((campaign) => {
               const campaignAds = ads.filter((a) => a.campaign_id === campaign.id)
               return (
                 <CampaignSection key={campaign.id} campaign={campaign} ads={campaignAds} thumbnails={thumbnails} />
