@@ -1,21 +1,18 @@
 'use client'
 
-export function ExportButton({ clientName, period }: { clientName: string; period: string }) {
+export function ExportButton({ clientId, period, customFrom, customTo }: {
+  clientId: string
+  period: string
+  customFrom?: string
+  customTo?: string
+}) {
   function handleExport() {
-    document.title = `${clientName} — ${period} — Disclose Media Report`
-
-    // Hide sidebar for clean print
-    const sidebar = document.querySelector('nav, aside, [class*="sidebar"]') as HTMLElement | null
-    const prevDisplay = sidebar?.style.display
-    if (sidebar) sidebar.style.display = 'none'
-
-    window.print()
-
-    // Restore after print dialog closes
-    setTimeout(() => {
-      document.title = 'Disclose Media — Client Reports'
-      if (sidebar && prevDisplay !== undefined) sidebar.style.display = prevDisplay
-    }, 1000)
+    const isCustom = period === 'custom'
+    let url = `/pdf/${clientId}?period=${period}`
+    if (isCustom && customFrom && customTo) {
+      url += `&from=${customFrom}&to=${customTo}`
+    }
+    window.open(url, '_blank')
   }
 
   return (
