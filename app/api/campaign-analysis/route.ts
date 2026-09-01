@@ -16,12 +16,17 @@ export async function POST(req: NextRequest) {
   const topAdBySpend = [...ads].sort((a, b) => parseFloat(String(b.amount_spent || 0)) - parseFloat(String(a.amount_spent || 0)))[0]
   const topAdByLeads = [...ads].sort((a, b) => (parseInt(String(b.lead || 0)) || 0) - (parseInt(String(a.lead || 0)) || 0))[0]
 
+  const leads = parseInt(String(campaign.lead || 0))
+  const lpv = parseInt(String(campaign.results?.toString().match(/\d+/)?.[0] || 0))
+  const isLeadForm = leads > 0 && (lpv === 0 || leads >= lpv)
+
   const prompt = `You are a senior performance marketing strategist writing a campaign analysis for a client report.
 
 Client: ${clientName}
 Campaign: ${campaign.campaign_name}
 Objective: ${objective}
 Period: ${period}
+Campaign type: ${isLeadForm ? 'Meta Lead Form (prospects submit details directly within Meta — no landing page involved)' : 'Landing Page (traffic sent to external website)'}
 
 Campaign metrics:
 - Spend: $${parseFloat(String(campaign.amount_spent || 0)).toFixed(2)}
@@ -31,8 +36,8 @@ Campaign metrics:
 - CTR: ${parseFloat(String(campaign.ctr || 0)).toFixed(2)}%
 - CPM: $${parseFloat(String(campaign.cpm || 0)).toFixed(2)}
 - CPC: $${parseFloat(String(campaign.cpc || 0)).toFixed(2)}
-- Leads: ${campaign.lead || 0}
-- Landing Page Views: ${campaign.results?.toString().match(/\d+/)?.[0] || 0}
+- Leads: ${leads}
+${isLeadForm ? `- Lead form type: Native Meta lead forms (no landing page conversion rate applies)` : `- Landing Page Views: ${lpv}\n- Landing Page Conversion Rate: ${lpv > 0 ? ((leads / lpv) * 100).toFixed(1) : 0}%`}
 - Cost Per Lead: $${parseFloat(String(campaign.cost_per_action_type_lead || 0)).toFixed(2)}
 - Frequency: ${(parseInt(String(campaign.impressions || 0)) > 0 && parseInt(String(campaign.reach || 0)) > 0) ? (parseInt(String(campaign.impressions || 0)) / parseInt(String(campaign.reach || 0))).toFixed(1) : '—'}x
 
@@ -40,6 +45,8 @@ Top ads:
 - By CTR: "${topAdByCtr?.ad_name || topAdByCtr?.name || 'N/A'}" — ${parseFloat(String(topAdByCtr?.ctr || 0)).toFixed(2)}% CTR, $${parseFloat(String(topAdByCtr?.amount_spent || 0)).toFixed(2)} spend
 - By Leads: "${topAdByLeads?.ad_name || topAdByLeads?.name || 'N/A'}" — ${topAdByLeads?.lead || 0} leads
 - Top Spend: "${topAdBySpend?.ad_name || topAdBySpend?.name || 'N/A'}" — $${parseFloat(String(topAdBySpend?.amount_spent || 0)).toFixed(2)}
+
+IMPORTANT: ${isLeadForm ? 'This is a Meta lead form campaign. Do NOT mention landing page conversion rates or landing page views — they are not applicable. Leads were captured via native Meta forms.' : 'This is a landing page campaign. You may reference the landing page conversion rate.'}
 
 Write a structured campaign analysis with exactly these 4 parts. Each part should be 1-2 sentences:
 

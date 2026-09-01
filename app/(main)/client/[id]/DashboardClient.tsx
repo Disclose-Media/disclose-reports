@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from 'react'
 import type { Client } from '@/lib/clients'
 import type { CampaignInsight, AdInsight, IgInsightsSummary } from '@/lib/meta'
 import type { WindsorOrganicResult, WindsorInstagramResult, WindsorPost, WindsorIgAudienceData, WindsorFbAudienceData } from '@/lib/windsor'
+import type { GoogleAdsResult } from '@/lib/google-ads'
 import { OrganicSection } from '@/components/OrganicSection'
 import { ContentTable } from '@/components/ContentTable'
+import { GoogleAdsSection } from '@/components/GoogleAdsSection'
 
 type Props = {
   client: Client
@@ -20,6 +22,7 @@ type Props = {
   igAudience?: WindsorIgAudienceData | null
   fbAudience?: WindsorFbAudienceData | null
   posts?: WindsorPost[]
+  googleAdsData?: GoogleAdsResult | null
 }
 
 function fmt(n: string | number | undefined, decimals = 0) {
@@ -547,10 +550,13 @@ function buildNarrative(campaign: CampaignInsight, ads: AdInsight[]): { overview
   // Overview paragraph
   let overview = ''
   if (leads > 0) {
-    overview = `This campaign delivered ${leads} lead${leads > 1 ? 's' : ''} at an average cost of $${cpl.toFixed(2)} per lead, with a total investment of $${spend.toFixed(2)}. `
-    if (lpv > 0) {
+    const isLeadForm = lpv === 0 || leads >= lpv
+    overview = `This campaign delivered ${leads} lead${leads > 1 ? 's' : ''} via ${isLeadForm ? 'Meta lead forms' : 'landing page'} at an average cost of $${cpl.toFixed(2)} per lead, with a total investment of $${spend.toFixed(2)}. `
+    if (!isLeadForm && lpv > 0) {
       const convRate = ((leads / lpv) * 100).toFixed(1)
-      overview += `Of the ${lpv} people who visited the landing page, ${convRate}% converted into leads. ${parseFloat(convRate) > 10 ? 'A strong result that reflects well on both the ad targeting and the landing page experience.' : 'A solid foundation that gives us clear room to grow conversion further.'}`
+      overview += `Of the ${lpv} people who visited the landing page, ${convRate}% converted into leads. ${parseFloat(convRate) > 10 ? 'A strong result that reflects well on both the ad targeting and landing page experience.' : 'A solid foundation that gives us clear room to grow conversion further.'}`
+    } else {
+      overview += `Lead forms allow prospects to submit their details without leaving Meta, reducing friction and lowering cost per lead.`
     }
   } else if (lpv > 0) {
     overview = `This campaign drove ${lpv} landing page views from a $${spend.toFixed(2)} investment, building meaningful pipeline awareness. The traffic quality and volume provide a strong base to build on.`
@@ -756,7 +762,7 @@ function NarrativeSection({ title, icon, color, text }: { title: string; icon: s
   )
 }
 
-export function DashboardClient({ client, summary, campaigns, ads, thumbnails, period, windsorOrganic = null, igInsights = null, windsorInstagram = null, igAudience = null, fbAudience = null, posts = [] as WindsorPost[] }: Props) {
+export function DashboardClient({ client, summary, campaigns, ads, thumbnails, period, windsorOrganic = null, igInsights = null, windsorInstagram = null, igAudience = null, fbAudience = null, posts = [] as WindsorPost[], googleAdsData = null }: Props) {
   const totalSpend = parseFloat(summary?.amount_spent || '0')
   const totalLeads = campaigns.reduce((s, c) => s + (parseInt(c.lead || '0') || 0), 0)
   const totalLpv = campaigns.reduce((s, c) => {
@@ -766,8 +772,6 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
   const totalClicks = parseInt(summary?.clicks || '0')
   const totalImpressions = parseInt(summary?.impressions || '0')
 
-  // Determine dominant account objective from actual data
-  // Derive account objective weighted by spend — the objective with the most $ behind it wins
   const objSpend: Record<EffectiveObjective, number> = { leads: 0, traffic: 0, engagement: 0, reach: 0 }
   for (const c of campaigns) { objSpend[detectObjective(c)] += parseFloat(c.amount_spent || '0') }
   const accountObj: EffectiveObjective = (
@@ -805,57 +809,102 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
         ]
 
   const hasPaid = client.type === 'paid' && campaigns.length > 0
+  const hasOrganic = !!windsorOrganic
+  const hasGoogle = !!googleAdsData
+  const isGoogleOnly = client.type === 'google'
+
+  // Tabs: shown when client has multiple channels (Meta + Google Ads)
+  const tabs = [
+    ...(hasPaid ? [{ key: 'meta', label: 'Meta Ads' }] : []),
+    ...(hasOrganic ? [{ key: 'organic', label: 'Organic Social' }] : []),
+    ...(hasGoogle ? [{ key: 'google', label: 'Google Ads' }] : []),
+  ]
+  const defaultTab = isGoogleOnly ? 'google' : tabs[0]?.key ?? 'meta'
+  const [activeTab, setActiveTab] = useState(defaultTab)
+
+  const showTabs = tabs.length > 1
 
   return (
     <>
-      {hasPaid && (
-        <SummaryBar
-          period={period}
-          items={[
-            { label: 'Total Spend', value: fmtDollar(totalSpend), gold: true },
-            { label: 'Impressions', value: fmt(summary?.impressions) },
-            { label: 'Reach', value: fmt(summary?.reach) },
-            { label: 'Clicks', value: fmt(totalClicks) },
-            ...summaryRow2,
-          ]}
-        />
+      {/* Tab navigation — only shown when multiple channels */}
+      {showTabs && (
+        <div className="flex gap-1 mb-6 bg-white border border-[#E8E4DC] rounded-[8px] p-1 w-fit print:hidden">
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] rounded-[6px] transition-all duration-150 ${
+                activeTab === tab.key
+                  ? 'bg-[#111111] text-[#C8972D]'
+                  : 'text-[#888888] hover:text-[#333333] hover:bg-[#F8F6F2]'
+              }`}
+              style={{ fontFamily: 'Montserrat, sans-serif' }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       )}
 
-      {windsorOrganic && (
-        <OrganicSection windsorOrganic={windsorOrganic} igInsights={igInsights} windsorInstagram={windsorInstagram} igAudience={igAudience} fbAudience={fbAudience} clientName={client.name} period={period} />
+      {/* Meta Ads tab */}
+      {(!showTabs || activeTab === 'meta') && (
+        <>
+          {hasPaid && (
+            <SummaryBar
+              period={period}
+              items={[
+                { label: 'Total Spend', value: fmtDollar(totalSpend), gold: true },
+                { label: 'Impressions', value: fmt(summary?.impressions) },
+                { label: 'Reach', value: fmt(summary?.reach) },
+                { label: 'Clicks', value: fmt(totalClicks) },
+                ...summaryRow2,
+              ]}
+            />
+          )}
+
+          {client.type === 'paid' && (
+            campaigns.length === 0 ? (
+              <div className="text-center py-16 bg-white border border-[#E8E4DC] rounded-[8px]">
+                <p className="text-[#AAAAAA] text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  No active campaigns in this period.
+                </p>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center gap-3 mb-5">
+                  <div style={{ width: '2px', height: '14px', background: '#C8972D', borderRadius: '1px' }} />
+                  <h2 className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#888888]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                    Paid Campaigns
+                  </h2>
+                  <span className="text-[10px] text-[#AAAAAA] bg-white border border-[#E8E4DC] px-2 py-0.5 rounded-full" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    {campaigns.length}
+                  </span>
+                </div>
+                {[...campaigns].sort((a, b) => parseFloat(b.amount_spent || '0') - parseFloat(a.amount_spent || '0')).map((campaign) => {
+                  const campaignAds = ads.filter((a) => a.campaign_id === campaign.id)
+                  return <CampaignSection key={campaign.id} campaign={campaign} ads={campaignAds} thumbnails={thumbnails} />
+                })}
+              </div>
+            )
+          )}
+        </>
       )}
 
-      {client.type === 'organic' && posts.length > 0 && <ContentTable posts={posts} clientName={client.name} period={period} />}
+      {/* Organic Social tab */}
+      {(!showTabs || activeTab === 'organic') && (
+        <>
+          {hasOrganic && (
+            <OrganicSection windsorOrganic={windsorOrganic!} igInsights={igInsights} windsorInstagram={windsorInstagram} igAudience={igAudience} fbAudience={fbAudience} clientName={client.name} period={period} />
+          )}
+          {posts.length > 0 && (
+            <ContentTable posts={posts} clientName={client.name} period={period} />
+          )}
+        </>
+      )}
 
-      {client.type === 'paid' && (
-        campaigns.length === 0 ? (
-          <div className="text-center py-16 bg-white border border-[#E8E4DC] rounded-[8px]">
-            <p className="text-[#AAAAAA] text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
-              No active campaigns in this period.
-            </p>
-          </div>
-        ) : (
-          <div>
-            <div className="flex items-center gap-3 mb-5">
-              <div style={{ width: '2px', height: '14px', background: '#C8972D', borderRadius: '1px' }} />
-              <h2
-                className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#888888]"
-                style={{ fontFamily: 'Montserrat, sans-serif' }}
-              >
-                Paid Campaigns
-              </h2>
-              <span className="text-[10px] text-[#AAAAAA] bg-white border border-[#E8E4DC] px-2 py-0.5 rounded-full" style={{ fontFamily: 'Inter, sans-serif' }}>
-                {campaigns.length}
-              </span>
-            </div>
-            {[...campaigns].sort((a, b) => parseFloat(b.amount_spent || '0') - parseFloat(a.amount_spent || '0')).map((campaign) => {
-              const campaignAds = ads.filter((a) => a.campaign_id === campaign.id)
-              return (
-                <CampaignSection key={campaign.id} campaign={campaign} ads={campaignAds} thumbnails={thumbnails} />
-              )
-            })}
-          </div>
-        )
+      {/* Google Ads tab */}
+      {(!showTabs || activeTab === 'google') && hasGoogle && (
+        <GoogleAdsSection data={googleAdsData!} clientName={client.name} period={period} />
       )}
     </>
   )

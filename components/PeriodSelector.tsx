@@ -10,7 +10,6 @@ const PRESETS = [
   { label: '30 Days', value: 'last_30d' },
   { label: 'This Month', value: 'this_month' },
   { label: 'Last Month', value: 'last_month' },
-  { label: '90 Days', value: 'last_90d' },
 ]
 
 const DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
@@ -30,10 +29,22 @@ function todayLocal(): string {
 
 function parseDate(s: string): Date | null {
   if (!s) return null
-  // Parse as local date (avoid UTC shift)
   const [y, m, d] = s.split('-').map(Number)
   if (!y || !m || !d) return null
   return new Date(y, m - 1, d)
+}
+
+// Returns last 12 calendar months (most recent first) as {label, value: 'YYYY-MM'}
+function getPastMonths(): { label: string; value: string }[] {
+  const now = new Date()
+  const months = []
+  for (let i = 1; i <= 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const label = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+    months.push({ label, value })
+  }
+  return months
 }
 
 function MiniCalendar({
@@ -60,7 +71,7 @@ function MiniCalendar({
 
   const { year, month } = view
   const firstDay = new Date(year, month, 1)
-  const startOffset = (firstDay.getDay() + 6) % 7 // Monday-first
+  const startOffset = (firstDay.getDay() + 6) % 7
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
   function prevMonth() {
@@ -83,12 +94,10 @@ function MiniCalendar({
   ]
   while (cells.length % 7 !== 0) cells.push(null)
 
-  // Range helpers
   const hasRange = rangeFrom && rangeTo && rangeFrom <= rangeTo
 
   return (
     <div>
-      {/* Month nav */}
       <div className="flex items-center justify-between mb-2">
         <button onClick={prevMonth} className="w-6 h-6 flex items-center justify-center rounded text-[#888888] hover:text-[#C8972D] transition-colors">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -105,14 +114,12 @@ function MiniCalendar({
         </button>
       </div>
 
-      {/* Day headers */}
       <div className="grid grid-cols-7 mb-1">
         {DAYS.map(d => (
           <div key={d} className="text-center text-[9px] font-bold text-[#555555] py-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>{d}</div>
         ))}
       </div>
 
-      {/* Days grid — render row by row for range bar highlighting */}
       <div className="grid grid-cols-7" style={{ rowGap: 2 }}>
         {cells.map((day, i) => {
           if (!day) return <div key={i} />
@@ -125,15 +132,12 @@ function MiniCalendar({
           const isToday = todayStr === dateStr
           const inRange = hasRange && dateStr > rangeFrom! && dateStr < rangeTo!
           const disabled = (min && dateStr < min) || (max && dateStr > max)
-
-          // Column position within week row (0=Mon … 6=Sun)
           const col = i % 7
           const isFirstInRow = col === 0
           const isLastInRow = col === 6
 
           return (
             <div key={i} className="relative flex items-center justify-center" style={{ height: 28 }}>
-              {/* Range bar behind the day circle */}
               {(inRange || isEndpoint) && hasRange && (
                 <div
                   className="absolute inset-y-0"
@@ -171,34 +175,43 @@ type Props = {
   period: string
   customFrom?: string
   customTo?: string
+  activeMonth?: string  // 'YYYY-MM' when a named month is active
 }
 
-export function PeriodSelector({ period, customFrom, customTo }: Props) {
+export function PeriodSelector({ period, customFrom, customTo, activeMonth }: Props) {
   const router = useRouter()
   const pathname = usePathname()
-  const isCustom = period === 'custom'
+  const isCustom = period === 'custom' && !activeMonth
 
   const today = todayLocal()
   const thirtyDaysAgo = fmtLocal(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
 
   const [showPicker, setShowPicker] = useState(false)
+  const [showMonths, setShowMonths] = useState(false)
   const [from, setFrom] = useState(customFrom || thirtyDaysAgo)
   const [to, setTo] = useState(customTo || today)
   const [activeField, setActiveField] = useState<'from' | 'to'>('from')
   const pickerRef = useRef<HTMLDivElement>(null)
+  const monthRef = useRef<HTMLDivElement>(null)
+
+  const pastMonths = getPastMonths()
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setShowPicker(false)
-      }
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setShowPicker(false)
+      if (monthRef.current && !monthRef.current.contains(e.target as Node)) setShowMonths(false)
     }
-    if (showPicker) document.addEventListener('mousedown', handleClick)
+    document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
-  }, [showPicker])
+  }, [])
 
   function navigate(value: string) {
     router.push(`${pathname}?period=${value}`)
+  }
+
+  function navigateMonth(monthValue: string) {
+    router.push(`${pathname}?period=custom&month=${monthValue}`)
+    setShowMonths(false)
   }
 
   function applyCustom() {
@@ -217,6 +230,10 @@ export function PeriodSelector({ period, customFrom, customTo }: Props) {
     setTo(v)
   }
 
+  const activeMonthLabel = activeMonth
+    ? pastMonths.find(m => m.value === activeMonth)?.label ?? activeMonth
+    : null
+
   return (
     <div className="flex flex-wrap gap-2 items-center">
       {PRESETS.map((preset) => (
@@ -224,7 +241,7 @@ export function PeriodSelector({ period, customFrom, customTo }: Props) {
           key={preset.value}
           onClick={() => navigate(preset.value)}
           className={`text-[11px] px-3.5 py-1.5 rounded-full border transition-all duration-150 ${
-            period === preset.value && !isCustom
+            period === preset.value && !activeMonth
               ? 'bg-[#C8972D] border-[#C8972D] text-white font-bold'
               : 'border-[#2A2A2A] text-[#888888] hover:border-[#C8972D] hover:text-[#C8972D]'
           }`}
@@ -234,10 +251,50 @@ export function PeriodSelector({ period, customFrom, customTo }: Props) {
         </button>
       ))}
 
+      {/* Month picker dropdown */}
+      <div className="relative" ref={monthRef}>
+        <button
+          onClick={() => { setShowMonths(v => !v); setShowPicker(false) }}
+          className={`flex items-center gap-1.5 text-[11px] px-3.5 py-1.5 rounded-full border transition-all duration-150 ${
+            activeMonth
+              ? 'bg-[#C8972D] border-[#C8972D] text-white font-bold'
+              : 'border-[#2A2A2A] text-[#888888] hover:border-[#C8972D] hover:text-[#C8972D]'
+          }`}
+          style={{ fontFamily: 'Inter, sans-serif' }}
+        >
+          {activeMonthLabel ?? 'Month'}
+          <svg width="8" height="5" viewBox="0 0 8 5" fill="currentColor" className="opacity-70">
+            <path d="M0 0l4 5 4-5H0z"/>
+          </svg>
+        </button>
+
+        {showMonths && (
+          <div
+            className="absolute left-0 top-full mt-2 z-50 bg-[#111111] border border-[#2A2A2A] rounded-[8px] py-1.5 shadow-xl"
+            style={{ minWidth: '160px' }}
+          >
+            {pastMonths.map(m => (
+              <button
+                key={m.value}
+                onClick={() => navigateMonth(m.value)}
+                className={`w-full text-left px-4 py-2 text-[11px] transition-colors ${
+                  activeMonth === m.value
+                    ? 'text-[#C8972D] bg-[rgba(200,151,45,0.1)]'
+                    : 'text-[#888888] hover:text-white hover:bg-[#1C1C1C]'
+                }`}
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Custom range button + picker */}
       <div className="relative" ref={pickerRef}>
         <button
-          onClick={() => setShowPicker((v) => !v)}
+          onClick={() => { setShowPicker(v => !v); setShowMonths(false) }}
           className={`text-[11px] px-3.5 py-1.5 rounded-full border transition-all duration-150 ${
             isCustom
               ? 'bg-[#C8972D] border-[#C8972D] text-white font-bold'
@@ -257,7 +314,6 @@ export function PeriodSelector({ period, customFrom, customTo }: Props) {
               Custom Date Range
             </p>
 
-            {/* From / To tabs */}
             <div className="flex gap-2 mb-3">
               {(['from', 'to'] as const).map((field) => {
                 const val = field === 'from' ? from : to
@@ -277,7 +333,6 @@ export function PeriodSelector({ period, customFrom, customTo }: Props) {
               })}
             </div>
 
-            {/* Calendar — always passes both from/to for range shading */}
             <div className="border border-[#222222] rounded-[6px] bg-[#161616] p-3 mb-3">
               {activeField === 'from' ? (
                 <MiniCalendar

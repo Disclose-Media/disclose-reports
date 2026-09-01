@@ -5,7 +5,8 @@ export type Client = {
   facebookPageIds?: string[]
   windsorPageId?: string  // Windsor facebook_organic account ID
   igUserId?: string
-  type: 'paid' | 'organic'
+  googleAdsId?: string   // Windsor google_ads account ID
+  type: 'paid' | 'organic' | 'google'
   status: 'active' | 'closed'
   currency: string
   hasLeadGen: boolean
@@ -19,6 +20,7 @@ export const CLIENTS: Client[] = [
     id: 'co-kids',
     name: 'Co Kids Group',
     accountId: '248251059419736',
+    googleAdsId: '304-753-3959',
     type: 'paid',
     status: 'active',
     currency: 'NZD',
@@ -70,6 +72,7 @@ export const CLIENTS: Client[] = [
     id: 'pocket-bar',
     name: 'Pocket Bar',
     accountId: '1695711684136476',
+    googleAdsId: '403-523-8447',
     type: 'paid',
     status: 'active',
     currency: 'NZD',
@@ -80,6 +83,7 @@ export const CLIENTS: Client[] = [
     id: 'hilton-nz',
     name: 'Hilton New Zealand',
     accountId: '250039821854564',
+    googleAdsId: '271-284-8258',
     type: 'paid',
     status: 'active',
     currency: 'NZD',
@@ -95,6 +99,17 @@ export const CLIENTS: Client[] = [
     currency: 'NZD',
     hasLeadGen: false,
     shareToken: 'hfj-u7a4h2xq1f',
+  },
+  {
+    id: 'blue-fitness',
+    name: 'Blue Fitness (Merrithew)',
+    accountId: '',
+    googleAdsId: '707-735-1664',
+    type: 'google',
+    status: 'active',
+    currency: 'NZD',
+    hasLeadGen: false,
+    shareToken: 'bf-gads-m4x7p2wr9k',
   },
 
   // ── Organic-only clients (Windsor facebook_organic) ───────────────────────
@@ -158,3 +173,4 @@ export function getClientByToken(token: string): Client | undefined {
 
 export const paidClients = CLIENTS.filter((c) => c.type === 'paid' && c.status === 'active')
 export const organicClients = CLIENTS.filter((c) => c.type === 'organic' && c.status === 'active')
+export const googleClients = CLIENTS.filter((c) => c.status === 'active' && !!c.googleAdsId)

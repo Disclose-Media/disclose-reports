@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { paidClients, organicClients } from '@/lib/clients'
+import { paidClients, organicClients, googleClients } from '@/lib/clients'
 import { useState } from 'react'
 
 export function Sidebar() {
@@ -88,6 +88,17 @@ export function Sidebar() {
             </p>
             <div className="space-y-0.5">
               {organicClients.map((c) => <NavItem key={c.id} client={c} />)}
+            </div>
+          </div>
+        )}
+
+        {googleClients.filter(c => c.type === 'google').length > 0 && (
+          <div>
+            <p className="text-[9px] uppercase tracking-[0.18em] px-3 mb-2 font-semibold" style={{ fontFamily: 'Montserrat, sans-serif', color: '#C8972D' }}>
+              Google Ads
+            </p>
+            <div className="space-y-0.5">
+              {googleClients.filter(c => c.type === 'google').map((c) => <NavItem key={c.id} client={c} />)}
             </div>
           </div>
         )}
