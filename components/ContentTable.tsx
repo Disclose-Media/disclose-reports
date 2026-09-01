@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { WindsorPost } from '@/lib/windsor'
 
 type SortKey = 'date' | 'reach' | 'views' | 'likes' | 'shares' | 'saves' | 'comments'
@@ -60,10 +60,33 @@ function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
   )
 }
 
-export function ContentTable({ posts }: { posts: WindsorPost[] }) {
+export function ContentTable({ posts, clientName, period }: { posts: WindsorPost[]; clientName?: string; period?: string }) {
   const [sortKey, setSortKey] = useState<SortKey>('views')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
-  const [filter, setFilter] = useState<'all' | 'facebook' | 'instagram'>('all')
+  const hasFbPosts = posts.some(p => p.platform === 'facebook')
+  const [filter, setFilter] = useState<'all' | 'facebook' | 'instagram'>(hasFbPosts ? 'facebook' : 'instagram')
+  const [summaries, setSummaries] = useState<Record<string, string | null>>({})
+  const [summaryLoading, setSummaryLoading] = useState(false)
+  const fetchedRef = useRef<Set<string>>(new Set())
+
+  useEffect(() => {
+    const platform = filter === 'all' ? null : filter
+    if (!platform || !clientName) return
+    const key = platform
+    if (fetchedRef.current.has(key) || summaries[key] !== undefined) return
+    fetchedRef.current.add(key)
+    setSummaryLoading(true)
+    const platformPosts = posts.filter(p => p.platform === platform)
+    fetch('/api/content-summary', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ posts: platformPosts, platform, clientName, period: period ?? 'Last 30 Days' }),
+    })
+      .then(r => r.json())
+      .then(({ summary }) => setSummaries(prev => ({ ...prev, [key]: summary })))
+      .catch(() => setSummaries(prev => ({ ...prev, [key]: null })))
+      .finally(() => setSummaryLoading(false))
+  }, [filter, posts, clientName, period, summaries])
 
   if (posts.length === 0) return null
 
@@ -217,6 +240,22 @@ export function ContentTable({ posts }: { posts: WindsorPost[] }) {
           </table>
         </div>
       </div>
+
+      {/* AI content summary */}
+      {filter !== 'all' && clientName && (
+        <div className="mt-3 px-4 py-3 bg-white border border-[#E8E4DC] rounded-[8px]">
+          {summaryLoading && !summaries[filter] ? (
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#C8972D] animate-pulse" />
+              <span className="text-[11px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>Generating content summary…</span>
+            </div>
+          ) : summaries[filter] ? (
+            <p className="text-[12px] text-[#444444] leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
+              {summaries[filter]}
+            </p>
+          ) : null}
+        </div>
+      )}
     </div>
   )
 }

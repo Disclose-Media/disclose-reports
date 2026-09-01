@@ -74,7 +74,7 @@ export function Sidebar() {
 
         <div>
           <p className="text-[9px] uppercase tracking-[0.18em] px-3 mb-2 font-semibold" style={{ fontFamily: 'Montserrat, sans-serif', color: '#C8972D' }}>
-            Paid Media
+            Meta Ads
           </p>
           <div className="space-y-0.5">
             {paidClients.map((c) => <NavItem key={c.id} client={c} />)}
@@ -84,7 +84,7 @@ export function Sidebar() {
         {organicClients.length > 0 && (
           <div>
             <p className="text-[9px] uppercase tracking-[0.18em] px-3 mb-2 font-semibold" style={{ fontFamily: 'Montserrat, sans-serif', color: '#C8972D' }}>
-              Organic
+              Organic Social Media
             </p>
             <div className="space-y-0.5">
               {organicClients.map((c) => <NavItem key={c.id} client={c} />)}

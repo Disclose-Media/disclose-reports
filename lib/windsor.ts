@@ -26,7 +26,7 @@ export async function getWindsorFacebookPosts(pageId: string, period: Period = '
   const { dateFrom, dateTo } = periodToDates(period)
   const url = new URL(`${BASE}/facebook_organic`)
   url.searchParams.set('api_key', KEY)
-  url.searchParams.set('fields', 'account_id,post_id,post_message,post_created_time,full_picture,permalink_url,media_type,post_impressions_unique,post_impressions,post_reactions_total,post_clicks,post_engagements')
+  url.searchParams.set('fields', 'account_id,post_id,post_message,post_created_time,full_picture,permalink_url,media_type,post_impressions_unique,post_impressions,post_reactions_total,post_comments_total,post_activity_by_action_type_share')
   url.searchParams.set('date_from', dateFrom)
   url.searchParams.set('date_to', dateTo)
   url.searchParams.set('_account_id', pageId)
@@ -53,8 +53,8 @@ export async function getWindsorFacebookPosts(pageId: string, period: Period = '
         reach: Number(row.post_impressions_unique) || 0,
         views: Number(row.post_impressions) || 0,
         likes: Number(row.post_reactions_total) || 0,
-        comments: 0,
-        shares: 0,
+        comments: Number(row.post_comments_total) || 0,
+        shares: Number(row.post_activity_by_action_type_share) || 0,
         saves: 0,
       })
     }
@@ -188,7 +188,7 @@ export async function getWindsorInstagramData(
   const url = new URL(`${BASE}/instagram`)
   url.searchParams.set('api_key', KEY)
   // profile_links_taps, profile_views, and follower_count_1d all only support last 30 days
-  const thirtyDayExtras = includeFollowers ? ',profile_links_taps,profile_views,follower_count_1d' : ''
+  const thirtyDayExtras = includeFollowers ? ',profile_links_taps,profile_views,profile_views_1d,follower_count_1d' : ''
   url.searchParams.set(
     'fields',
     `date,account_id,account_name,views,reach_1d,total_interactions,likes,comments,saves,shares${thirtyDayExtras}`
@@ -232,7 +232,7 @@ export async function getWindsorInstagramData(
       e.shares       += Number(row.shares) || 0
       e.newFollows   += Number(row.follower_count_1d) || 0
       e.linkClicks   += Number(row.profile_links_taps) || 0
-      e.profileViews += Number(row.profile_views) || 0
+      e.profileViews += Number(row.profile_views_1d) || Number(row.profile_views) || 0
     }
 
     const daily = Array.from(byDate.entries())

@@ -798,7 +798,7 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
         <OrganicSection windsorOrganic={windsorOrganic} igInsights={igInsights} windsorInstagram={windsorInstagram} igAudience={igAudience} fbAudience={fbAudience} />
       )}
 
-      {client.type === 'organic' && posts.length > 0 && <ContentTable posts={posts} />}
+      {client.type === 'organic' && posts.length > 0 && <ContentTable posts={posts} clientName={client.name} period={period} />}
 
       {client.type === 'paid' && (
         campaigns.length === 0 ? (
