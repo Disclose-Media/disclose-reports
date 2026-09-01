@@ -115,7 +115,18 @@ function SummaryBar({ items, period }: { items: { label: string; value: string; 
   )
 }
 
-type SortKey = 'name' | 'spend' | 'reach' | 'impressions' | 'clicks' | 'lpv' | 'cplpv' | 'leads' | 'cpl'
+type Objective = 'auto' | 'reach' | 'traffic' | 'leads'
+type EffectiveObjective = 'reach' | 'traffic' | 'leads'
+
+function detectObjective(campaign: CampaignInsight): EffectiveObjective {
+  const leads = parseInt(campaign.lead || '0') || 0
+  const lpv = campaign.results?.value ? parseInt(campaign.results.value) : 0
+  if (leads > 0) return 'leads'
+  if (lpv > 0) return 'traffic'
+  return 'reach'
+}
+
+type SortKey = 'name' | 'spend' | 'reach' | 'impressions' | 'clicks' | 'lpv' | 'cplpv' | 'leads' | 'cpl' | 'freq' | 'ctr' | 'cpm' | 'cpc'
 type SortDir = 'asc' | 'desc'
 
 function adValue(ad: AdInsight, key: SortKey): number | string {
@@ -129,6 +140,10 @@ function adValue(ad: AdInsight, key: SortKey): number | string {
     case 'cplpv': { const m = ad.cost_per_result?.value?.match(/[\d.]+/); return m ? parseFloat(m[0]) : 0 }
     case 'leads': return parseInt(ad.lead || '0') || 0
     case 'cpl': { const m = ad.cost_per_action_type_lead?.match(/[\d.]+/); return m ? parseFloat(m[0]) : 0 }
+    case 'freq': { const i = parseInt(ad.impressions || '0'); const r = parseInt(ad.reach || '0'); return r > 0 ? i / r : 0 }
+    case 'ctr': return parseFloat(ad.ctr || '0')
+    case 'cpm': return parseFloat(ad.cpm || '0')
+    case 'cpc': return parseFloat(ad.cpc || '0')
   }
 }
 
@@ -145,10 +160,33 @@ function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
   )
 }
 
+const OBJECTIVE_LABELS: Record<EffectiveObjective, string> = {
+  reach: 'Reach & Awareness',
+  traffic: 'Traffic & LPV',
+  leads: 'Lead Generation',
+}
+
+function ObjectiveBadge({ obj }: { obj: EffectiveObjective }) {
+  const colors: Record<EffectiveObjective, string> = {
+    reach: 'bg-blue-900/30 text-blue-300 border-blue-900/40',
+    traffic: 'bg-amber-900/30 text-amber-300 border-amber-900/40',
+    leads: 'bg-emerald-900/30 text-emerald-400 border-emerald-900/40',
+  }
+  return (
+    <span className={`text-[10px] border px-2.5 py-1 rounded-full ${colors[obj]}`} style={{ fontFamily: 'Inter, sans-serif' }}>
+      {OBJECTIVE_LABELS[obj]}
+    </span>
+  )
+}
+
 function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsight; ads: AdInsight[]; thumbnails: Record<string, string> }) {
   const [open, setOpen] = useState(true)
   const [sortKey, setSortKey] = useState<SortKey>('spend')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [objectiveOverride, setObjectiveOverride] = useState<Objective>('auto')
+
+  const autoObj = detectObjective(campaign)
+  const obj: EffectiveObjective = objectiveOverride === 'auto' ? autoObj : objectiveOverride
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -178,105 +216,100 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
   const cplpv = cplpvMatch ? parseFloat(cplpvMatch[0]) : 0
   const cplMatch = campaign.cost_per_action_type_lead?.match(/[\d.]+/)
   const cpl = cplMatch ? parseFloat(cplMatch[0]) : 0
+  const impressions = parseInt(campaign.impressions || '0')
+  const reach = parseInt(campaign.reach || '0')
+  const freq = impressions > 0 && reach > 0 ? impressions / reach : 0
+  const ctr = parseFloat(campaign.ctr || '0')
+  const cpm = parseFloat(campaign.cpm || '0')
+  const cpc = parseFloat(campaign.cpc || '0')
+
+  // KPI cards per objective
+  const kpiRow2: { label: string; value: string; gold?: boolean; green?: boolean }[] =
+    obj === 'leads'
+      ? [
+          { label: 'Landing Page Views', value: lpv > 0 ? fmt(lpv) : '—' },
+          { label: 'Cost Per LPV', value: cplpv > 0 ? `$${cplpv.toFixed(2)}` : '—' },
+          { label: 'Leads', value: leads > 0 ? String(leads) : '—', green: leads > 0 },
+          { label: 'Cost Per Lead', value: cpl > 0 ? fmtDollar(cpl) : '—', gold: cpl > 0 },
+        ]
+      : obj === 'traffic'
+      ? [
+          { label: 'CTR', value: `${ctr.toFixed(2)}%` },
+          { label: 'Landing Page Views', value: lpv > 0 ? fmt(lpv) : '—' },
+          { label: 'Cost Per LPV', value: cplpv > 0 ? `$${cplpv.toFixed(2)}` : '—' },
+          { label: 'CPC', value: cpc > 0 ? `$${cpc.toFixed(2)}` : '—' },
+        ]
+      : [
+          { label: 'CPM', value: cpm > 0 ? `$${cpm.toFixed(2)}` : '—' },
+          { label: 'Frequency', value: freq > 0 ? freq.toFixed(2) : '—' },
+          { label: 'CTR', value: `${ctr.toFixed(2)}%` },
+          { label: 'CPC', value: cpc > 0 ? `$${cpc.toFixed(2)}` : '—' },
+        ]
+
+  // Table columns per objective
+  const varCols: { label: string; key: SortKey }[] =
+    obj === 'leads'
+      ? [
+          { label: 'CTR', key: 'ctr' },
+          { label: 'LPV', key: 'lpv' },
+          { label: 'Cost/LPV', key: 'cplpv' },
+          { label: 'Leads', key: 'leads' },
+          { label: 'CPL', key: 'cpl' },
+        ]
+      : obj === 'traffic'
+      ? [
+          { label: 'CTR', key: 'ctr' },
+          { label: 'LPV', key: 'lpv' },
+          { label: 'Cost/LPV', key: 'cplpv' },
+          { label: 'CPM', key: 'cpm' },
+          { label: 'CPC', key: 'cpc' },
+        ]
+      : [
+          { label: 'Frequency', key: 'freq' },
+          { label: 'CTR', key: 'ctr' },
+          { label: 'CPM', key: 'cpm' },
+          { label: 'CPC', key: 'cpc' },
+        ]
 
   useEffect(() => {
     if (!open || !chartRef.current || ads.length === 0) return
     import('chart.js/auto').then(({ default: Chart }) => {
       if (chartObj.current) (chartObj.current as { destroy: () => void }).destroy()
+
+      const secondaryDataset =
+        obj === 'leads'
+          ? { label: 'Leads', data: ads.map((a) => parseInt(a.lead || '0') || 0), backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 4, yAxisID: 'y1' }
+          : obj === 'traffic'
+          ? { label: 'LPVs', data: ads.map((a) => { const m = a.results?.value?.match(/^(\d+)/); return m ? parseInt(m[1]) : 0 }), backgroundColor: 'rgba(99,179,237,0.75)', borderRadius: 4, yAxisID: 'y1' }
+          : { label: 'Reach', data: ads.map((a) => parseInt(a.reach || '0')), backgroundColor: 'rgba(99,179,237,0.75)', borderRadius: 4, yAxisID: 'y1' }
+
+      const y1Label = obj === 'leads' ? 'Leads' : obj === 'traffic' ? 'LPVs' : 'Reach'
+
       chartObj.current = new Chart(chartRef.current!, {
         type: 'bar',
         data: {
           labels: ads.map((a) => a.name.length > 28 ? a.name.slice(0, 28) + '…' : a.name),
           datasets: [
-            {
-              label: 'Spend (NZD)',
-              data: ads.map((a) => parseFloat(a.amount_spent || '0')),
-              backgroundColor: 'rgba(200,151,45,0.85)',
-              borderRadius: 4,
-              yAxisID: 'y',
-            },
-            {
-              label: 'LPVs',
-              data: ads.map((a) => {
-                const m = a.results?.value?.match(/^(\d+)/)
-                return m ? parseInt(m[1]) : 0
-              }),
-              backgroundColor: 'rgba(99,179,237,0.75)',
-              borderRadius: 4,
-              yAxisID: 'y1',
-            },
-            {
-              label: 'Leads',
-              data: ads.map((a) => parseInt(a.lead || '0') || 0),
-              backgroundColor: 'rgba(16,185,129,0.75)',
-              borderRadius: 4,
-              yAxisID: 'y1',
-            },
+            { label: 'Spend (NZD)', data: ads.map((a) => parseFloat(a.amount_spent || '0')), backgroundColor: 'rgba(200,151,45,0.85)', borderRadius: 4, yAxisID: 'y' },
+            secondaryDataset,
           ],
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: {
-              display: true,
-              position: 'top',
-              labels: {
-                font: { size: 10, family: 'Inter, sans-serif' },
-                boxWidth: 10,
-                padding: 16,
-                color: '#888888',
-              },
-            },
+            legend: { display: true, position: 'top', labels: { font: { size: 10, family: 'Inter, sans-serif' }, boxWidth: 10, padding: 16, color: '#888888' } },
           },
           scales: {
-            x: {
-              ticks: {
-                color: '#AAAAAA',
-                font: { size: 9, family: 'Inter, sans-serif' },
-                maxRotation: 30,
-              },
-              grid: { color: 'rgba(0,0,0,0.04)' },
-              border: { color: '#E8E4DC' },
-            },
-            y: {
-              ticks: {
-                color: '#AAAAAA',
-                font: { size: 9, family: 'Inter, sans-serif' },
-                callback: (v) => '$' + v,
-              },
-              grid: { color: 'rgba(0,0,0,0.04)' },
-              border: { color: '#E8E4DC' },
-              title: {
-                display: true,
-                text: 'Spend',
-                color: '#AAAAAA',
-                font: { size: 9, family: 'Inter, sans-serif' },
-              },
-            },
-            y1: {
-              position: 'right',
-              ticks: {
-                color: '#AAAAAA',
-                font: { size: 9, family: 'Inter, sans-serif' },
-              },
-              grid: { display: false },
-              border: { color: '#E8E4DC' },
-              title: {
-                display: true,
-                text: 'LPVs / Leads',
-                color: '#AAAAAA',
-                font: { size: 9, family: 'Inter, sans-serif' },
-              },
-            },
+            x: { ticks: { color: '#AAAAAA', font: { size: 9, family: 'Inter, sans-serif' }, maxRotation: 30 }, grid: { color: 'rgba(0,0,0,0.04)' }, border: { color: '#E8E4DC' } },
+            y: { ticks: { color: '#AAAAAA', font: { size: 9, family: 'Inter, sans-serif' }, callback: (v) => '$' + v }, grid: { color: 'rgba(0,0,0,0.04)' }, border: { color: '#E8E4DC' }, title: { display: true, text: 'Spend', color: '#AAAAAA', font: { size: 9, family: 'Inter, sans-serif' } } },
+            y1: { position: 'right', ticks: { color: '#AAAAAA', font: { size: 9, family: 'Inter, sans-serif' } }, grid: { display: false }, border: { color: '#E8E4DC' }, title: { display: true, text: y1Label, color: '#AAAAAA', font: { size: 9, family: 'Inter, sans-serif' } } },
           },
         },
       })
     })
-    return () => {
-      if (chartObj.current) (chartObj.current as { destroy: () => void }).destroy()
-    }
-  }, [open, ads])
+    return () => { if (chartObj.current) (chartObj.current as { destroy: () => void }).destroy() }
+  }, [open, ads, obj])
 
   return (
     <div className="mb-6">
@@ -286,27 +319,19 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
         className="w-full bg-[#111111] text-white px-5 py-4 flex items-center justify-between hover:bg-[#1C1C1C] transition-colors duration-150"
         style={{ borderRadius: open ? '8px 8px 0 0' : '8px' }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <div style={{ width: '2px', height: '18px', background: '#C8972D', borderRadius: '1px', flexShrink: 0 }} />
-          <span
-            className="font-bold text-sm text-white text-left"
-            style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.01em' }}
-          >
+          <span className="font-bold text-sm text-white text-left truncate" style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.01em' }}>
             {campaign.name}
           </span>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0 ml-3">
           <span className="hidden sm:flex items-center gap-1.5 text-[11px]" style={{ fontFamily: 'Inter, sans-serif' }}>
             <span className="text-[#AAAAAA]">Spend</span>
             <span className="font-bold text-[#C8972D]">{fmtDollar(spend)}</span>
           </span>
-          <span className="text-[10px] bg-emerald-900/30 text-emerald-400 border border-emerald-900/40 px-2.5 py-1 rounded-full" style={{ fontFamily: 'Inter, sans-serif' }}>
-            Active
-          </span>
-          <svg
-            width="12" height="12" viewBox="0 0 12 12" fill="none"
-            className={`text-[#888888] transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-          >
+          <ObjectiveBadge obj={obj} />
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className={`text-[#888888] transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
             <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </div>
@@ -315,7 +340,26 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
       {open && (
         <div className="border border-t-0 border-[#E8E4DC] rounded-b-[8px] bg-[#F8F6F2] p-5">
 
-          {/* KPI row 1 */}
+          {/* Objective selector */}
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[9px] uppercase tracking-[0.15em] text-[#AAAAAA] font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+              Showing metrics for:
+            </p>
+            <div className="flex items-center gap-1.5">
+              {(['auto', 'reach', 'traffic', 'leads'] as Objective[]).map((o) => (
+                <button
+                  key={o}
+                  onClick={() => setObjectiveOverride(o)}
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-all ${objectiveOverride === o ? 'bg-[#C8972D] text-white border-[#C8972D]' : 'bg-white text-[#888888] border-[#E8E4DC] hover:border-[#C8972D] hover:text-[#C8972D]'}`}
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  {o === 'auto' ? `Auto (${OBJECTIVE_LABELS[autoObj]})` : OBJECTIVE_LABELS[o]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* KPI row 1 — always the same */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
             <KpiCard label="Amount Spent" value={fmtDollar(spend)} gold />
             <KpiCard label="Reach" value={fmt(campaign.reach)} />
@@ -323,12 +367,11 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
             <KpiCard label="Clicks" value={fmt(campaign.clicks)} />
           </div>
 
-          {/* KPI row 2 */}
+          {/* KPI row 2 — objective-specific */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <KpiCard label="Landing Page Views" value={lpv > 0 ? fmt(lpv) : '—'} />
-            <KpiCard label="Cost Per LPV" value={cplpv > 0 ? `$${cplpv.toFixed(2)}` : '—'} />
-            <KpiCard label="Leads" value={leads > 0 ? String(leads) : '—'} green={leads > 0} />
-            <KpiCard label="Cost Per Lead" value={cpl > 0 ? fmtDollar(cpl) : '—'} gold={cpl > 0} />
+            {kpiRow2.map((k) => (
+              <KpiCard key={k.label} label={k.label} value={k.value} gold={k.gold} green={k.green} />
+            ))}
           </div>
 
           {/* Ad breakdown table */}
@@ -336,10 +379,7 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
             <div className="bg-white border border-[#E8E4DC] rounded-[8px] overflow-hidden mb-6">
               <div className="border-b border-[#E8E4DC] px-5 py-3 flex items-center gap-2.5 bg-[#F8F6F2]">
                 <div style={{ width: '2px', height: '12px', background: '#C8972D', borderRadius: '1px' }} />
-                <p
-                  className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#888888]"
-                  style={{ fontFamily: 'Montserrat, sans-serif' }}
-                >
+                <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#888888]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                   Ad Performance
                 </p>
               </div>
@@ -347,7 +387,6 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-[#E8E4DC]">
-                      {/* Thumbnail col — no sort */}
                       <th className="py-3 pl-4 pr-2 bg-white w-14" />
                       {([
                         { label: 'Ad', key: 'name' as SortKey, align: 'left' },
@@ -355,10 +394,7 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
                         { label: 'Reach', key: 'reach' as SortKey, align: 'right' },
                         { label: 'Impressions', key: 'impressions' as SortKey, align: 'right' },
                         { label: 'Clicks', key: 'clicks' as SortKey, align: 'right' },
-                        { label: 'LPV', key: 'lpv' as SortKey, align: 'right' },
-                        { label: 'Cost/LPV', key: 'cplpv' as SortKey, align: 'right' },
-                        { label: 'Leads', key: 'leads' as SortKey, align: 'right' },
-                        { label: 'CPL', key: 'cpl' as SortKey, align: 'right' },
+                        ...varCols.map((c) => ({ ...c, align: 'right' as const })),
                       ]).map((col) => (
                         <th
                           key={col.key}
@@ -384,22 +420,33 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
                       const adCplMatch = ad.cost_per_action_type_lead?.match(/[\d.]+/)
                       const adCpl = adCplMatch ? parseFloat(adCplMatch[0]) : 0
                       const adSpend = parseFloat(ad.amount_spent || '0')
+                      const adImpr = parseInt(ad.impressions || '0')
+                      const adReach = parseInt(ad.reach || '0')
+                      const adFreq = adImpr > 0 && adReach > 0 ? adImpr / adReach : 0
+                      const adCtr = parseFloat(ad.ctr || '0')
+                      const adCpm = parseFloat(ad.cpm || '0')
+                      const adCpc = parseFloat(ad.cpc || '0')
+
+                      const varCells = varCols.map((col) => {
+                        switch (col.key) {
+                          case 'lpv': return <td key="lpv" className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{adLpv > 0 ? fmt(adLpv) : '—'}</td>
+                          case 'cplpv': return <td key="cplpv" className={`py-3 px-4 text-right text-xs font-medium ${adCplpv > 0 && adCplpv < 0.75 ? 'text-emerald-600' : adCplpv > 1 ? 'text-amber-600' : 'text-[#444444]'}`} style={{ fontFamily: 'Inter, sans-serif' }}>{adCplpv > 0 ? `$${adCplpv.toFixed(2)}` : '—'}</td>
+                          case 'leads': return <td key="leads" className={`py-3 px-4 text-right text-xs font-bold ${adLeads > 0 ? 'text-emerald-600' : 'text-[#CCCCCC]'}`} style={{ fontFamily: 'Inter, sans-serif' }}>{adLeads > 0 ? adLeads : '—'}</td>
+                          case 'cpl': return <td key="cpl" className={`py-3 px-4 text-right text-xs font-medium ${adCpl > 0 ? 'text-[#C8972D]' : 'text-[#CCCCCC]'}`} style={{ fontFamily: 'Inter, sans-serif' }}>{adCpl > 0 ? `$${adCpl.toFixed(2)}` : '—'}</td>
+                          case 'freq': return <td key="freq" className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{adFreq > 0 ? adFreq.toFixed(2) : '—'}</td>
+                          case 'ctr': return <td key="ctr" className={`py-3 px-4 text-right text-xs font-medium ${adCtr >= 2 ? 'text-emerald-600' : adCtr < 1 ? 'text-amber-600' : 'text-[#444444]'}`} style={{ fontFamily: 'Inter, sans-serif' }}>{`${adCtr.toFixed(2)}%`}</td>
+                          case 'cpm': return <td key="cpm" className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{adCpm > 0 ? `$${adCpm.toFixed(2)}` : '—'}</td>
+                          case 'cpc': return <td key="cpc" className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{adCpc > 0 ? `$${adCpc.toFixed(2)}` : '—'}</td>
+                          default: return null
+                        }
+                      })
 
                       return (
-                        <tr
-                          key={ad.id}
-                          className={`border-b border-[#F0EDE8] hover:bg-[#FBF9F5] transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FAFAF8]'}`}
-                        >
-                          {/* Creative thumbnail */}
+                        <tr key={ad.id} className={`border-b border-[#F0EDE8] hover:bg-[#FBF9F5] transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-[#FAFAF8]'}`}>
                           <td className="pl-4 pr-2 py-2 w-14">
                             {thumbnails[ad.id] ? (
                               <div className="w-10 h-10 rounded-[4px] overflow-hidden border border-[#E8E4DC] bg-[#F8F6F2] shrink-0">
-                                <img
-                                  src={thumbnails[ad.id]}
-                                  alt=""
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                />
+                                <img src={thumbnails[ad.id]} alt="" className="w-full h-full object-cover" loading="lazy" />
                               </div>
                             ) : (
                               <div className="w-10 h-10 rounded-[4px] border border-[#E8E4DC] bg-[#F0EDE8] flex items-center justify-center shrink-0">
@@ -411,45 +458,14 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
                               </div>
                             )}
                           </td>
-                          <td
-                            className="py-3 px-4 font-semibold text-[#C8972D] text-xs max-w-[200px]"
-                            style={{ fontFamily: 'Inter, sans-serif' }}
-                          >
+                          <td className="py-3 px-4 font-semibold text-[#C8972D] text-xs max-w-[200px]" style={{ fontFamily: 'Inter, sans-serif' }}>
                             <span className="truncate block">{ad.name}</span>
                           </td>
-                          <td className="py-3 px-4 text-right text-xs font-semibold text-[#111111]" style={{ fontFamily: 'Inter, sans-serif' }}>
-                            ${adSpend.toFixed(2)}
-                          </td>
-                          <td className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>
-                            {fmt(ad.reach)}
-                          </td>
-                          <td className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>
-                            {fmt(ad.impressions)}
-                          </td>
-                          <td className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>
-                            {fmt(ad.clicks)}
-                          </td>
-                          <td className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>
-                            {adLpv > 0 ? fmt(adLpv) : '—'}
-                          </td>
-                          <td
-                            className={`py-3 px-4 text-right text-xs font-medium ${adCplpv > 0 && adCplpv < 0.75 ? 'text-emerald-600' : adCplpv > 1 ? 'text-amber-600' : 'text-[#444444]'}`}
-                            style={{ fontFamily: 'Inter, sans-serif' }}
-                          >
-                            {adCplpv > 0 ? `$${adCplpv.toFixed(2)}` : '—'}
-                          </td>
-                          <td
-                            className={`py-3 px-4 text-right text-xs font-bold ${adLeads > 0 ? 'text-emerald-600' : 'text-[#CCCCCC]'}`}
-                            style={{ fontFamily: 'Inter, sans-serif' }}
-                          >
-                            {adLeads > 0 ? adLeads : '—'}
-                          </td>
-                          <td
-                            className={`py-3 px-4 text-right text-xs font-medium ${adCpl > 0 ? 'text-[#C8972D]' : 'text-[#CCCCCC]'}`}
-                            style={{ fontFamily: 'Inter, sans-serif' }}
-                          >
-                            {adCpl > 0 ? `$${adCpl.toFixed(2)}` : '—'}
-                          </td>
+                          <td className="py-3 px-4 text-right text-xs font-semibold text-[#111111]" style={{ fontFamily: 'Inter, sans-serif' }}>${adSpend.toFixed(2)}</td>
+                          <td className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{fmt(ad.reach)}</td>
+                          <td className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{fmt(ad.impressions)}</td>
+                          <td className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{fmt(ad.clicks)}</td>
+                          {varCells}
                         </tr>
                       )
                     })}
@@ -462,10 +478,7 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
           {/* Chart */}
           {ads.length > 0 && (
             <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-5 mb-6">
-              <p
-                className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#888888] mb-4"
-                style={{ fontFamily: 'Montserrat, sans-serif' }}
-              >
+              <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#888888] mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 Ad Performance Chart
               </p>
               <div className="relative h-52">
