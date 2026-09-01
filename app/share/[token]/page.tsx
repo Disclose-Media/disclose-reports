@@ -159,9 +159,14 @@ export default async function SharePage({
           className="text-[10px] uppercase tracking-[0.18em] mb-2"
           style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#C8972D' }}
         >
-          {client.type === 'organic' ? 'Organic · Facebook & Instagram' : client.type === 'google' ? 'Google Ads' : 'Paid Media · Meta Ads'}
-          {client.googleAdsId && client.type === 'paid' && ' · + Google Ads'}
-          {client.windsorPageId && client.type === 'paid' && ' · + Organic'}
+          {client.type === 'organic'
+            ? 'Organic · Facebook & Instagram'
+            : client.type === 'google'
+            ? 'Google Ads'
+            : client.googleAdsId
+            ? 'Meta Ads · Google Ads'
+            : 'Meta Ads'}
+          {client.windsorPageId && client.type === 'paid' && ' · Organic'}
           {client.hasLeadGen && ' · Lead Generation'}
         </p>
 

@@ -303,20 +303,29 @@ export async function getIgInsights(
   period: DatePreset | CustomRange = 'last_30d'
 ): Promise<IgInsightsSummary> {
   const { since, until } = periodToSinceUntil(period)
-  const [dailyData, accountData] = await Promise.all([
+  const [dailyData, accountData, totalValueData] = await Promise.all([
     graphFetch(`${igUserId}/insights`, {
-      metric: 'impressions,reach,profile_views,profile_link_taps,follower_count',
+      metric: 'impressions,reach,profile_link_taps,follower_count',
       period: 'day',
       since: String(since),
       until: String(until),
     }).catch(() => ({ data: [] })),
     graphFetch(igUserId, { fields: 'followers_count,username' }).catch(() => ({})),
+    // profile_views deprecated in day breakdown on v18+ — fetch as total_value
+    graphFetch(`${igUserId}/insights`, {
+      metric: 'profile_views',
+      period: 'total_value',
+      since: String(since),
+      until: String(until),
+    }).catch(() => ({ data: [] })),
   ])
   const acc = accountData as { followers_count?: number; username?: string }
+  const tvData = totalValueData as { data?: { name?: string; total_value?: { value?: number } }[] }
+  const profileViewsTotal = tvData.data?.find((d) => d.name === 'profile_views')?.total_value?.value ?? 0
   return {
     views: sumMetric(dailyData.data, 'impressions'),
     reach: sumMetric(dailyData.data, 'reach'),
-    profileVisits: sumMetric(dailyData.data, 'profile_views'),
+    profileVisits: profileViewsTotal,
     linkClicks: sumMetric(dailyData.data, 'profile_link_taps'),
     follows: sumMetric(dailyData.data, 'follower_count'),
     totalFollowers: acc.followers_count || 0,
