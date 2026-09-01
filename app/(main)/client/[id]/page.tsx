@@ -116,7 +116,7 @@ export default async function ClientPage({
     windsorInstagram = windsorIgRes as WindsorInstagramResult | null
     igAudience = igAudienceRes as WindsorIgAudienceData | null
     fbAudience = fbAudienceRes as WindsorFbAudienceData | null
-    googleAdsData = googleAdsRes as GoogleAdsResult | null
+    googleAdsData = client.type === 'google' ? (googleAdsRes as GoogleAdsResult | null) : null
     posts = [...(fbPostsRes as WindsorPost[]), ...(igPostsRes as WindsorPost[])].sort(
       (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
     )
