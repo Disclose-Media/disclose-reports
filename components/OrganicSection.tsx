@@ -377,11 +377,12 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
   const { summary: ig, daily, hasThirtyDayData } = windsorInstagram
   const hasData = ig.views > 0 || ig.reach > 0 || ig.interactions > 0 || ig.newFollows > 0
 
-  // Use Meta API values for link clicks and profile visits when Windsor returns 0
+  // Meta API (total_value period) is authoritative for link clicks and profile visits —
+  // these metrics are deprecated in Windsor/day breakdown. Fall back to Windsor if Meta returns 0.
   const metaLinkClicks = igInsights?.linkClicks ?? 0
   const metaProfileVisits = igInsights?.profileVisits ?? 0
-  const linkClicks = hasThirtyDayData ? (ig.linkClicks > 0 ? ig.linkClicks : metaLinkClicks) : null
-  const profileVisits = hasThirtyDayData ? (ig.profileViews > 0 ? ig.profileViews : metaProfileVisits) : null
+  const linkClicks = metaLinkClicks > 0 ? metaLinkClicks : (ig.linkClicks > 0 ? ig.linkClicks : null)
+  const profileVisits = metaProfileVisits > 0 ? metaProfileVisits : (ig.profileViews > 0 ? ig.profileViews : null)
 
   const engagementRate = ig.reach > 0 ? ((ig.interactions / ig.reach) * 100).toFixed(1) : '0.0'
   const na = '—'
@@ -416,11 +417,6 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
           <KpiTile label="Profile Visits" value={profileVisits !== null ? fmt(profileVisits) : na} />
           <KpiTile label="New Follows" value={hasThirtyDayData ? fmt(ig.newFollows) : na} />
         </div>
-        {!hasThirtyDayData && (
-          <p className="text-[10px] text-[#555555] px-6 pb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
-            * Link Clicks, Profile Visits and New Follows are only available for the last 30 days via the Instagram API.
-          </p>
-        )}
       </div>
 
       {/* Summary */}
