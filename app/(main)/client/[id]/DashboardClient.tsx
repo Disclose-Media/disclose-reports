@@ -191,7 +191,7 @@ function ObjectiveBadge({ obj }: { obj: EffectiveObjective }) {
   )
 }
 
-function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsight; ads: AdInsight[]; thumbnails: Record<string, string> }) {
+function CampaignSection({ campaign, ads, thumbnails, clientName, period }: { campaign: CampaignInsight; ads: AdInsight[]; thumbnails: Record<string, string>; clientName?: string; period?: string }) {
   const [open, setOpen] = useState(true)
   const [sortKey, setSortKey] = useState<SortKey>('spend')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -523,7 +523,7 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
           )}
 
           {/* Campaign Analysis */}
-          <CampaignSummary campaign={campaign} ads={ads} obj={obj} clientName={client.name} period={period} />
+          <CampaignSummary campaign={campaign} ads={ads} obj={obj} clientName={clientName} period={period} />
         </div>
       )}
     </div>
@@ -882,7 +882,7 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
                 </div>
                 {[...campaigns].sort((a, b) => parseFloat(b.amount_spent || '0') - parseFloat(a.amount_spent || '0')).map((campaign) => {
                   const campaignAds = ads.filter((a) => a.campaign_id === campaign.id)
-                  return <CampaignSection key={campaign.id} campaign={campaign} ads={campaignAds} thumbnails={thumbnails} />
+                  return <CampaignSection key={campaign.id} campaign={campaign} ads={campaignAds} thumbnails={thumbnails} clientName={client.name} period={period} />
                 })}
               </div>
             )

@@ -49,8 +49,8 @@ Instagram metrics:
 - Saves: ${metrics.saves?.toLocaleString()}
 - Shares: ${metrics.shares?.toLocaleString()}
 - Engagement Rate: ${metrics.engagementRate}%
-- Profile Visits: ${metrics.profileViews > 0 ? metrics.profileViews?.toLocaleString() : 'not available'}
-- Link Clicks: ${metrics.linkClicks > 0 ? metrics.linkClicks?.toLocaleString() : 'not available'}
+- Profile Visits: ${Number(metrics.profileViews) > 0 ? metrics.profileViews?.toLocaleString() : 'not available'}
+- Link Clicks: ${Number(metrics.linkClicks) > 0 ? metrics.linkClicks?.toLocaleString() : 'not available'}
 - New Followers: ${metrics.newFollows?.toLocaleString()}
 - Username: ${metrics.username || ''}
 
