@@ -13,8 +13,7 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 30,
       path: '/',
     })
-    return NextResponse.redirect(new URL('/', req.url))
-  }
+return NextResponse.redirect(new URL('/', req.url), 303)  }
 
   return NextResponse.redirect(new URL('/login?error=1', req.url))
 }
