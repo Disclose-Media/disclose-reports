@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { getClientByToken } from '@/lib/clients'
 import {
   getCampaigns, getAds, getAccountSummary, getAdThumbnails,
@@ -9,9 +8,10 @@ import {
 import {
   getWindsorOrganicData, getWindsorInstagramData, getWindsorFacebookPosts, getWindsorInstagramPosts,
   getWindsorIgAudience, getWindsorFbAudience,
-  type WindsorInstagramResult, type WindsorPost, type WindsorIgAudienceData, type WindsorFbAudienceData,
+  type WindsorInstagramResult, type WindsorPost, type WindsorIgAudienceData, type WindsorFbAudienceData, type CustomRange,
 } from '@/lib/windsor'
 import { DashboardClient } from '@/app/(main)/client/[id]/DashboardClient'
+import { PeriodSelector } from '@/components/PeriodSelector'
 
 const PRESETS: { label: string; value: DatePreset }[] = [
   { label: 'Today', value: 'today' },
@@ -28,13 +28,20 @@ export default async function SharePage({
   searchParams,
 }: {
   params: { token: string }
-  searchParams: { period?: string }
+  searchParams: { period?: string; from?: string; to?: string }
 }) {
   const client = getClientByToken(params.token)
   if (!client) notFound()
 
-  const period = (searchParams.period as DatePreset) || 'last_30d'
-  const currentPreset = PRESETS.find((p) => p.value === period) || PRESETS[3]
+  const rawPeriod = searchParams.period || 'last_30d'
+  const isCustom = rawPeriod === 'custom' && !!searchParams.from && !!searchParams.to
+  const period: DatePreset | CustomRange = isCustom
+    ? { from: searchParams.from!, to: searchParams.to! }
+    : (rawPeriod as DatePreset)
+  const currentPreset = PRESETS.find((p) => p.value === rawPeriod) || PRESETS[3]
+  const periodLabel = isCustom
+    ? `${searchParams.from} to ${searchParams.to}`
+    : currentPreset.label
 
   let summary = null
   let campaigns: Awaited<ReturnType<typeof getCampaigns>> = []
@@ -63,7 +70,7 @@ export default async function SharePage({
       hasPaid ? getAds(client.accountId, period) : Promise.resolve([]),
       hasPaid ? getAdThumbnails(client.accountId) : Promise.resolve({}),
       hasWindsor ? getWindsorOrganicData(client.windsorPageId!, period) : Promise.resolve(null),
-      paidIgUserId ? getIgInsights(paidIgUserId, period).catch(() => null) : Promise.resolve(null),
+      paidIgUserId ? getIgInsights(paidIgUserId, period).catch(() => null) : (isOrganic && client.igUserId ? getIgInsights(client.igUserId, period).catch(() => null) : Promise.resolve(null)),
       client.igUserId && isOrganic ? getWindsorInstagramData(client.igUserId, period) : Promise.resolve(null),
       isOrganic && hasWindsor ? getWindsorFacebookPosts(client.windsorPageId!, period).catch(() => []) : Promise.resolve([]),
       isOrganic && client.igUserId ? getWindsorInstagramPosts(client.igUserId, period).catch(() => []) : Promise.resolve([]),
@@ -134,22 +141,7 @@ export default async function SharePage({
           {client.name}
         </h1>
 
-        <div className="flex flex-wrap gap-2">
-          {PRESETS.map((preset) => (
-            <Link
-              key={preset.value}
-              href={`/share/${params.token}?period=${preset.value}`}
-              className={`text-[11px] px-3.5 py-1.5 rounded-full border transition-all duration-150 ${
-                preset.value === period
-                  ? 'bg-[#C8972D] border-[#C8972D] text-white font-bold'
-                  : 'border-[#2A2A2A] text-[#888888] hover:border-[#C8972D] hover:text-[#C8972D]'
-              }`}
-              style={{ fontFamily: 'Inter, sans-serif' }}
-            >
-              {preset.label}
-            </Link>
-          ))}
-        </div>
+        <PeriodSelector period={rawPeriod} customFrom={searchParams.from} customTo={searchParams.to} />
       </div>
 
       <div style={{ height: '2px', background: 'linear-gradient(90deg, #C8972D 0%, rgba(200,151,45,0.15) 100%)' }} />
@@ -170,7 +162,7 @@ export default async function SharePage({
             campaigns={campaigns}
             ads={ads}
             thumbnails={thumbnails}
-            period={currentPreset.label}
+            period={periodLabel}
             windsorOrganic={windsorOrganic}
             igInsights={igInsights}
             windsorInstagram={windsorInstagram}
