@@ -61,7 +61,7 @@ function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
 }
 
 export function ContentTable({ posts }: { posts: WindsorPost[] }) {
-  const [sortKey, setSortKey] = useState<SortKey>('date')
+  const [sortKey, setSortKey] = useState<SortKey>('views')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [filter, setFilter] = useState<'all' | 'facebook' | 'instagram'>('all')
 
@@ -155,7 +155,7 @@ export function ContentTable({ posts }: { posts: WindsorPost[] }) {
                 const date = new Date(post.publishedAt)
                 const dateStr = date.toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' })
                 const timeStr = date.toLocaleTimeString('en-NZ', { hour: 'numeric', minute: '2-digit' })
-                const caption = post.caption.length > 60 ? post.caption.slice(0, 60) + '…' : post.caption || 'No caption'
+                const caption = post.caption || 'No caption'
                 return (
                   <tr key={post.id} className="border-b border-[#F8F6F2] hover:bg-[#FAFAF8] transition-colors">
                     <td className="px-4 py-3">
@@ -183,13 +183,13 @@ export function ContentTable({ posts }: { posts: WindsorPost[] }) {
                               href={post.permalink}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[11px] text-[#111111] font-medium truncate max-w-[240px] hover:text-[#C8972D] transition-colors block"
+                              className="text-[11px] text-[#111111] font-medium hover:text-[#C8972D] transition-colors block leading-snug"
                               style={{ fontFamily: 'Inter, sans-serif' }}
                             >
                               {caption}
                             </a>
                           ) : (
-                            <p className="text-[11px] text-[#111111] font-medium truncate max-w-[240px]" style={{ fontFamily: 'Inter, sans-serif' }}>
+                            <p className="text-[11px] text-[#111111] font-medium leading-snug" style={{ fontFamily: 'Inter, sans-serif' }}>
                               {caption}
                             </p>
                           )}
