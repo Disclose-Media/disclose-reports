@@ -13,6 +13,7 @@ import {
 import { getGoogleAdsData, type GoogleAdsResult } from '@/lib/google-ads'
 import { DashboardClient } from '@/app/(main)/client/[id]/DashboardClient'
 import { PeriodSelector } from '@/components/PeriodSelector'
+import { PrintButton } from '@/components/PrintButton'
 
 const PRESETS: { label: string; value: DatePreset }[] = [
   { label: 'Today', value: 'today' },
@@ -150,6 +151,7 @@ export default async function SharePage({
               Live
             </span>
             <span className="text-[11px] text-[#666666]" style={{ fontFamily: 'Inter, sans-serif' }}>{dateLabel}</span>
+            <PrintButton />
           </div>
         </div>
 
