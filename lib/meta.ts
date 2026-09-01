@@ -311,18 +311,19 @@ export async function getIgInsights(
       until: String(until),
     }).catch(() => ({ data: [] })),
     graphFetch(igUserId, { fields: 'followers_count,username' }).catch(() => ({})),
-    // profile_views and website_clicks deprecated in day breakdown on v18+ — fetch as total_value
+    // profile_views and profile_links_taps deprecated in day breakdown on v18+ — fetch as total_value
     graphFetch(`${igUserId}/insights`, {
-      metric: 'profile_views,profile_link_taps',
+      metric: 'profile_views,profile_links_taps',
       period: 'total_value',
       since: String(since),
       until: String(until),
-    }).catch(() => ({ data: [] })),
+    }).catch((e) => { console.error('[meta] total_value fetch failed:', e); return { data: [] } }),
   ])
   const acc = accountData as { followers_count?: number; username?: string }
   const tvData = totalValueData as { data?: { name?: string; total_value?: { value?: number } }[] }
+  console.log('[meta] total_value data:', JSON.stringify(tvData?.data))
   const profileViewsTotal = tvData.data?.find((d) => d.name === 'profile_views')?.total_value?.value ?? 0
-  const linkClicksTotal = tvData.data?.find((d) => d.name === 'profile_link_taps')?.total_value?.value ?? 0
+  const linkClicksTotal = tvData.data?.find((d) => d.name === 'profile_links_taps')?.total_value?.value ?? 0
   return {
     views: sumMetric(dailyData.data, 'impressions'),
     reach: sumMetric(dailyData.data, 'reach'),
