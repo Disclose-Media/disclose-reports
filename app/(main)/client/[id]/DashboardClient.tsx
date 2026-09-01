@@ -793,97 +793,58 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
   const isGoogleOnly = client.type === 'google'
 
   // Tabs: shown when client has multiple channels (Meta + Google Ads)
-  const tabs = [
-    ...(hasPaid ? [{ key: 'meta', label: 'Meta Ads' }] : []),
-    ...(hasOrganic ? [{ key: 'organic', label: 'Organic Social' }] : []),
-    ...(hasGoogle ? [{ key: 'google', label: 'Google Ads' }] : []),
-  ]
-  const defaultTab = initialTab && tabs.find(t => t.key === initialTab) ? initialTab : isGoogleOnly ? 'google' : tabs[0]?.key ?? 'meta'
-  const [activeTab, setActiveTab] = useState(defaultTab)
-
-  const showTabs = tabs.length > 1
-
   return (
     <>
-      {/* Tab navigation — only shown when multiple channels */}
-      {showTabs && (
-        <div className="flex gap-1 mb-6 bg-white border border-[#E8E4DC] rounded-[8px] p-1 w-fit print:hidden">
-          {tabs.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] rounded-[6px] transition-all duration-150 ${
-                activeTab === tab.key
-                  ? 'bg-[#111111] text-[#C8972D]'
-                  : 'text-[#888888] hover:text-[#333333] hover:bg-[#F8F6F2]'
-              }`}
-              style={{ fontFamily: 'Montserrat, sans-serif' }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Meta Ads tab */}
-      {(!showTabs || activeTab === 'meta') && (
+      {/* Meta Ads */}
+      {hasPaid && (
         <>
-          {hasPaid && (
-            <SummaryBar
-              period={period}
-              items={[
-                { label: 'Total Spend', value: fmtDollar(totalSpend), gold: true },
-                { label: 'Impressions', value: fmt(summary?.impressions) },
-                { label: 'Reach', value: fmt(summary?.reach) },
-                { label: 'Clicks', value: fmt(totalClicks) },
-                ...summaryRow2,
-              ]}
-            />
-          )}
-
-          {client.type === 'paid' && (
-            campaigns.length === 0 ? (
-              <div className="text-center py-16 bg-white border border-[#E8E4DC] rounded-[8px]">
-                <p className="text-[#AAAAAA] text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
-                  No active campaigns in this period.
-                </p>
+          <SummaryBar
+            period={period}
+            items={[
+              { label: 'Total Spend', value: fmtDollar(totalSpend), gold: true },
+              { label: 'Impressions', value: fmt(summary?.impressions) },
+              { label: 'Reach', value: fmt(summary?.reach) },
+              { label: 'Clicks', value: fmt(totalClicks) },
+              ...summaryRow2,
+            ]}
+          />
+          {campaigns.length === 0 ? (
+            <div className="text-center py-16 bg-white border border-[#E8E4DC] rounded-[8px]">
+              <p className="text-[#AAAAAA] text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
+                No active campaigns in this period.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <div className="flex items-center gap-3 mb-5">
+                <div style={{ width: '2px', height: '14px', background: '#C8972D', borderRadius: '1px' }} />
+                <h2 className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#888888]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                  Meta Ads · Campaigns
+                </h2>
+                <span className="text-[10px] text-[#AAAAAA] bg-white border border-[#E8E4DC] px-2 py-0.5 rounded-full" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  {campaigns.length}
+                </span>
               </div>
-            ) : (
-              <div>
-                <div className="flex items-center gap-3 mb-5">
-                  <div style={{ width: '2px', height: '14px', background: '#C8972D', borderRadius: '1px' }} />
-                  <h2 className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#888888]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-                    Paid Campaigns
-                  </h2>
-                  <span className="text-[10px] text-[#AAAAAA] bg-white border border-[#E8E4DC] px-2 py-0.5 rounded-full" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    {campaigns.length}
-                  </span>
-                </div>
-                {[...campaigns].sort((a, b) => parseFloat(b.amount_spent || '0') - parseFloat(a.amount_spent || '0')).map((campaign) => {
-                  const campaignAds = ads.filter((a) => a.campaign_id === campaign.id)
-                  return <CampaignSection key={campaign.id} campaign={campaign} ads={campaignAds} thumbnails={thumbnails} clientName={client.name} period={period} />
-                })}
-              </div>
-            )
+              {[...campaigns].sort((a, b) => parseFloat(b.amount_spent || '0') - parseFloat(a.amount_spent || '0')).map((campaign) => {
+                const campaignAds = ads.filter((a) => a.campaign_id === campaign.id)
+                return <CampaignSection key={campaign.id} campaign={campaign} ads={campaignAds} thumbnails={thumbnails} clientName={client.name} period={period} />
+              })}
+            </div>
           )}
         </>
       )}
 
-      {/* Organic Social tab */}
-      {(!showTabs || activeTab === 'organic') && (
-        <>
-          {hasOrganic && (
-            <OrganicSection windsorOrganic={windsorOrganic!} igInsights={igInsights} windsorInstagram={windsorInstagram} igAudience={igAudience} fbAudience={fbAudience} clientName={client.name} period={period} />
-          )}
-          {posts.length > 0 && (
-            <ContentTable posts={posts} clientName={client.name} period={period} />
-          )}
-        </>
-      )}
-
-      {/* Google Ads tab */}
-      {(!showTabs || activeTab === 'google') && hasGoogle && (
+      {/* Google Ads */}
+      {hasGoogle && (
         <GoogleAdsSection data={googleAdsData!} clientName={client.name} period={period} />
+      )}
+
+      {/* Organic Social */}
+      {hasOrganic && (
+        <OrganicSection windsorOrganic={windsorOrganic!} igInsights={igInsights} windsorInstagram={windsorInstagram} igAudience={igAudience} fbAudience={fbAudience} clientName={client.name} period={period} />
+      )}
+      {posts.length > 0 && (
+        <ContentTable posts={posts} clientName={client.name} period={period} />
       )}
     </>
   )
