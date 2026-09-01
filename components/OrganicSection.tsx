@@ -355,6 +355,7 @@ function FacebookSection({ windsorOrganic, clientName, period }: { windsorOrgani
         <MetricRow label="Impressions" value={fb.views} />
         <MetricRow label="Unique Reach" value={fb.viewers} />
         <MetricRow label="Content Interactions" value={fb.interactions} gold />
+        <MetricRow label="Engagement Rate" value={`${engagementRate}%`} gold />
         <MetricRow label="Link Clicks" value={fb.linkClicks} />
         <MetricRow label="Page Visits" value={fb.visits} />
         <MetricRow label="New Follows" value={fb.follows} green />
@@ -458,6 +459,7 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
         <MetricRow label="Views" value={ig.views} />
         <MetricRow label="Reach" value={ig.reach} />
         <MetricRow label="Interactions" value={ig.interactions} gold />
+        <MetricRow label="Engagement Rate" value={`${engagementRate}%`} gold />
         <MetricRow label="Likes" value={ig.likes} />
         <MetricRow label="Comments" value={ig.comments} />
         <MetricRow label="Saves" value={ig.saves} />
