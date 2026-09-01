@@ -115,8 +115,8 @@ function SummaryBar({ items, period }: { items: { label: string; value: string; 
   )
 }
 
-type Objective = 'auto' | 'reach' | 'traffic' | 'leads'
-type EffectiveObjective = 'reach' | 'traffic' | 'leads'
+type Objective = 'auto' | 'reach' | 'traffic' | 'leads' | 'engagement'
+type EffectiveObjective = 'reach' | 'traffic' | 'leads' | 'engagement'
 
 function detectObjective(campaign: CampaignInsight): EffectiveObjective {
   const leads = parseInt(campaign.lead || '0') || 0
@@ -164,6 +164,7 @@ const OBJECTIVE_LABELS: Record<EffectiveObjective, string> = {
   reach: 'Reach & Awareness',
   traffic: 'Traffic & LPV',
   leads: 'Lead Generation',
+  engagement: 'Engagement',
 }
 
 function ObjectiveBadge({ obj }: { obj: EffectiveObjective }) {
@@ -171,6 +172,7 @@ function ObjectiveBadge({ obj }: { obj: EffectiveObjective }) {
     reach: 'bg-blue-900/30 text-blue-300 border-blue-900/40',
     traffic: 'bg-amber-900/30 text-amber-300 border-amber-900/40',
     leads: 'bg-emerald-900/30 text-emerald-400 border-emerald-900/40',
+    engagement: 'bg-purple-900/30 text-purple-300 border-purple-900/40',
   }
   return (
     <span className={`text-[10px] border px-2.5 py-1 rounded-full ${colors[obj]}`} style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -222,6 +224,9 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
   const ctr = parseFloat(campaign.ctr || '0')
   const cpm = parseFloat(campaign.cpm || '0')
   const cpc = parseFloat(campaign.cpc || '0')
+  const clicks = parseInt(campaign.clicks || '0')
+  const engRate = impressions > 0 ? (clicks / impressions) * 100 : 0
+  const cpe = clicks > 0 && spend > 0 ? spend / clicks : 0
 
   // KPI cards per objective
   const kpiRow2: { label: string; value: string; gold?: boolean; green?: boolean }[] =
@@ -238,6 +243,13 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
           { label: 'Landing Page Views', value: lpv > 0 ? fmt(lpv) : '—' },
           { label: 'Cost Per LPV', value: cplpv > 0 ? `$${cplpv.toFixed(2)}` : '—' },
           { label: 'CPC', value: cpc > 0 ? `$${cpc.toFixed(2)}` : '—' },
+        ]
+      : obj === 'engagement'
+      ? [
+          { label: 'Engagements', value: clicks > 0 ? fmt(clicks) : '—', green: clicks > 0 },
+          { label: 'Engagement Rate', value: engRate > 0 ? `${engRate.toFixed(2)}%` : '—' },
+          { label: 'Cost Per Engagement', value: cpe > 0 ? `$${cpe.toFixed(2)}` : '—', gold: cpe > 0 },
+          { label: 'CPM', value: cpm > 0 ? `$${cpm.toFixed(2)}` : '—' },
         ]
       : [
           { label: 'CPM', value: cpm > 0 ? `$${cpm.toFixed(2)}` : '—' },
@@ -264,6 +276,14 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
           { label: 'CPM', key: 'cpm' },
           { label: 'CPC', key: 'cpc' },
         ]
+      : obj === 'engagement'
+      ? [
+          { label: 'Clicks', key: 'clicks' },
+          { label: 'CTR', key: 'ctr' },
+          { label: 'CPC', key: 'cpc' },
+          { label: 'CPM', key: 'cpm' },
+          { label: 'Frequency', key: 'freq' },
+        ]
       : [
           { label: 'Frequency', key: 'freq' },
           { label: 'CTR', key: 'ctr' },
@@ -281,9 +301,11 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
           ? { label: 'Leads', data: ads.map((a) => parseInt(a.lead || '0') || 0), backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 4, yAxisID: 'y1' }
           : obj === 'traffic'
           ? { label: 'LPVs', data: ads.map((a) => { const m = a.results?.value?.match(/^(\d+)/); return m ? parseInt(m[1]) : 0 }), backgroundColor: 'rgba(99,179,237,0.75)', borderRadius: 4, yAxisID: 'y1' }
+          : obj === 'engagement'
+          ? { label: 'Clicks', data: ads.map((a) => parseInt(a.clicks || '0')), backgroundColor: 'rgba(168,85,247,0.75)', borderRadius: 4, yAxisID: 'y1' }
           : { label: 'Reach', data: ads.map((a) => parseInt(a.reach || '0')), backgroundColor: 'rgba(99,179,237,0.75)', borderRadius: 4, yAxisID: 'y1' }
 
-      const y1Label = obj === 'leads' ? 'Leads' : obj === 'traffic' ? 'LPVs' : 'Reach'
+      const y1Label = obj === 'leads' ? 'Leads' : obj === 'traffic' ? 'LPVs' : obj === 'engagement' ? 'Clicks' : 'Reach'
 
       chartObj.current = new Chart(chartRef.current!, {
         type: 'bar',
@@ -346,7 +368,7 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
               Showing metrics for:
             </p>
             <div className="flex items-center gap-1.5">
-              {(['auto', 'reach', 'traffic', 'leads'] as Objective[]).map((o) => (
+              {(['auto', 'reach', 'traffic', 'leads', 'engagement'] as Objective[]).map((o) => (
                 <button
                   key={o}
                   onClick={() => setObjectiveOverride(o)}
@@ -598,6 +620,11 @@ function CampaignSummary({ campaign, ads, obj }: { campaign: CampaignInsight; ad
   const freq = impressions > 0 && reach > 0 ? impressions / reach : 0
   const { overview, highlights, opportunities, recommendation } = buildNarrative(campaign, ads)
 
+  const clicks = parseInt(campaign.clicks || '0')
+  const engRate = impressions > 0 ? (clicks / impressions) * 100 : 0
+  const spend = parseFloat(campaign.amount_spent || '0')
+  const cpe = clicks > 0 && spend > 0 ? spend / clicks : 0
+
   const analysisMetrics =
     obj === 'leads'
       ? [
@@ -612,6 +639,13 @@ function CampaignSummary({ campaign, ads, obj }: { campaign: CampaignInsight; ad
           { label: 'LPV', value: lpv > 0 ? lpv.toLocaleString() : '—', hl: lpv > 0 ? 'good' : 'neutral' },
           { label: 'Cost Per LPV', value: cplpv > 0 ? `$${cplpv.toFixed(2)}` : '—', hl: cplpv > 0 && cplpv < 0.75 ? 'good' : cplpv > 1.5 ? 'warn' : 'neutral' },
           { label: 'CPC', value: cpc > 0 ? `$${cpc.toFixed(2)}` : '—', hl: 'neutral' },
+        ]
+      : obj === 'engagement'
+      ? [
+          { label: 'Engagements', value: clicks > 0 ? clicks.toLocaleString() : '—', hl: clicks > 0 ? 'good' : 'neutral' },
+          { label: 'Engagement Rate', value: engRate > 0 ? `${engRate.toFixed(2)}%` : '—', hl: engRate >= 3 ? 'good' : engRate >= 1 ? 'neutral' : 'warn' },
+          { label: 'Cost Per Engagement', value: cpe > 0 ? `$${cpe.toFixed(2)}` : '—', hl: 'neutral' },
+          { label: 'CPM', value: cpm > 0 ? `$${cpm.toFixed(2)}` : '—', hl: cpm < 15 ? 'good' : cpm < 25 ? 'neutral' : 'warn' },
         ]
       : [
           { label: 'CPM', value: `$${cpm.toFixed(2)}`, hl: cpm < 15 ? 'good' : cpm < 25 ? 'neutral' : 'warn' },
