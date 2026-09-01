@@ -19,7 +19,6 @@ const PRESETS: { label: string; value: DatePreset }[] = [
   { label: '14 Days', value: 'last_14d' },
   { label: '30 Days', value: 'last_30d' },
   { label: 'This Month', value: 'this_month' },
-  { label: 'Last Month', value: 'last_month' },
 ]
 
 export default async function ClientPage({
@@ -27,7 +26,7 @@ export default async function ClientPage({
   searchParams,
 }: {
   params: { id: string }
-  searchParams: { period?: string; from?: string; to?: string; month?: string }
+  searchParams: { period?: string; from?: string; to?: string; month?: string; tab?: string }
 }) {
   const client = getClient(params.id)
   if (!client) notFound()
@@ -221,6 +220,7 @@ export default async function ClientPage({
             fbAudience={fbAudience}
             posts={posts}
             googleAdsData={googleAdsData}
+            initialTab={searchParams.tab}
           />
         )}
       </main>

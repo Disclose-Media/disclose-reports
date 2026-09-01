@@ -20,7 +20,6 @@ const PRESETS: { label: string; value: DatePreset }[] = [
   { label: '14 Days', value: 'last_14d' },
   { label: '30 Days', value: 'last_30d' },
   { label: 'This Month', value: 'this_month' },
-  { label: 'Last Month', value: 'last_month' },
 ]
 
 export default async function SharePage({

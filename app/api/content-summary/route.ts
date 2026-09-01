@@ -59,7 +59,7 @@ Write a 4-5 sentence summary covering:
 Rules:
 - Write in third person ("the page", "the account", not "your page")
 - Use exact numbers always (e.g. "11,396 views" not "over 11K")
-- No bullet points, no headers — flowing paragraph prose only
+- No bullet points, no markdown, no headers, no # symbols — flowing paragraph prose only, plain text
 - Be specific about actual content themes from the captions — never be generic
 - End with one concrete, actionable recommendation for next month's content`
 

@@ -257,9 +257,18 @@ export function ContentTable({ posts, clientName, period }: { posts: WindsorPost
                 <span className="text-[11px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>Generating content summary…</span>
               </div>
             ) : summaries[filter] ? (
-              <p className="text-[12px] text-[#444444] leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
-                {summaries[filter]}
-              </p>
+              <div className="space-y-3">
+                {summaries[filter]
+                  .split('\n')
+                  .map(l => l.replace(/^#+\s*/, '').trim())
+                  .join('\n')
+                  .split(/\n{2,}/)
+                  .map(p => p.trim())
+                  .filter(Boolean)
+                  .map((para, i) => (
+                    <p key={i} className="text-[12px] text-[#444444] leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>{para}</p>
+                  ))}
+              </div>
             ) : null}
           </div>
         </div>

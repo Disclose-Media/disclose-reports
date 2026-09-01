@@ -17,7 +17,8 @@ export async function POST(req: NextRequest) {
   const topAdByLeads = [...ads].sort((a, b) => (parseInt(String(b.lead || 0)) || 0) - (parseInt(String(a.lead || 0)) || 0))[0]
 
   const leads = parseInt(String(campaign.lead || 0))
-  const lpv = parseInt(String(campaign.results?.toString().match(/\d+/)?.[0] || 0))
+  const lpvMatch = (campaign.results as { value?: string } | null)?.value?.match(/^(\d+)/)
+  const lpv = lpvMatch ? parseInt(lpvMatch[1]) : 0
   const isLeadForm = leads > 0 && (lpv === 0 || leads >= lpv)
 
   const prompt = `You are a senior performance marketing strategist writing a campaign analysis for a client report.

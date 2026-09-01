@@ -9,7 +9,6 @@ const PRESETS = [
   { label: '14 Days', value: 'last_14d' },
   { label: '30 Days', value: 'last_30d' },
   { label: 'This Month', value: 'this_month' },
-  { label: 'Last Month', value: 'last_month' },
 ]
 
 const DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']

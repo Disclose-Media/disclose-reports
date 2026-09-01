@@ -23,6 +23,7 @@ type Props = {
   fbAudience?: WindsorFbAudienceData | null
   posts?: WindsorPost[]
   googleAdsData?: GoogleAdsResult | null
+  initialTab?: string
 }
 
 function fmt(n: string | number | undefined, decimals = 0) {
@@ -762,7 +763,7 @@ function NarrativeSection({ title, icon, color, text }: { title: string; icon: s
   )
 }
 
-export function DashboardClient({ client, summary, campaigns, ads, thumbnails, period, windsorOrganic = null, igInsights = null, windsorInstagram = null, igAudience = null, fbAudience = null, posts = [] as WindsorPost[], googleAdsData = null }: Props) {
+export function DashboardClient({ client, summary, campaigns, ads, thumbnails, period, windsorOrganic = null, igInsights = null, windsorInstagram = null, igAudience = null, fbAudience = null, posts = [] as WindsorPost[], googleAdsData = null, initialTab }: Props) {
   const totalSpend = parseFloat(summary?.amount_spent || '0')
   const totalLeads = campaigns.reduce((s, c) => s + (parseInt(c.lead || '0') || 0), 0)
   const totalLpv = campaigns.reduce((s, c) => {
@@ -819,7 +820,7 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
     ...(hasOrganic ? [{ key: 'organic', label: 'Organic Social' }] : []),
     ...(hasGoogle ? [{ key: 'google', label: 'Google Ads' }] : []),
   ]
-  const defaultTab = isGoogleOnly ? 'google' : tabs[0]?.key ?? 'meta'
+  const defaultTab = initialTab && tabs.find(t => t.key === initialTab) ? initialTab : isGoogleOnly ? 'google' : tabs[0]?.key ?? 'meta'
   const [activeTab, setActiveTab] = useState(defaultTab)
 
   const showTabs = tabs.length > 1

@@ -13,11 +13,11 @@ export function Sidebar() {
 
   const activeId = pathname.startsWith('/client/') ? pathname.split('/')[2] : null
 
-  const NavItem = ({ client }: { client: (typeof paidClients)[0] }) => {
+  const NavItem = ({ client, hrefOverride }: { client: (typeof paidClients)[0]; hrefOverride?: string }) => {
     const isActive = activeId === client.id
     return (
       <Link
-        href={`/client/${client.id}?period=${period}`}
+        href={hrefOverride ?? `/client/${client.id}?period=${period}`}
         onClick={() => setMobileOpen(false)}
         className={`group flex items-center gap-2.5 px-3 py-2 rounded-md text-[11px] font-medium transition-all duration-150 border-l-2 ${
           isActive
@@ -92,13 +92,15 @@ export function Sidebar() {
           </div>
         )}
 
-        {googleClients.filter(c => c.type === 'google').length > 0 && (
+        {googleClients.length > 0 && (
           <div>
             <p className="text-[9px] uppercase tracking-[0.18em] px-3 mb-2 font-semibold" style={{ fontFamily: 'Montserrat, sans-serif', color: '#C8972D' }}>
               Google Ads
             </p>
             <div className="space-y-0.5">
-              {googleClients.filter(c => c.type === 'google').map((c) => <NavItem key={c.id} client={c} />)}
+              {googleClients.map((c) => (
+                <NavItem key={`google-${c.id}`} client={c} hrefOverride={c.type !== 'google' ? `/client/${c.id}?period=${period}&tab=google` : undefined} />
+              ))}
             </div>
           </div>
         )}
