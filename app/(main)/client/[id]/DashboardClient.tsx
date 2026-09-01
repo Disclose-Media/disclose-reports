@@ -256,7 +256,7 @@ function CampaignSection({ campaign, ads, thumbnails }: { campaign: CampaignInsi
           { label: 'Engagements', value: clicks > 0 ? fmt(clicks) : '—', green: clicks > 0 },
           { label: 'Engagement Rate', value: engRate > 0 ? `${engRate.toFixed(2)}%` : '—' },
           { label: 'Cost Per Engagement', value: cpe > 0 ? `$${cpe.toFixed(2)}` : '—', gold: cpe > 0 },
-          { label: 'CPM', value: cpm > 0 ? `$${cpm.toFixed(2)}` : '—' },
+          { label: 'Frequency', value: freq > 0 ? freq.toFixed(2) : '—' },
         ]
       : [
           { label: 'CPM', value: cpm > 0 ? `$${cpm.toFixed(2)}` : '—' },
@@ -652,7 +652,7 @@ function CampaignSummary({ campaign, ads, obj }: { campaign: CampaignInsight; ad
           { label: 'Engagements', value: clicks > 0 ? clicks.toLocaleString() : '—', hl: clicks > 0 ? 'good' : 'neutral' },
           { label: 'Engagement Rate', value: engRate > 0 ? `${engRate.toFixed(2)}%` : '—', hl: engRate >= 3 ? 'good' : engRate >= 1 ? 'neutral' : 'warn' },
           { label: 'Cost Per Engagement', value: cpe > 0 ? `$${cpe.toFixed(2)}` : '—', hl: 'neutral' },
-          { label: 'CPM', value: cpm > 0 ? `$${cpm.toFixed(2)}` : '—', hl: cpm < 15 ? 'good' : cpm < 25 ? 'neutral' : 'warn' },
+          { label: 'Frequency', value: freq > 0 ? freq.toFixed(2) : '—', hl: freq > 4 ? 'warn' : freq > 0 ? 'good' : 'neutral' },
         ]
       : [
           { label: 'CPM', value: `$${cpm.toFixed(2)}`, hl: cpm < 15 ? 'good' : cpm < 25 ? 'neutral' : 'warn' },
