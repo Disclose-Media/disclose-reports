@@ -740,12 +740,12 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
   const totalImpressions = parseInt(summary?.impressions || '0')
 
   // Determine dominant account objective from actual data
-  // Derive account objective from actual Meta campaign objectives (most common wins)
-  const objCounts: Record<EffectiveObjective, number> = { leads: 0, traffic: 0, engagement: 0, reach: 0 }
-  for (const c of campaigns) { objCounts[detectObjective(c)]++ }
+  // Derive account objective weighted by spend — the objective with the most $ behind it wins
+  const objSpend: Record<EffectiveObjective, number> = { leads: 0, traffic: 0, engagement: 0, reach: 0 }
+  for (const c of campaigns) { objSpend[detectObjective(c)] += parseFloat(c.amount_spent || '0') }
   const accountObj: EffectiveObjective = (
     ['leads', 'traffic', 'engagement', 'reach'] as EffectiveObjective[]
-  ).reduce((best, o) => objCounts[o] > objCounts[best] ? o : best, 'reach' as EffectiveObjective)
+  ).reduce((best, o) => objSpend[o] > objSpend[best] ? o : best, 'reach' as EffectiveObjective)
 
   const cpl = totalLeads > 0 ? totalSpend / totalLeads : 0
   const avgCplpv = totalLpv > 0 ? totalSpend / totalLpv : 0
