@@ -67,28 +67,116 @@ body {
 /* ── Print / PDF export ─────────────────────────────────────────── */
 @media print {
   @page {
-    margin: 18mm 14mm;
+    margin: 16mm 14mm 14mm 14mm;
     size: A4;
   }
+  @page :first { margin-top: 10mm; }
 
-  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+  }
 
-  body { background: #ffffff !important; color: #111111 !important; font-size: 11pt; }
+  /* Base */
+  html, body {
+    background: #ffffff !important;
+    color: #111111 !important;
+    font-size: 10pt;
+    width: 100%;
+  }
 
-  /* Hide interactive chrome */
-  .lg\\:ml-52 { margin-left: 0 !important; }
+  /* Hide everything that isn't the report content */
+  nav, aside, header,
+  [class*="print:hidden"],
+  .print\\:hidden {
+    display: none !important;
+  }
 
-  /* Campaign sections: keep together where possible */
-  .campaign-section { break-inside: avoid; page-break-inside: avoid; }
+  /* Remove sidebar indent */
+  .lg\\:ml-52, [class*="ml-52"] { margin-left: 0 !important; }
 
-  /* Print header shown only during print */
-  .print-header { display: flex !important; }
+  /* Page layout */
+  main { padding: 0 !important; }
+  .px-8 { padding-left: 0 !important; padding-right: 0 !important; }
+  .py-8 { padding-top: 12pt !important; padding-bottom: 0 !important; }
 
-  /* Remove box shadows for cleaner print */
-  * { box-shadow: none !important; }
+  /* Print-only header */
+  .print-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid #C8972D;
+    padding-bottom: 10pt;
+    margin-bottom: 16pt;
+  }
 
-  /* Ensure dark campaign headers print correctly */
-  .campaign-header-dark { background: #111111 !important; color: #ffffff !important; }
+  /* Account overview bar */
+  .bg-\\[\\#111111\\] {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+  }
+
+  /* KPI cards — keep on white */
+  .bg-white { background: #ffffff !important; }
+  .bg-\\[\\#F8F6F2\\] { background: #f7f5f1 !important; }
+  .border-\\[\\#E8E4DC\\] { border-color: #e0dcd4 !important; }
+
+  /* Campaign section headers stay dark */
+  .bg-\\[\\#111111\\].text-white,
+  button.bg-\\[\\#111111\\] {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* Gold text */
+  .text-\\[\\#C8972D\\] { color: #C8972D !important; }
+
+  /* Typography scale down for print */
+  .text-\\[26px\\], .text-\\[22px\\] { font-size: 16pt !important; }
+  .text-\\[18px\\] { font-size: 13pt !important; }
+  .text-base { font-size: 11pt !important; }
+  .text-sm { font-size: 9.5pt !important; }
+  .text-xs { font-size: 8.5pt !important; }
+  .text-\\[11px\\], .text-\\[10px\\] { font-size: 8pt !important; }
+  .text-\\[9px\\] { font-size: 7.5pt !important; }
+
+  /* Grid — force to proper columns on print */
+  .grid-cols-2 { grid-template-columns: repeat(2, 1fr) !important; }
+  .sm\\:grid-cols-4 { grid-template-columns: repeat(4, 1fr) !important; }
+  .sm\\:grid-cols-2 { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Gaps */
+  .gap-3 { gap: 6pt !important; }
+  .gap-6 { gap: 10pt !important; }
+  .mb-6 { margin-bottom: 10pt !important; }
+  .mb-8 { margin-bottom: 14pt !important; }
+  .p-4, .p-5 { padding: 8pt !important; }
+
+  /* Tables */
+  table { width: 100% !important; border-collapse: collapse !important; font-size: 8pt !important; }
+  th, td { padding: 4pt 6pt !important; }
+  thead tr { background: #f7f5f1 !important; }
+
+  /* Keep campaign sections together */
+  .mb-6 { break-inside: avoid; }
+
+  /* Charts — constrain height */
+  canvas { max-height: 160pt !important; }
+  .h-52 { height: 160pt !important; }
+
+  /* Rounded borders print ok */
+  .rounded-\\[8px\\] { border-radius: 6pt !important; }
+
+  /* Footer */
+  footer { border-top: 1px solid #e0dcd4 !important; padding-top: 8pt !important; margin-top: 16pt !important; }
+
+  /* Overflow visible for tables */
+  .overflow-x-auto, .overflow-hidden { overflow: visible !important; }
+
+  /* Remove hover/transition styles */
+  * { transition: none !important; animation: none !important; }
 }
 
 .brand-label {

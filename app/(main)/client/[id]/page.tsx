@@ -114,19 +114,19 @@ export default async function ClientPage({
     <div className="min-h-screen bg-[#F8F6F2]">
 
       {/* Print-only header */}
-      <div className="print-header hidden items-center justify-between border-b-2 border-[#C8972D] pb-4 mb-6 px-0">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.18em] text-[#C8972D] font-bold" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-            Disclose Media · Confidential Report
+      <div className="print-header hidden items-center justify-between pb-4 mb-6 px-0" style={{ borderBottom: '2.5px solid #C8972D' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          <p style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '8pt', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C8972D', margin: 0 }}>
+            Disclose Media · Performance Report
           </p>
-          <h1 className="text-[22px] font-extrabold text-[#111111] mt-1" style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontFamily: 'Montserrat, sans-serif', fontSize: '20pt', fontWeight: 800, color: '#111111', letterSpacing: '-0.02em', margin: 0 }}>
             {client.name}
           </h1>
-          <p className="text-[11px] text-[#888888] mt-0.5" style={{ fontFamily: 'Inter, sans-serif' }}>
-            {periodLabel} · Generated {new Date().toLocaleDateString('en-NZ', { day: 'numeric', month: 'long', year: 'numeric' })}
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '9pt', color: '#666666', margin: 0 }}>
+            {periodLabel} &nbsp;·&nbsp; {client.type === 'organic' ? 'Organic · Facebook & Instagram' : 'Paid Media · Meta Ads'} &nbsp;·&nbsp; Generated {new Date().toLocaleDateString('en-NZ', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
-        <img src="/dm-logo-white.png" alt="Disclose Media" style={{ height: '40px', filter: 'invert(1)' }} />
+        <img src="/dm-logo-white.png" alt="Disclose Media" style={{ height: '36px', filter: 'invert(1)', opacity: 0.85 }} />
       </div>
 
       {/* Client hero — dark */}
