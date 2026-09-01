@@ -313,7 +313,7 @@ export async function getIgInsights(
     graphFetch(igUserId, { fields: 'followers_count,username' }).catch(() => ({})),
     // profile_views and website_clicks deprecated in day breakdown on v18+ — fetch as total_value
     graphFetch(`${igUserId}/insights`, {
-      metric: 'profile_views,website_clicks',
+      metric: 'profile_views,profile_link_taps',
       period: 'total_value',
       since: String(since),
       until: String(until),
@@ -322,7 +322,7 @@ export async function getIgInsights(
   const acc = accountData as { followers_count?: number; username?: string }
   const tvData = totalValueData as { data?: { name?: string; total_value?: { value?: number } }[] }
   const profileViewsTotal = tvData.data?.find((d) => d.name === 'profile_views')?.total_value?.value ?? 0
-  const linkClicksTotal = tvData.data?.find((d) => d.name === 'website_clicks')?.total_value?.value ?? 0
+  const linkClicksTotal = tvData.data?.find((d) => d.name === 'profile_link_taps')?.total_value?.value ?? 0
   return {
     views: sumMetric(dailyData.data, 'impressions'),
     reach: sumMetric(dailyData.data, 'reach'),
