@@ -305,9 +305,15 @@ function FacebookSection({ windsorOrganic }: { windsorOrganic: WindsorOrganicRes
   )
 }
 
-function InstagramSection({ windsorInstagram }: { windsorInstagram: WindsorInstagramResult }) {
+function InstagramSection({ windsorInstagram, igInsights }: { windsorInstagram: WindsorInstagramResult; igInsights?: IgInsightsSummary | null }) {
   const { summary: ig, daily, hasThirtyDayData } = windsorInstagram
   const hasData = ig.views > 0 || ig.reach > 0 || ig.interactions > 0 || ig.newFollows > 0
+
+  // Use Meta API values for link clicks and profile visits when Windsor returns 0
+  const metaLinkClicks = igInsights?.linkClicks ?? 0
+  const metaProfileVisits = igInsights?.profileVisits ?? 0
+  const linkClicks = hasThirtyDayData ? (ig.linkClicks > 0 ? ig.linkClicks : metaLinkClicks) : null
+  const profileVisits = hasThirtyDayData ? (ig.profileViews > 0 ? ig.profileViews : metaProfileVisits) : null
 
   const engagementRate = ig.reach > 0 ? ((ig.interactions / ig.reach) * 100).toFixed(1) : '0.0'
   const na = '—'
@@ -338,8 +344,8 @@ function InstagramSection({ windsorInstagram }: { windsorInstagram: WindsorInsta
           <KpiTile label="Views" value={fmt(ig.views)} />
           <KpiTile label="Reach" value={fmt(ig.reach)} />
           <KpiTile label="Interactions" value={fmt(ig.interactions)} sub={`${engagementRate}% eng. rate`} />
-          <KpiTile label="Link Clicks" value={hasThirtyDayData ? fmt(ig.linkClicks) : na} />
-          <KpiTile label="Profile Visits" value={hasThirtyDayData ? fmt(ig.profileViews) : na} />
+          <KpiTile label="Link Clicks" value={linkClicks !== null ? fmt(linkClicks) : na} />
+          <KpiTile label="Profile Visits" value={profileVisits !== null ? fmt(profileVisits) : na} />
           <KpiTile label="New Follows" value={hasThirtyDayData ? fmt(ig.newFollows) : na} />
         </div>
         {!hasThirtyDayData && (
@@ -353,7 +359,7 @@ function InstagramSection({ windsorInstagram }: { windsorInstagram: WindsorInsta
       <SummaryBlurb text={
         `Your Instagram ${ig.username ? `(@${ig.username}) ` : ''}reached ${fmt(ig.reach)} unique accounts with ${fmt(ig.views)} content views this period. ` +
         `Posts, reels and stories generated ${fmt(ig.interactions)} total interactions — ${fmt(ig.likes)} likes, ${fmt(ig.comments)} comments, ${fmt(ig.saves)} saves and ${fmt(ig.shares)} shares.` +
-        (hasThirtyDayData && (ig.linkClicks > 0 || ig.profileViews > 0) ? ` The profile received ${fmt(ig.profileViews)} visits and ${fmt(ig.linkClicks)} link clicks.` : '') +
+        (hasThirtyDayData && ((profileVisits ?? 0) > 0 || (linkClicks ?? 0) > 0) ? ` The profile received ${fmt(profileVisits ?? 0)} visits and ${fmt(linkClicks ?? 0)} link clicks.` : '') +
         (hasThirtyDayData && ig.newFollows > 0 ? ` You gained ${fmt(ig.newFollows)} new follower${ig.newFollows === 1 ? '' : 's'}.` : '')
       } />
 
@@ -397,8 +403,8 @@ function InstagramSection({ windsorInstagram }: { windsorInstagram: WindsorInsta
         <MetricRow label="Comments" value={ig.comments} />
         <MetricRow label="Saves" value={ig.saves} />
         <MetricRow label="Shares" value={ig.shares} />
-        <MetricRow label="Link Clicks" value={hasThirtyDayData ? ig.linkClicks : '—'} />
-        <MetricRow label="Profile Visits" value={hasThirtyDayData ? ig.profileViews : '—'} />
+        <MetricRow label="Link Clicks" value={linkClicks !== null ? linkClicks : '—'} />
+        <MetricRow label="Profile Visits" value={profileVisits !== null ? profileVisits : '—'} />
         <MetricRow label="New Follows" value={hasThirtyDayData ? ig.newFollows : '—'} green />
       </div>
     </div>
@@ -432,7 +438,7 @@ export function OrganicSection({ windsorOrganic, igInsights = null, windsorInsta
       {fbAudience && fbAudience.totalFans > 0 && (
         <AudienceCard platform="facebook" totalCount={fbAudience.totalFans} topCities={fbAudience.topCities} topCountries={fbAudience.topCountries} />
       )}
-      {windsorInstagram && <InstagramSection windsorInstagram={windsorInstagram} />}
+      {windsorInstagram && <InstagramSection windsorInstagram={windsorInstagram} igInsights={igInsights} />}
       {igAudience && igAudience.totalFollowers > 0 && (
         <AudienceCard platform="instagram" totalCount={igAudience.totalFollowers} womenPct={igAudience.womenPct} menPct={igAudience.menPct} genderAge={igAudience.genderAge} topCities={igAudience.topCities} topCountries={igAudience.topCountries} />
       )}
