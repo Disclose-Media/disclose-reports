@@ -1,3 +1,6 @@
+import type { CustomRange } from './windsor'
+export type { CustomRange }
+
 const BASE = 'https://graph.facebook.com/v20.0'
 const TOKEN = process.env.META_ACCESS_TOKEN!
 
@@ -78,13 +81,20 @@ function extractCostPerAction(cpa: { action_type: string; value: string }[] | un
   return cpa?.find((a) => a.action_type === type)?.value || '0'
 }
 
+function adsDateParam(period: DatePreset | CustomRange): Record<string, string> {
+  if (typeof period === 'object') {
+    return { time_range: JSON.stringify({ since: period.from, until: period.to }) }
+  }
+  return { date_preset: period }
+}
+
 export async function getCampaigns(
   accountId: string,
-  datePreset: DatePreset = 'last_30d'
+  datePreset: DatePreset | CustomRange = 'last_30d'
 ): Promise<CampaignInsight[]> {
   const data = await graphFetch(`act_${accountId}/insights`, {
     fields: INSIGHT_FIELDS,
-    date_preset: datePreset,
+    ...adsDateParam(datePreset),
     level: 'campaign',
     limit: '50',
   })
@@ -121,11 +131,11 @@ export async function getCampaigns(
 
 export async function getAds(
   accountId: string,
-  datePreset: DatePreset = 'last_30d'
+  datePreset: DatePreset | CustomRange = 'last_30d'
 ): Promise<AdInsight[]> {
   const data = await graphFetch(`act_${accountId}/insights`, {
     fields: INSIGHT_FIELDS,
-    date_preset: datePreset,
+    ...adsDateParam(datePreset),
     level: 'ad',
     limit: '100',
   })
@@ -193,16 +203,23 @@ export type IgInsightsSummary = {
   views: number
   reach: number
   profileVisits: number
+  linkClicks: number
   follows: number
   totalFollowers: number
   username: string
 }
 
-function presetToSinceUntil(preset: DatePreset): { since: number; until: number } {
+function periodToSinceUntil(period: DatePreset | CustomRange): { since: number; until: number } {
+  if (typeof period === 'object') {
+    return {
+      since: Math.floor(new Date(period.from).getTime() / 1000),
+      until: Math.floor(new Date(period.to + 'T23:59:59').getTime() / 1000),
+    }
+  }
   const now = new Date()
   const until = Math.floor(now.getTime() / 1000)
   const daysAgo = (d: number) => Math.floor((now.getTime() - d * 86400 * 1000) / 1000)
-  switch (preset) {
+  switch (period) {
     case 'today': return { since: daysAgo(1), until }
     case 'yesterday': return { since: daysAgo(2), until: daysAgo(1) }
     case 'last_7d': return { since: daysAgo(7), until }
@@ -232,9 +249,9 @@ function sumMetric(data: unknown[], name: string): number {
 
 export async function getPageInsights(
   pageId: string,
-  period: DatePreset = 'last_30d'
+  period: DatePreset | CustomRange = 'last_30d'
 ): Promise<PageInsightsSummary> {
-  const { since, until } = presetToSinceUntil(period)
+  const { since, until } = periodToSinceUntil(period)
   const [dailyData, reachData] = await Promise.all([
     graphFetch(`${pageId}/insights`, {
       metric: 'page_impressions,page_post_engagements,page_website_clicks,page_fan_adds_unique,page_views_total',
@@ -268,12 +285,12 @@ export async function getLinkedIgAccount(pageId: string): Promise<string | null>
 
 export async function getIgInsights(
   igUserId: string,
-  period: DatePreset = 'last_30d'
+  period: DatePreset | CustomRange = 'last_30d'
 ): Promise<IgInsightsSummary> {
-  const { since, until } = presetToSinceUntil(period)
+  const { since, until } = periodToSinceUntil(period)
   const [dailyData, accountData] = await Promise.all([
     graphFetch(`${igUserId}/insights`, {
-      metric: 'impressions,reach,profile_views,follower_count',
+      metric: 'impressions,reach,profile_views,profile_link_taps,follower_count',
       period: 'day',
       since: String(since),
       until: String(until),
@@ -285,6 +302,7 @@ export async function getIgInsights(
     views: sumMetric(dailyData.data, 'impressions'),
     reach: sumMetric(dailyData.data, 'reach'),
     profileVisits: sumMetric(dailyData.data, 'profile_views'),
+    linkClicks: sumMetric(dailyData.data, 'profile_link_taps'),
     follows: sumMetric(dailyData.data, 'follower_count'),
     totalFollowers: acc.followers_count || 0,
     username: acc.username || '',
@@ -293,7 +311,7 @@ export async function getIgInsights(
 
 export async function getAccountSummary(
   accountId: string,
-  datePreset: DatePreset = 'last_30d'
+  datePreset: DatePreset | CustomRange = 'last_30d'
 ) {
   const data = await graphFetch(`act_${accountId}/insights`, {
     fields: [
@@ -307,7 +325,7 @@ export async function getAccountSummary(
       'actions',
       'cost_per_action_type',
     ].join(','),
-    date_preset: datePreset,
+    ...adsDateParam(datePreset),
     level: 'account',
   })
 
@@ -342,7 +360,7 @@ export type PostItem = {
 }
 
 export async function getFacebookPosts(pageId: string, period: DatePreset = 'last_30d'): Promise<PostItem[]> {
-  const { since, until } = presetToSinceUntil(period)
+  const { since, until } = periodToSinceUntil(period)
   try {
     const data = await graphFetch(`${pageId}/published_posts`, {
       fields: 'id,message,story,created_time,full_picture,attachments{media_type}',
@@ -393,7 +411,7 @@ export async function getFacebookPosts(pageId: string, period: DatePreset = 'las
 }
 
 export async function getInstagramPosts(igUserId: string, period: DatePreset = 'last_30d'): Promise<PostItem[]> {
-  const { since, until } = presetToSinceUntil(period)
+  const { since, until } = periodToSinceUntil(period)
   try {
     const data = await graphFetch(`${igUserId}/media`, {
       fields: 'id,caption,media_type,timestamp,thumbnail_url,media_url,like_count,comments_count',
