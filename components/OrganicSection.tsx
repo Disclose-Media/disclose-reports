@@ -180,7 +180,18 @@ function AiSummaryBlurb({ platform, metrics, clientName, period, fallback }: {
             <span className="text-[11px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>Generating snapshot…</span>
           </div>
         ) : (
-          <p className="text-[12px] leading-relaxed text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{text}</p>
+          <div className="space-y-3">
+            {(text ?? '')
+              .split('\n')
+              .map(l => l.replace(/^#+\s*/, '').trim())
+              .join('\n')
+              .split(/\n{2,}/)
+              .map(p => p.trim())
+              .filter(Boolean)
+              .map((para, i) => (
+                <p key={i} className="text-[12px] leading-relaxed text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{para}</p>
+              ))}
+          </div>
         )}
       </div>
     </div>
@@ -262,7 +273,7 @@ function AudienceCard({
               {totalCount.toLocaleString('en-NZ')}
             </p>
           </div>
-          {isIg && womenPct != null && menPct != null && (
+          {womenPct != null && menPct != null && (womenPct > 0 || menPct > 0) && (
             <div className="flex items-center gap-4 pb-0.5">
               <span className="flex items-center gap-1.5 text-[10px] text-[#666666]" style={{ fontFamily: 'Inter, sans-serif' }}>
                 <span className="inline-block w-2 h-2 rounded-sm" style={{ background: '#D4909B' }} />
@@ -276,8 +287,8 @@ function AudienceCard({
           )}
         </div>
 
-        {/* Gender/age (IG only) */}
-        {isIg && genderAge && genderAge.length > 0 && (
+        {/* Gender/age */}
+        {genderAge && genderAge.length > 0 && (
           <div className="mb-5 pb-5 border-b border-[#F0EEE9]">
             <p className="text-[9px] uppercase tracking-[0.15em] text-[#AAAAAA] font-bold mb-3" style={{ fontFamily: 'Montserrat, sans-serif' }}>Age & Gender</p>
             <GenderAgeBars genderAge={genderAge} />
@@ -316,12 +327,11 @@ function FacebookSection({ windsorOrganic, clientName, period }: { windsorOrgani
       <div className="bg-[#111111] border border-[#1E1E1E] rounded-[8px] mb-5 overflow-hidden">
         <div className="border-b border-[#1E1E1E] px-6 py-3 flex items-center justify-between">
           <p className="text-[10px] uppercase tracking-[0.18em]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#C8972D' }}>Period Totals</p>
-          {fb.totalPageLikes > 0 && <span className="text-[10px] text-[#555555]" style={{ fontFamily: 'Inter, sans-serif' }}>{fmt(fb.totalPageLikes)} page likes</span>}
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 divide-x divide-y divide-[#1E1E1E] sm:divide-y-0">
           <KpiTile label="Impressions" value={fmt(fb.views)} />
           <KpiTile label="Reach" value={fmt(fb.viewers)} />
-          <KpiTile label="Interactions" value={fmt(fb.interactions)} sub={`${engagementRate}% eng. rate`} />
+          <KpiTile label="Interactions" value={fmt(fb.interactions)} />
           <KpiTile label="Link Clicks" value={fmt(fb.linkClicks)} />
           <KpiTile label="Page Visits" value={fmt(fb.visits)} />
           <KpiTile label="New Follows" value={fmt(fb.follows)} />
@@ -349,7 +359,6 @@ function FacebookSection({ windsorOrganic, clientName, period }: { windsorOrgani
             </svg>
             <span className="text-[11px] font-bold text-[#111111]" style={{ fontFamily: 'Montserrat, sans-serif' }}>Facebook Page</span>
           </div>
-          <span className="text-[9px] px-2 py-1 rounded-full border border-[#E8E4DC] text-[#888888]" style={{ fontFamily: 'Inter, sans-serif' }}>{engagementRate}% eng. rate</span>
         </div>
         {fb.totalPageLikes > 0 && <MetricRow label="Total Page Likes" value={fb.totalPageLikes} />}
         <MetricRow label="Impressions" value={fb.views} />
@@ -402,7 +411,7 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 divide-x divide-y divide-[#1E1E1E] sm:divide-y-0">
           <KpiTile label="Views" value={fmt(ig.views)} />
           <KpiTile label="Reach" value={fmt(ig.reach)} />
-          <KpiTile label="Interactions" value={fmt(ig.interactions)} sub={`${engagementRate}% eng. rate`} />
+          <KpiTile label="Interactions" value={fmt(ig.interactions)} />
           <KpiTile label="Link Clicks" value={linkClicks !== null ? fmt(linkClicks) : na} />
           <KpiTile label="Profile Visits" value={profileVisits !== null ? fmt(profileVisits) : na} />
           <KpiTile label="New Follows" value={hasThirtyDayData ? fmt(ig.newFollows) : na} />
@@ -497,7 +506,7 @@ export function OrganicSection({ windsorOrganic, igInsights = null, windsorInsta
     <div>
       <FacebookSection windsorOrganic={windsorOrganic} clientName={clientName} period={period} />
       {fbAudience && fbAudience.totalFans > 0 && (
-        <AudienceCard platform="facebook" totalCount={fbAudience.totalFans} topCities={fbAudience.topCities} topCountries={fbAudience.topCountries} />
+        <AudienceCard platform="facebook" totalCount={fbAudience.totalFans} womenPct={fbAudience.womenPct} menPct={fbAudience.menPct} genderAge={fbAudience.genderAge} topCities={fbAudience.topCities} topCountries={fbAudience.topCountries} />
       )}
       {windsorInstagram
         ? <InstagramSection windsorInstagram={windsorInstagram} igInsights={igInsights} clientName={clientName} period={period} />

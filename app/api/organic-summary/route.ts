@@ -54,11 +54,12 @@ Instagram metrics:
 - New Followers: ${metrics.newFollows?.toLocaleString()}
 - Username: ${metrics.username || ''}
 
-Write 2 sentences maximum in this style:
-- Sentence 1: State reach and views with interaction breakdown (likes, comments, saves, shares) — be specific with numbers.
-- Sentence 2: Note profile visits/link clicks/new followers if available and what they suggest about intent or interest.
+Write exactly 2 short paragraphs separated by a blank line:
 
-Rules: Third person ("the account", not "your account"). Include the @username if provided. Use exact numbers. No bullet points. No headers. Conversational but professional.`
+Paragraph 1: State reach and views with exact interaction breakdown (likes, comments, saves, shares).
+Paragraph 2: Note profile visits, link clicks, or new followers if available and what they indicate.
+
+Rules: Plain text only — no markdown, no #, no bullets. Third person. Include @username if provided. Exact numbers always. Blank line between paragraphs.`
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {

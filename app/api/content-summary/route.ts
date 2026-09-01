@@ -50,18 +50,17 @@ ${topPosts.map((p, i) => `${i + 1}. "${p.caption}..." — ${p.views.toLocaleStri
 Lowest performing posts:
 ${bottomPosts.map((p, i) => `${i + 1}. "${p.caption}..." — ${p.views.toLocaleString()} views, ${p.reach.toLocaleString()} reach`).join('\n')}
 
-Write a 4-5 sentence summary covering:
-1. The top performer: caption quote, exact views and reach numbers, and what made it stand out.
-2. The content themes and formats that drove the rest of the strong performers this period.
-3. What the lowest performing posts had in common — what theme or format didn't connect.
-4. The clearest content direction heading into the next period — be specific and actionable.
+Write exactly 3 separate paragraphs, separated by a blank line. Each paragraph is 1-2 sentences.
+
+Paragraph 1 — Top performer: Quote a snippet of the caption, state exact views and reach, explain what made it stand out.
+Paragraph 2 — What worked and what didn't: Compare the themes/formats of strong vs weak performers. Use exact numbers.
+Paragraph 3 — Content direction: One specific, data-backed observation about what the audience responds to.
 
 Rules:
-- Write in third person ("the page", "the account", not "your page")
-- Use exact numbers always (e.g. "11,396 views" not "over 11K")
-- No bullet points, no markdown, no headers, no # symbols — flowing paragraph prose only, plain text
-- Be specific about actual content themes from the captions — never be generic
-- End with one concrete, actionable recommendation for next month's content`
+- Plain text only — no markdown, no #, no bullets, no headers
+- Third person ("the page", "the account")
+- Exact numbers always (e.g. "3,881 views" not "nearly 4K")
+- Blank line between each paragraph`
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {

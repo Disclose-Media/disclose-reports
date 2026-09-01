@@ -295,6 +295,9 @@ export type WindsorIgAudienceData = {
 
 export type WindsorFbAudienceData = {
   totalFans: number
+  womenPct: number
+  menPct: number
+  genderAge: AudienceGenderAge[]
   topCities: AudienceLocation[]
   topCountries: AudienceLocation[]
 }
@@ -378,22 +381,42 @@ export async function getWindsorIgAudience(igAccountId: string): Promise<Windsor
 }
 
 export async function getWindsorFbAudience(pageId: string): Promise<WindsorFbAudienceData> {
-  const empty: WindsorFbAudienceData = { totalFans: 0, topCities: [], topCountries: [] }
+  const empty: WindsorFbAudienceData = { totalFans: 0, womenPct: 0, menPct: 0, genderAge: [], topCities: [], topCountries: [] }
   try {
-    // Windsor returns all connected pages mixed — include account_id and filter client-side
-    const [cityRows, countryRows] = await Promise.all([
+    const [gaRows, cityRows, countryRows] = await Promise.all([
+      windsorLifetimeFetch('facebook_organic', 'account_id,page_fans,page_fans_gender_age_name,page_fans_gender_age_value', pageId),
       windsorLifetimeFetch('facebook_organic', 'account_id,page_fans,page_fans_city_name,page_fans_city_value', pageId),
       windsorLifetimeFetch('facebook_organic', 'account_id,page_fans,page_fans_country_name,page_fans_country_value', pageId),
     ])
 
+    const myGa = gaRows.filter(r => String(r.account_id) === pageId)
     const myCity = cityRows.filter(r => String(r.account_id) === pageId)
     const myCountry = countryRows.filter(r => String(r.account_id) === pageId)
-    const totalFans = myCity.length > 0 ? Number(myCity[0].page_fans) || 0 : 0
+    const totalFans = myCity.length > 0 ? Number(myCity[0].page_fans) || 0 : (myGa.length > 0 ? Number(myGa[0].page_fans) || 0 : 0)
+
+    const gaMap = new Map<string, { women: number; men: number }>()
+    for (const row of myGa) {
+      if (row.page_fans_gender_age_name == null) continue
+      const [gender, age] = String(row.page_fans_gender_age_name).split('.')
+      if (!age) continue
+      if (!gaMap.has(age)) gaMap.set(age, { women: 0, men: 0 })
+      const e = gaMap.get(age)!
+      const size = Number(row.page_fans_gender_age_value) || 0
+      if (gender === 'F') e.women += size
+      else if (gender === 'M') e.men += size
+    }
+    const AGE_ORDER = ['13-17', '18-24', '25-34', '35-44', '45-54', '55-64', '65+']
+    const genderAge: AudienceGenderAge[] = AGE_ORDER.filter(a => gaMap.has(a)).map(a => ({ ageGroup: a, women: gaMap.get(a)!.women, men: gaMap.get(a)!.men }))
+    let totalWomen = 0, totalMen = 0
+    for (const { women, men } of genderAge) { totalWomen += women; totalMen += men }
+    const gTotal = totalWomen + totalMen
+    const womenPct = gTotal > 0 ? Math.round((totalWomen / gTotal) * 1000) / 10 : 0
+    const menPct = gTotal > 0 ? Math.round((totalMen / gTotal) * 1000) / 10 : 0
 
     const topCities = toLocations(myCity.map(r => ({ name: String(r.page_fans_city_name ?? ''), value: Number(r.page_fans_city_value) || 0 })))
     const topCountries = toLocations(myCountry.map(r => ({ name: COUNTRY_NAMES[String(r.page_fans_country_name ?? '')] ?? String(r.page_fans_country_name ?? ''), value: Number(r.page_fans_country_value) || 0 })))
 
-    return { totalFans, topCities, topCountries }
+    return { totalFans, womenPct, menPct, genderAge, topCities, topCountries }
   } catch { return empty }
 }
 
