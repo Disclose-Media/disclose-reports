@@ -119,6 +119,13 @@ type Objective = 'auto' | 'reach' | 'traffic' | 'leads' | 'engagement'
 type EffectiveObjective = 'reach' | 'traffic' | 'leads' | 'engagement'
 
 function detectObjective(campaign: CampaignInsight): EffectiveObjective {
+  // Use Meta's campaign objective field first
+  const obj = (campaign.objective || '').toUpperCase()
+  if (obj === 'OUTCOME_LEADS' || obj === 'LEAD_GENERATION') return 'leads'
+  if (obj === 'OUTCOME_TRAFFIC' || obj === 'LINK_CLICKS' || obj === 'CONVERSIONS') return 'traffic'
+  if (obj === 'OUTCOME_ENGAGEMENT' || obj === 'POST_ENGAGEMENT' || obj === 'PAGE_LIKES' || obj === 'EVENT_RESPONSES' || obj === 'VIDEO_VIEWS' || obj === 'MESSAGES') return 'engagement'
+  if (obj === 'OUTCOME_AWARENESS' || obj === 'REACH' || obj === 'BRAND_AWARENESS') return 'reach'
+  // Fallback: infer from data
   const leads = parseInt(campaign.lead || '0') || 0
   const lpv = campaign.results?.value ? parseInt(campaign.results.value) : 0
   if (leads > 0) return 'leads'

@@ -18,6 +18,7 @@ export type CampaignInsight = {
   id: string
   name: string
   status: string
+  objective?: string
   amount_spent: string
   impressions: string
   reach: string
@@ -92,14 +93,25 @@ export async function getCampaigns(
   accountId: string,
   datePreset: DatePreset | CustomRange = 'last_30d'
 ): Promise<CampaignInsight[]> {
-  const data = await graphFetch(`act_${accountId}/insights`, {
-    fields: INSIGHT_FIELDS,
-    ...adsDateParam(datePreset),
-    level: 'campaign',
-    limit: '50',
-  })
+  const [insightsData, campaignsData] = await Promise.all([
+    graphFetch(`act_${accountId}/insights`, {
+      fields: INSIGHT_FIELDS,
+      ...adsDateParam(datePreset),
+      level: 'campaign',
+      limit: '50',
+    }),
+    graphFetch(`act_${accountId}/campaigns`, {
+      fields: 'id,objective',
+      limit: '100',
+    }),
+  ])
 
-  return (data.data || [])
+  const objectiveMap: Record<string, string> = {}
+  for (const c of (campaignsData.data || [])) {
+    objectiveMap[String(c.id)] = String(c.objective || '')
+  }
+
+  return (insightsData.data || [])
     .filter((r: Record<string, unknown>) => parseFloat(String(r.spend || '0')) > 0)
     .map((r: Record<string, unknown>) => {
       const actions = r.actions as { action_type: string; value: string }[] | undefined
@@ -112,6 +124,7 @@ export async function getCampaigns(
         id: String(r.campaign_id),
         name: String(r.campaign_name),
         status: 'ACTIVE',
+        objective: objectiveMap[String(r.campaign_id)] || '',
         amount_spent: String(r.spend || '0'),
         impressions: String(r.impressions || '0'),
         reach: String(r.reach || '0'),
