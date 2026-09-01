@@ -1,14 +1,21 @@
 import Link from 'next/link'
 import { CLIENTS } from '@/lib/clients'
 import { getAccountSummary } from '@/lib/meta'
+import { getGoogleAdsData } from '@/lib/google-ads'
 
 async function ClientCard({ client }: { client: (typeof CLIENTS)[0] }) {
   let summary = null
+  let googleSummary = null
   try {
     if (client.type === 'paid' && client.accountId) {
       summary = await getAccountSummary(client.accountId)
     }
+    if (client.type === 'google' && client.googleAdsId) {
+      googleSummary = await getGoogleAdsData(client.googleAdsId).catch(() => null)
+    }
   } catch {}
+
+  const typeLabel = client.type === 'organic' ? 'Organic Social' : client.type === 'google' ? 'Google Ads' : 'Meta Paid Ads'
 
   return (
     <Link
@@ -24,7 +31,7 @@ async function ClientCard({ client }: { client: (typeof CLIENTS)[0] }) {
             {client.name}
           </p>
           <p className="text-[11px] text-[#AAAAAA] mt-0.5" style={{ fontFamily: 'Inter, sans-serif' }}>
-            {client.type === 'organic' ? 'Organic Page' : 'Meta Paid Ads'}
+            {typeLabel}
             {client.hasLeadGen && ' · Lead Gen'}
           </p>
         </div>
@@ -49,6 +56,33 @@ async function ClientCard({ client }: { client: (typeof CLIENTS)[0] }) {
             Facebook Page Insights · via Windsor
           </span>
         </div>
+      ) : client.type === 'google' ? (
+        googleSummary ? (
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <p className="text-[9px] text-[#AAAAAA] uppercase tracking-[0.15em] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>Spend</p>
+              <p className="text-sm font-bold text-[#C8972D]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                ${googleSummary.summary.spend.toLocaleString('en-NZ', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </p>
+            </div>
+            <div>
+              <p className="text-[9px] text-[#AAAAAA] uppercase tracking-[0.15em] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>Clicks</p>
+              <p className="text-sm font-semibold text-[#111111]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                {googleSummary.summary.clicks.toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <p className="text-[9px] text-[#AAAAAA] uppercase tracking-[0.15em] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>CTR</p>
+              <p className="text-sm font-semibold text-[#111111]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+                {googleSummary.summary.ctr.toFixed(2)}%
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 py-1">
+            <span className="text-[11px] text-[#888888]" style={{ fontFamily: 'Inter, sans-serif' }}>Google Ads · via Windsor</span>
+          </div>
+        )
       ) : summary ? (
         <div className="grid grid-cols-3 gap-4">
           <div>
@@ -96,6 +130,7 @@ async function ClientCard({ client }: { client: (typeof CLIENTS)[0] }) {
 export default function HomePage() {
   const paidClients = CLIENTS.filter((c) => c.type === 'paid' && c.status === 'active')
   const organicClients = CLIENTS.filter((c) => c.type === 'organic' && c.status === 'active')
+  const googleOnlyClients = CLIENTS.filter((c) => c.type === 'google' && c.status === 'active')
 
   return (
     <div className="min-h-screen bg-[#F8F6F2]">
@@ -145,14 +180,14 @@ export default function HomePage() {
 
         {/* Organic clients */}
         {organicClients.length > 0 && (
-          <div>
+          <div className="mb-12">
             <div className="flex items-center gap-3 mb-6">
               <div style={{ width: '2px', height: '16px', background: '#C8972D', borderRadius: '1px' }} />
               <h2
                 className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#888888]"
                 style={{ fontFamily: 'Montserrat, sans-serif' }}
               >
-                Organic
+                Organic Social Media
               </h2>
               <span className="text-[10px] text-[#AAAAAA] bg-white border border-[#E8E4DC] px-2 py-0.5 rounded-full" style={{ fontFamily: 'Inter, sans-serif' }}>
                 {organicClients.length} clients
@@ -160,6 +195,29 @@ export default function HomePage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
               {organicClients.map((client) => (
+                <ClientCard key={client.id} client={client} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Google Ads clients */}
+        {googleOnlyClients.length > 0 && (
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <div style={{ width: '2px', height: '16px', background: '#C8972D', borderRadius: '1px' }} />
+              <h2
+                className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#888888]"
+                style={{ fontFamily: 'Montserrat, sans-serif' }}
+              >
+                Google Ads
+              </h2>
+              <span className="text-[10px] text-[#AAAAAA] bg-white border border-[#E8E4DC] px-2 py-0.5 rounded-full" style={{ fontFamily: 'Inter, sans-serif' }}>
+                {googleOnlyClients.length} clients
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {googleOnlyClients.map((client) => (
                 <ClientCard key={client.id} client={client} />
               ))}
             </div>

@@ -10,6 +10,7 @@ import {
   getWindsorIgAudience, getWindsorFbAudience,
   type WindsorInstagramResult, type WindsorPost, type WindsorIgAudienceData, type WindsorFbAudienceData, type CustomRange,
 } from '@/lib/windsor'
+import { getGoogleAdsData, type GoogleAdsResult } from '@/lib/google-ads'
 import { DashboardClient } from '@/app/(main)/client/[id]/DashboardClient'
 import { PeriodSelector } from '@/components/PeriodSelector'
 
@@ -20,7 +21,6 @@ const PRESETS: { label: string; value: DatePreset }[] = [
   { label: '30 Days', value: 'last_30d' },
   { label: 'This Month', value: 'this_month' },
   { label: 'Last Month', value: 'last_month' },
-  { label: '90 Days', value: 'last_90d' },
 ]
 
 export default async function SharePage({
@@ -28,20 +28,32 @@ export default async function SharePage({
   searchParams,
 }: {
   params: { token: string }
-  searchParams: { period?: string; from?: string; to?: string }
+  searchParams: { period?: string; from?: string; to?: string; month?: string }
 }) {
   const client = getClientByToken(params.token)
   if (!client) notFound()
 
   const rawPeriod = searchParams.period || 'last_30d'
-  const isCustom = rawPeriod === 'custom' && !!searchParams.from && !!searchParams.to
-  const period: DatePreset | CustomRange = isCustom
-    ? { from: searchParams.from!, to: searchParams.to! }
-    : (rawPeriod as DatePreset)
-  const currentPreset = PRESETS.find((p) => p.value === rawPeriod) || PRESETS[3]
-  const periodLabel = isCustom
-    ? `${searchParams.from} to ${searchParams.to}`
-    : currentPreset.label
+  const activeMonth = searchParams.month
+  const isMonthPreset = rawPeriod === 'custom' && !!activeMonth
+  const isCustom = rawPeriod === 'custom' && !!searchParams.from && !!searchParams.to && !activeMonth
+
+  let period: DatePreset | CustomRange
+  let periodLabel: string
+
+  if (isMonthPreset && activeMonth) {
+    const [y, m] = activeMonth.split('-').map(Number)
+    const lastDay = new Date(y, m, 0).getDate()
+    period = { from: `${y}-${String(m).padStart(2, '0')}-01`, to: `${y}-${String(m).padStart(2, '0')}-${lastDay}` }
+    periodLabel = new Date(y, m - 1, 1).toLocaleDateString('en-NZ', { month: 'long', year: 'numeric' })
+  } else if (isCustom) {
+    period = { from: searchParams.from!, to: searchParams.to! }
+    periodLabel = `${searchParams.from} to ${searchParams.to}`
+  } else {
+    period = rawPeriod as DatePreset
+    const currentPreset = PRESETS.find((p) => p.value === rawPeriod) || PRESETS[3]
+    periodLabel = currentPreset.label
+  }
 
   let summary = null
   let campaigns: Awaited<ReturnType<typeof getCampaigns>> = []
@@ -53,18 +65,20 @@ export default async function SharePage({
   let igAudience: WindsorIgAudienceData | null = null
   let fbAudience: WindsorFbAudienceData | null = null
   let posts: WindsorPost[] = []
+  let googleAdsData: GoogleAdsResult | null = null
   let error = null
 
   try {
     const hasPaid = client.type === 'paid' && !!client.accountId
     const hasWindsor = !!client.windsorPageId
     const isOrganic = client.type === 'organic'
+    const hasGoogleAds = !!client.googleAdsId
 
     const paidIgUserId = client.type === 'paid' && hasWindsor
       ? await getLinkedIgAccount(client.windsorPageId!).catch(() => null)
       : null
 
-    const [summaryRes, campaignsRes, adsRes, thumbnailsRes, windsorRes, igRes, windsorIgRes, fbPostsRes, igPostsRes, igAudienceRes, fbAudienceRes] = await Promise.all([
+    const [summaryRes, campaignsRes, adsRes, thumbnailsRes, windsorRes, igRes, windsorIgRes, fbPostsRes, igPostsRes, igAudienceRes, fbAudienceRes, googleAdsRes] = await Promise.all([
       hasPaid ? getAccountSummary(client.accountId, period) : Promise.resolve(null),
       hasPaid ? getCampaigns(client.accountId, period) : Promise.resolve([]),
       hasPaid ? getAds(client.accountId, period) : Promise.resolve([]),
@@ -76,6 +90,7 @@ export default async function SharePage({
       isOrganic && client.igUserId ? getWindsorInstagramPosts(client.igUserId, period).catch(() => []) : Promise.resolve([]),
       isOrganic && client.igUserId ? getWindsorIgAudience(client.igUserId).catch(() => null) : Promise.resolve(null),
       isOrganic && hasWindsor ? getWindsorFbAudience(client.windsorPageId!).catch(() => null) : Promise.resolve(null),
+      hasGoogleAds ? getGoogleAdsData(client.googleAdsId!, period).catch(() => null) : Promise.resolve(null),
     ])
 
     summary = summaryRes
@@ -100,6 +115,7 @@ export default async function SharePage({
     windsorInstagram = windsorIgRes as WindsorInstagramResult | null
     igAudience = igAudienceRes as WindsorIgAudienceData | null
     fbAudience = fbAudienceRes as WindsorFbAudienceData | null
+    googleAdsData = googleAdsRes as GoogleAdsResult | null
     posts = [...(fbPostsRes as WindsorPost[]), ...(igPostsRes as WindsorPost[])].sort(
       (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
     )
@@ -142,7 +158,8 @@ export default async function SharePage({
           className="text-[10px] uppercase tracking-[0.18em] mb-2"
           style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#C8972D' }}
         >
-          {client.type === 'organic' ? 'Organic · Facebook & Instagram' : 'Paid Media · Meta Ads'}
+          {client.type === 'organic' ? 'Organic · Facebook & Instagram' : client.type === 'google' ? 'Google Ads' : 'Paid Media · Meta Ads'}
+          {client.googleAdsId && client.type === 'paid' && ' · + Google Ads'}
           {client.windsorPageId && client.type === 'paid' && ' · + Organic'}
           {client.hasLeadGen && ' · Lead Generation'}
         </p>
@@ -154,7 +171,7 @@ export default async function SharePage({
           {client.name}
         </h1>
 
-        <PeriodSelector period={rawPeriod} customFrom={searchParams.from} customTo={searchParams.to} />
+        <PeriodSelector period={rawPeriod} customFrom={searchParams.from} customTo={searchParams.to} activeMonth={activeMonth} />
       </div>
 
       <div style={{ height: '2px', background: 'linear-gradient(90deg, #C8972D 0%, rgba(200,151,45,0.15) 100%)' }} />
@@ -182,6 +199,7 @@ export default async function SharePage({
             igAudience={igAudience}
             fbAudience={fbAudience}
             posts={posts}
+            googleAdsData={googleAdsData}
           />
         )}
       </main>
