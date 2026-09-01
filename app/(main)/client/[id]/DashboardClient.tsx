@@ -602,11 +602,11 @@ function buildNarrative(campaign: CampaignInsight, ads: AdInsight[]): { overview
   if (leads > 0 && topAdByLeads && parseInt(topAdByLeads.lead || '0') > 0) {
     recommendation = `Increase daily budget allocation to "${topAdByLeads.name}" to capitalise on its proven lead generation performance, while introducing one new creative variant to keep the audience engaged and test further improvements.`
   } else if (lpv > 0 && leads === 0) {
-    recommendation = `Prioritise a landing page review — the ad traffic is there, and a focused conversion rate optimisation test on the form or page layout is the highest-leverage action to start generating leads from the existing audience.`
+    recommendation = `Prioritise a landing page review. The ad traffic is there, and a focused conversion rate optimisation test on the form or page layout is the highest-leverage action to start generating leads from the existing audience.`
   } else if (ctr < 1.5 && ctr > 0) {
     recommendation = `Launch a creative refresh test with at least two new ad variants. Prioritise strong hook copy in the first 3 seconds and a clear, benefit-led call to action to lift CTR and drive down cost per click.`
   } else if (freq > 4) {
-    recommendation = `Expand the audience targeting — lookalike audiences based on existing leads or page visitors are a natural next step that should reduce CPM, introduce new potential customers, and sustain campaign momentum.`
+    recommendation = `Expand the audience targeting. Lookalike audiences based on existing leads or page visitors are a natural next step that should reduce CPM, introduce new potential customers, and sustain campaign momentum.`
   } else {
     recommendation = `Maintain current momentum and schedule a creative refresh within the next two weeks to stay ahead of any audience fatigue. Regular reporting will ensure budget is always allocated to the highest-performing segments.`
   }
