@@ -630,9 +630,6 @@ function CampaignSummary({ campaign, ads, obj }: { campaign: CampaignInsight; ad
             Campaign Analysis
           </p>
         </div>
-        <span className="text-[9px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>
-          Auto-generated from live data
-        </span>
       </div>
 
       <div className="p-5">
