@@ -77,7 +77,7 @@ function KpiCard({
 
 function SummaryBar({ items, period }: { items: { label: string; value: string; gold?: boolean; green?: boolean }[]; period: string }) {
   return (
-    <div className="bg-white border border-[#E8E4DC] rounded-[8px] mb-8 overflow-hidden">
+    <div className="bg-white border border-[#E8E4DC] rounded-[8px] mb-8 overflow-hidden" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
       {/* Header */}
       <div className="bg-[#111111] px-6 py-3 flex items-center justify-between">
         <p
