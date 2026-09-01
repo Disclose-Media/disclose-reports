@@ -303,7 +303,7 @@ export async function getIgInsights(
   period: DatePreset | CustomRange = 'last_30d'
 ): Promise<IgInsightsSummary> {
   const { since, until } = periodToSinceUntil(period)
-  const [dailyData, accountData, totalValueData] = await Promise.all([
+  const [dailyData, accountData] = await Promise.all([
     graphFetch(`${igUserId}/insights`, {
       metric: 'impressions,reach,follower_count',
       period: 'day',
@@ -311,24 +311,13 @@ export async function getIgInsights(
       until: String(until),
     }).catch(() => ({ data: [] })),
     graphFetch(igUserId, { fields: 'followers_count,username' }).catch(() => ({})),
-    // profile_views and profile_links_taps deprecated in day breakdown on v18+ — fetch as total_value
-    graphFetch(`${igUserId}/insights`, {
-      metric: 'profile_views,profile_links_taps',
-      period: 'total_value',
-      since: String(since),
-      until: String(until),
-    }).catch((e) => { console.error('[meta] total_value fetch failed:', e); return { data: [] } }),
   ])
   const acc = accountData as { followers_count?: number; username?: string }
-  const tvData = totalValueData as { data?: { name?: string; total_value?: { value?: number } }[] }
-  console.log('[meta] total_value data:', JSON.stringify(tvData?.data))
-  const profileViewsTotal = tvData.data?.find((d) => d.name === 'profile_views')?.total_value?.value ?? 0
-  const linkClicksTotal = tvData.data?.find((d) => d.name === 'profile_links_taps')?.total_value?.value ?? 0
   return {
     views: sumMetric(dailyData.data, 'impressions'),
     reach: sumMetric(dailyData.data, 'reach'),
-    profileVisits: profileViewsTotal,
-    linkClicks: linkClicksTotal,
+    profileVisits: 0,
+    linkClicks: 0,
     follows: sumMetric(dailyData.data, 'follower_count'),
     totalFollowers: acc.followers_count || 0,
     username: acc.username || '',

@@ -377,12 +377,9 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
   const { summary: ig, daily, hasThirtyDayData } = windsorInstagram
   const hasData = ig.views > 0 || ig.reach > 0 || ig.interactions > 0 || ig.newFollows > 0
 
-  // Meta API (total_value period) is authoritative for link clicks and profile visits —
-  // these metrics are deprecated in Windsor/day breakdown. Fall back to Windsor if Meta returns 0.
-  const metaLinkClicks = igInsights?.linkClicks ?? 0
-  const metaProfileVisits = igInsights?.profileVisits ?? 0
-  const linkClicks = metaLinkClicks > 0 ? metaLinkClicks : (ig.linkClicks > 0 ? ig.linkClicks : null)
-  const profileVisits = metaProfileVisits > 0 ? metaProfileVisits : (ig.profileViews > 0 ? ig.profileViews : null)
+  // Windsor is source of truth for link clicks and profile visits
+  const linkClicks = hasThirtyDayData ? (ig.linkClicks > 0 ? ig.linkClicks : null) : null
+  const profileVisits = hasThirtyDayData ? (ig.profileViews > 0 ? ig.profileViews : null) : null
 
   const engagementRate = ig.reach > 0 ? ((ig.interactions / ig.reach) * 100).toFixed(1) : '0.0'
   const na = '—'
