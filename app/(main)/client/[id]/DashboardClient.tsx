@@ -722,7 +722,47 @@ function NarrativeSection({ title, icon, color, text }: { title: string; icon: s
 export function DashboardClient({ client, summary, campaigns, ads, thumbnails, period, windsorOrganic = null, igInsights = null, windsorInstagram = null, igAudience = null, fbAudience = null, posts = [] as WindsorPost[] }: Props) {
   const totalSpend = parseFloat(summary?.amount_spent || '0')
   const totalLeads = campaigns.reduce((s, c) => s + (parseInt(c.lead || '0') || 0), 0)
+  const totalLpv = campaigns.reduce((s, c) => {
+    const m = c.results?.value?.match(/^(\d+)/)
+    return s + (m ? parseInt(m[1]) : 0)
+  }, 0)
+  const totalClicks = parseInt(summary?.clicks || '0')
+  const totalImpressions = parseInt(summary?.impressions || '0')
+
+  // Determine dominant account objective from actual data
+  const accountObj: EffectiveObjective =
+    totalLeads > 0 ? 'leads' : totalLpv > 0 ? 'traffic' : 'reach'
+
   const cpl = totalLeads > 0 ? totalSpend / totalLeads : 0
+  const avgCplpv = totalLpv > 0 ? totalSpend / totalLpv : 0
+  const avgCtr = parseFloat(summary?.ctr || '0')
+  const avgCpm = parseFloat(summary?.cpm || '0')
+  const avgCpc = parseFloat(summary?.cpc || '0')
+  const totalReach = parseInt(summary?.reach || '0')
+  const freq = totalImpressions > 0 && totalReach > 0 ? totalImpressions / totalReach : 0
+
+  const summaryRow2 =
+    accountObj === 'leads'
+      ? [
+          { label: 'Avg CTR', value: `${avgCtr.toFixed(2)}%` },
+          { label: 'Total LPV', value: totalLpv > 0 ? fmt(totalLpv) : '—' },
+          { label: 'Total Leads', value: totalLeads > 0 ? String(totalLeads) : '—', green: totalLeads > 0 },
+          { label: 'Cost Per Lead', value: cpl > 0 ? fmtDollar(cpl) : '—', gold: cpl > 0 },
+        ]
+      : accountObj === 'traffic'
+      ? [
+          { label: 'Avg CTR', value: `${avgCtr.toFixed(2)}%` },
+          { label: 'Total LPV', value: totalLpv > 0 ? fmt(totalLpv) : '—' },
+          { label: 'Cost Per LPV', value: avgCplpv > 0 ? fmtDollar(avgCplpv) : '—', gold: avgCplpv > 0 },
+          { label: 'Avg CPC', value: avgCpc > 0 ? fmtDollar(avgCpc) : '—' },
+        ]
+      : [
+          { label: 'Avg CTR', value: `${avgCtr.toFixed(2)}%` },
+          { label: 'Avg CPM', value: avgCpm > 0 ? `$${avgCpm.toFixed(2)}` : '—' },
+          { label: 'Avg Frequency', value: freq > 0 ? freq.toFixed(2) : '—' },
+          { label: 'Avg CPC', value: avgCpc > 0 ? fmtDollar(avgCpc) : '—' },
+        ]
+
   const hasPaid = client.type === 'paid' && campaigns.length > 0
 
   return (
@@ -734,11 +774,8 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
             { label: 'Total Spend', value: fmtDollar(totalSpend), gold: true },
             { label: 'Impressions', value: fmt(summary?.impressions) },
             { label: 'Reach', value: fmt(summary?.reach) },
-            { label: 'Clicks', value: fmt(summary?.clicks) },
-            { label: 'Avg CTR', value: `${parseFloat(summary?.ctr || '0').toFixed(2)}%` },
-            { label: 'Avg CPM', value: `$${parseFloat(summary?.cpm || '0').toFixed(2)}` },
-            { label: 'Total Leads', value: totalLeads > 0 ? String(totalLeads) : '—', green: totalLeads > 0 },
-            { label: 'Cost Per Lead', value: cpl > 0 ? fmtDollar(cpl) : '—', gold: cpl > 0 },
+            { label: 'Clicks', value: fmt(totalClicks) },
+            ...summaryRow2,
           ]}
         />
       )}
