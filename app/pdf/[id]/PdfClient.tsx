@@ -209,11 +209,12 @@ export function PdfClient({
           print-color-adjust: exact !important;
           font-size: 10pt;
         }
-        @page { margin: 0; size: A4 portrait; }
+        @page { margin: 14mm 16mm; size: A4 portrait; }
         @media print {
           .no-print { display: none !important; }
           .avoid-break { break-inside: avoid; page-break-inside: avoid; }
-          .page-wrap { padding: 14mm 16mm; }
+          .keep-with-next { break-after: avoid; page-break-after: avoid; }
+          .page-wrap { padding: 0; }
         }
         @media screen {
           body { background: #e5e7eb; }
@@ -371,9 +372,9 @@ export function PdfClient({
           const tdStyle: React.CSSProperties = { padding: '6px 8px', textAlign: 'right', fontSize: 9, color: CHARCOAL, fontFamily: 'Inter, sans-serif' }
 
           return (
-            <div key={campaign.id} className="avoid-break" style={{ marginBottom: 18, border: `1px solid ${LIGHT_GREY}`, borderRadius: 8, overflow: 'hidden' }}>
-              {/* Campaign header — dark bg per brand: white text on dark */}
-              <div style={{ background: BLACK, padding: '11px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            <div key={campaign.id} style={{ marginBottom: 22, border: `1px solid ${LIGHT_GREY}`, borderRadius: 8, overflow: 'hidden' }}>
+              {/* Campaign header — keep with first KPI row */}
+              <div className="keep-with-next" style={{ background: BLACK, padding: '11px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 3, height: 16, background: GOLD, borderRadius: 2, flexShrink: 0 }} />
                   <span style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 11.5, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>{campaign.name}</span>
@@ -388,18 +389,19 @@ export function PdfClient({
               </div>
 
               <div style={{ padding: '14px 16px', background: '#fff' }}>
-                {/* KPI row 1 */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 8 }}>
-                  {kpi1.map(k => <KpiCard key={k.label} {...k} />)}
-                </div>
-                {/* KPI row 2 */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 16 }}>
-                  {kpi2.map(k => <KpiCard key={k.label} {...k} />)}
+                {/* KPI rows — keep together */}
+                <div className="avoid-break" style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 8 }}>
+                    {kpi1.map(k => <KpiCard key={k.label} {...k} />)}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
+                    {kpi2.map(k => <KpiCard key={k.label} {...k} />)}
+                  </div>
                 </div>
 
                 {/* Ad performance table */}
                 {campaignAds.length > 0 && (
-                  <div style={{ marginBottom: 16 }}>
+                  <div className="avoid-break" style={{ marginBottom: 14 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                       <div style={{ width: 2, height: 12, background: GOLD, borderRadius: 1 }} />
                       <span style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 8, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: DARK_GREY }}>Ad Performance</span>
@@ -462,13 +464,15 @@ export function PdfClient({
 
                 {/* Campaign Analysis */}
                 <div style={{ background: OFFWHITE, border: `1px solid ${LIGHT_GREY}`, borderRadius: 6, padding: '12px 14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                    <div style={{ width: 2, height: 12, background: GOLD, borderRadius: 1 }} />
-                    <span style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 8, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: DARK_GREY }}>Campaign Analysis</span>
-                  </div>
-                  {/* Analysis metric cards */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 12 }}>
-                    {analysisMetrics.map(m => <AnalysisCard key={m.label} {...m} />)}
+                  {/* Header + metric cards — keep together */}
+                  <div className="avoid-break" style={{ marginBottom: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                      <div style={{ width: 2, height: 12, background: GOLD, borderRadius: 1 }} />
+                      <span style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 8, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: DARK_GREY }}>Campaign Analysis</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
+                      {analysisMetrics.map(m => <AnalysisCard key={m.label} {...m} />)}
+                    </div>
                   </div>
                   {/* Narrative */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -477,13 +481,13 @@ export function PdfClient({
                       { label: "What's Working", text: narrative.highlights },
                       { label: 'Growth Opportunities', text: narrative.opportunities },
                     ].map(s => (
-                      <div key={s.label}>
+                      <div key={s.label} className="avoid-break">
                         <span style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 7.5, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: GOLD }}>{s.label}</span>
                         <p style={{ fontSize: 9, color: CHARCOAL, lineHeight: 1.65, fontFamily: 'Inter, sans-serif', marginTop: 3 }}>{s.text}</p>
                       </div>
                     ))}
                     {/* Recommendation — dark card per brand guidelines */}
-                    <div style={{ background: BLACK, borderRadius: 5, padding: '10px 14px', marginTop: 2 }}>
+                    <div className="avoid-break" style={{ background: BLACK, borderRadius: 5, padding: '10px 14px', marginTop: 2 }}>
                       <div style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 7.5, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: GOLD, marginBottom: 4 }}>Recommendation</div>
                       <p style={{ fontSize: 9, color: '#cccccc', lineHeight: 1.65, fontFamily: 'Inter, sans-serif' }}>{narrative.recommendation}</p>
                     </div>
