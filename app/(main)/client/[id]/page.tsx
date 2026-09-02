@@ -31,10 +31,13 @@ export default async function ClientPage({
   const client = getClient(params.id)
   if (!client) notFound()
 
-  const rawPeriod = searchParams.period || 'this_month'
-  const activeMonth = searchParams.month  // 'YYYY-MM' e.g. '2026-07'
-  const isMonthPreset = rawPeriod === 'custom' && !!activeMonth
-  const isCustom = rawPeriod === 'custom' && !!searchParams.from && !!searchParams.to && !activeMonth
+  const activeMonth = searchParams.month
+  const isMonthPreset = searchParams.period === 'custom' && !!activeMonth
+  const isCustom = searchParams.period === 'custom' && !!searchParams.from && !!searchParams.to && !activeMonth
+  // Fall back to this_month if 'custom' has no valid params
+  const rawPeriod = (searchParams.period === 'custom' && !isMonthPreset && !isCustom)
+    ? 'this_month'
+    : (searchParams.period || 'this_month')
 
   let period: DatePreset | CustomRange
   let periodLabel: string
