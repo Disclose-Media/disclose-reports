@@ -129,10 +129,10 @@ export default async function SharePage({
   return (
     <div className="min-h-screen bg-[#F8F6F2]">
 
-      <div className="bg-[#111111] px-8 pt-7 pb-6">
-        <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <img src="/dm-logo-white.png" alt="Disclose Media" className="h-7 w-auto object-contain" />
+      <div className="bg-[#111111] px-10 pt-9 pb-8">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <div className="flex items-center gap-4">
+            <img src="/dm-logo-white.png" alt="Disclose Media" className="h-8 w-auto object-contain" />
             <div>
               <p className="text-white text-[10px] font-bold tracking-[0.12em] uppercase" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 Disclose Media
@@ -156,7 +156,7 @@ export default async function SharePage({
         </div>
 
         <p
-          className="text-[10px] uppercase tracking-[0.18em] mb-2"
+          className="text-[10px] uppercase tracking-[0.18em] mb-3"
           style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#C8972D' }}
         >
           {client.type === 'organic'
@@ -169,7 +169,7 @@ export default async function SharePage({
         </p>
 
         <h1
-          className="text-[26px] font-extrabold text-white leading-tight mb-5"
+          className="text-[30px] font-extrabold text-white leading-tight mb-6"
           style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.02em' }}
         >
           {client.name}
