@@ -374,7 +374,7 @@ export function PdfClient({
           return (
             <div key={campaign.id} style={{ marginBottom: 22, border: `1px solid ${LIGHT_GREY}`, borderRadius: 8, overflow: 'hidden' }}>
               {/* Campaign header — keep with first KPI row */}
-              <div className="keep-with-next" style={{ background: BLACK, padding: '11px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+              <div className="keep-with-next" style={{ background: BLACK, borderRadius: '8px 8px 0 0', padding: '11px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 3, height: 16, background: GOLD, borderRadius: 2, flexShrink: 0 }} />
                   <span style={{ fontFamily: 'Montserrat, sans-serif', fontSize: 11.5, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>{campaign.name}</span>

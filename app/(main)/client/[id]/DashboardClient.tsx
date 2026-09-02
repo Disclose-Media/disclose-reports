@@ -83,7 +83,7 @@ function SummaryBar({ items, period }: { items: { label: string; value: string; 
   return (
     <div className="bg-white border border-[#E8E4DC] rounded-[8px] mb-8 overflow-hidden" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
       {/* Header */}
-      <div className="bg-[#111111] px-6 py-3 flex items-center justify-between">
+      <div className="bg-[#111111] rounded-t-[8px] px-6 py-3 flex items-center justify-between">
         <p
           className="text-[10px] uppercase tracking-[0.18em]"
           style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#C8972D' }}

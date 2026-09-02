@@ -324,7 +324,7 @@ function FacebookSection({ windsorOrganic, clientName, period }: { windsorOrgani
       <SectionHeader title="Organic Performance · Facebook" />
 
       {/* Summary bar */}
-      <div className="bg-[#111111] border border-[#1E1E1E] rounded-[8px] mb-5 overflow-hidden">
+      <div className="bg-[#111111] border border-[#1E1E1E] rounded-[8px] mb-5 overflow-hidden" style={{ borderRadius: 8 }}>
         <div className="border-b border-[#1E1E1E] px-6 py-3 flex items-center justify-between">
           <p className="text-[10px] uppercase tracking-[0.18em]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#C8972D' }}>Period Totals</p>
         </div>
@@ -397,7 +397,7 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
       <SectionHeader title="Organic Performance · Instagram" />
 
       {/* Summary bar */}
-      <div className="bg-[#111111] border border-[#1E1E1E] rounded-[8px] mb-5 overflow-hidden">
+      <div className="bg-[#111111] border border-[#1E1E1E] rounded-[8px] mb-5 overflow-hidden" style={{ borderRadius: 8 }}>
         <div className="border-b border-[#1E1E1E] px-6 py-3 flex items-center justify-between">
           <p className="text-[10px] uppercase tracking-[0.18em]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#C8972D' }}>Period Totals</p>
           {ig.totalFollowers > 0 && <span className="text-[10px] text-[#555555]" style={{ fontFamily: 'Inter, sans-serif' }}>{fmt(ig.totalFollowers)} followers</span>}
