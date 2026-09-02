@@ -13,53 +13,61 @@ export async function POST(req: NextRequest) {
 
   const isFb = platform === 'facebook'
 
+  // Only include metrics that have real values (> 0)
+  const fbLines = [
+    `- Impressions: ${metrics.views?.toLocaleString()}`,
+    `- Unique Reach: ${metrics.viewers?.toLocaleString()}`,
+    `- Total Interactions: ${metrics.interactions?.toLocaleString()}`,
+    `- Engagement Rate: ${metrics.engagementRate}%`,
+    Number(metrics.linkClicks) > 0 ? `- Link Clicks: ${metrics.linkClicks?.toLocaleString()}` : null,
+    Number(metrics.visits) > 0 ? `- Page Visits: ${metrics.visits?.toLocaleString()}` : null,
+    Number(metrics.follows) > 0 ? `- New Followers: ${metrics.follows?.toLocaleString()}` : null,
+  ].filter(Boolean).join('\n')
+
+  const igLines = [
+    `- Views: ${metrics.views?.toLocaleString()}`,
+    `- Unique Reach: ${metrics.reach?.toLocaleString()}`,
+    `- Total Interactions: ${metrics.interactions?.toLocaleString()}`,
+    `- Likes: ${metrics.likes?.toLocaleString()}`,
+    Number(metrics.comments) > 0 ? `- Comments: ${metrics.comments?.toLocaleString()}` : null,
+    Number(metrics.saves) > 0 ? `- Saves: ${metrics.saves?.toLocaleString()}` : null,
+    Number(metrics.shares) > 0 ? `- Shares: ${metrics.shares?.toLocaleString()}` : null,
+    `- Engagement Rate: ${metrics.engagementRate}%`,
+    Number(metrics.newFollows) > 0 ? `- New Followers: ${metrics.newFollows?.toLocaleString()}` : null,
+    metrics.username ? `- Username: ${metrics.username}` : null,
+  ].filter(Boolean).join('\n')
+
   const prompt = isFb
-    ? `You are a social media strategist writing a concise organic performance summary for a client report.
+    ? `You are a social media strategist writing a positive, client-friendly organic performance summary.
 
 Client: ${clientName}
 Platform: Facebook
 Period: ${period}
 
-Facebook Page metrics:
-- Impressions (views): ${metrics.views?.toLocaleString()}
-- Unique Reach: ${metrics.viewers?.toLocaleString()}
-- Total Interactions: ${metrics.interactions?.toLocaleString()}
-- Engagement Rate: ${metrics.engagementRate}%
-- Link Clicks: ${metrics.linkClicks?.toLocaleString()}
-- Page Visits: ${metrics.visits?.toLocaleString()}
-- New Followers: ${metrics.follows?.toLocaleString()}
+Available metrics:
+${fbLines}
 
-Write 2 sentences maximum in this style:
-- Sentence 1: State reach and impressions with a brief insight on what this indicates for organic visibility.
-- Sentence 2: Describe interaction quality (engagement rate, link clicks, follows) and whether it reflects audience interest.
-
-Rules: Third person ("the page", not "your page"). Use exact numbers. No bullet points. No headers. Conversational but professional.`
-    : `You are a social media strategist writing a concise organic performance summary for a client report.
+Write 1-2 sentences maximum.
+- Focus only on the metrics listed above. Do not mention or reference any metric not listed.
+- Frame everything positively. Highlight what is working well.
+- Use exact numbers from the metrics above.
+- Third person ("the page", not "your page"). No bullet points. No headers. Conversational but professional.
+- No em dashes (do not use the character —). No negative language. No suggestions that content needs improvement.`
+    : `You are a social media strategist writing a positive, client-friendly organic performance summary.
 
 Client: ${clientName}
 Platform: Instagram
 Period: ${period}
 
-Instagram metrics:
-- Views: ${metrics.views?.toLocaleString()}
-- Unique Reach: ${metrics.reach?.toLocaleString()}
-- Total Interactions: ${metrics.interactions?.toLocaleString()}
-- Likes: ${metrics.likes?.toLocaleString()}
-- Comments: ${metrics.comments?.toLocaleString()}
-- Saves: ${metrics.saves?.toLocaleString()}
-- Shares: ${metrics.shares?.toLocaleString()}
-- Engagement Rate: ${metrics.engagementRate}%
-- Profile Visits: ${Number(metrics.profileViews) > 0 ? metrics.profileViews?.toLocaleString() : 'not available'}
-- Link Clicks: ${Number(metrics.linkClicks) > 0 ? metrics.linkClicks?.toLocaleString() : 'not available'}
-- New Followers: ${metrics.newFollows?.toLocaleString()}
-- Username: ${metrics.username || ''}
+Available metrics:
+${igLines}
 
-Write exactly 2 short paragraphs separated by a blank line:
-
-Paragraph 1: State reach and views with exact interaction breakdown (likes, comments, saves, shares).
-Paragraph 2: Note profile visits, link clicks, or new followers if available and what they indicate.
-
-Rules: Plain text only. No markdown, no #, no bullets, no em dashes (do not use the character —). Third person. Include @username if provided. Exact numbers always. Blank line between paragraphs.`
+Write exactly 1-2 sentences.
+- Focus ONLY on the metrics listed above. Do not reference or mention any metric not in the list above.
+- Frame everything positively. Celebrate what the numbers show.
+- Use exact numbers. Include @username if provided.
+- Third person. No bullet points. No headers. No em dashes (do not use the character —).
+- Never say anything is "unavailable", "limited", "not available", or suggest the content needs improvement.`
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {

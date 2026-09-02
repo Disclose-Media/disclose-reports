@@ -408,7 +408,7 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
           <KpiTile label="Interactions" value={fmt(ig.interactions)} />
           <KpiTile label="Accounts Engaged" value={ig.accountsEngaged > 0 ? fmt(ig.accountsEngaged) : na} />
           <KpiTile label="Shares" value={ig.shares > 0 ? fmt(ig.shares) : na} />
-          <KpiTile label="New Follows" value={hasThirtyDayData ? fmt(ig.newFollows) : na} />
+          <KpiTile label="New Follows" value={fmt(ig.newFollows)} />
         </div>
       </div>
 
@@ -462,7 +462,7 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
         <MetricRow label="Comments" value={ig.comments} />
         <MetricRow label="Saves" value={ig.saves} />
         <MetricRow label="Shares" value={ig.shares} />
-        <MetricRow label="New Follows" value={hasThirtyDayData ? ig.newFollows : '—'} green />
+        <MetricRow label="New Follows" value={ig.newFollows} green />
       </div>
     </div>
   )
