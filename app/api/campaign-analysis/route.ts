@@ -27,7 +27,7 @@ Client: ${clientName}
 Campaign: ${campaign.campaign_name}
 Objective: ${objective}
 Period: ${period}
-Campaign type: ${isLeadForm ? 'Meta Lead Form (prospects submit details directly within Meta — no landing page involved)' : 'Landing Page (traffic sent to external website)'}
+Campaign type: ${isLeadForm ? 'Meta Lead Form (prospects submit details directly within Meta, no landing page involved)' : 'Landing Page (traffic sent to external website)'}
 
 Campaign metrics:
 - Spend: $${parseFloat(String(campaign.amount_spent || 0)).toFixed(2)}
@@ -47,7 +47,7 @@ Top ads:
 - By Leads: "${topAdByLeads?.ad_name || topAdByLeads?.name || 'N/A'}" (${topAdByLeads?.lead || 0} leads)
 - Top Spend: "${topAdBySpend?.ad_name || topAdBySpend?.name || 'N/A'}" ($${parseFloat(String(topAdBySpend?.amount_spent || 0)).toFixed(2)})
 
-IMPORTANT: ${isLeadForm ? 'This is a Meta lead form campaign. Do NOT mention landing page conversion rates or landing page views — they are not applicable. Leads were captured via native Meta forms.' : 'This is a landing page campaign. You may reference the landing page conversion rate.'}
+IMPORTANT: ${isLeadForm ? 'This is a Meta lead form campaign. Do NOT mention landing page conversion rates or landing page views. They are not applicable. Leads were captured via native Meta forms.' : 'This is a landing page campaign. You may reference the landing page conversion rate.'}
 
 Write a structured campaign analysis with exactly these 3 parts. Each part should be 1-2 sentences. Analyse only the data provided. Use only the exact numbers from the metrics above.
 

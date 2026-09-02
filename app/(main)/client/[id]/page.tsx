@@ -31,7 +31,7 @@ export default async function ClientPage({
   const client = getClient(params.id)
   if (!client) notFound()
 
-  const rawPeriod = searchParams.period || 'last_30d'
+  const rawPeriod = searchParams.period || 'this_month'
   const activeMonth = searchParams.month  // 'YYYY-MM' e.g. '2026-07'
   const isMonthPreset = rawPeriod === 'custom' && !!activeMonth
   const isCustom = rawPeriod === 'custom' && !!searchParams.from && !!searchParams.to && !activeMonth

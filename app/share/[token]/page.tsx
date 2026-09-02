@@ -33,7 +33,7 @@ export default async function SharePage({
   const client = getClientByToken(params.token)
   if (!client) notFound()
 
-  const rawPeriod = searchParams.period || 'last_30d'
+  const rawPeriod = searchParams.period || 'this_month'
   const activeMonth = searchParams.month
   const isMonthPreset = rawPeriod === 'custom' && !!activeMonth
   const isCustom = rawPeriod === 'custom' && !!searchParams.from && !!searchParams.to && !activeMonth
