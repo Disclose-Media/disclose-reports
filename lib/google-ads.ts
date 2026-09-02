@@ -92,11 +92,18 @@ function periodToDates(period: Period): { dateFrom: string; dateTo: string } {
 function buildUrl(fields: string, dateFrom: string, dateTo: string, accountId: string): string {
   const url = new URL(`${BASE}/google_ads`)
   url.searchParams.set('api_key', KEY)
-  url.searchParams.set('fields', fields)
+  // Always include account_id so we can filter rows client-side
+  // Windsor ignores _account_id for Google Ads and returns all connected accounts
+  url.searchParams.set('fields', fields.includes('account_id') ? fields : `account_id,${fields}`)
   url.searchParams.set('date_from', dateFrom)
   url.searchParams.set('date_to', dateTo)
   url.searchParams.set('_account_id', accountId)
   return url.toString()
+}
+
+// Normalise account ID for comparison: strip dashes, leading zeros, whitespace
+function normaliseId(id: string): string {
+  return String(id).replace(/[-\s]/g, '').replace(/^0+/, '')
 }
 
 async function fetchRows(url: string): Promise<Record<string, unknown>[]> {
@@ -104,6 +111,15 @@ async function fetchRows(url: string): Promise<Record<string, unknown>[]> {
   if (!res.ok) return []
   const json = await res.json()
   return json.data ?? json.result ?? (Array.isArray(json) ? json : [])
+}
+
+// Filter rows to only those belonging to this client's account
+function filterByAccount(rows: Record<string, unknown>[], accountId: string): Record<string, unknown>[] {
+  const norm = normaliseId(accountId)
+  return rows.filter(row => {
+    const rowId = String(row.account_id ?? row.customer_id ?? '')
+    return rowId === '' || normaliseId(rowId) === norm
+  })
 }
 
 export async function getGoogleAdsData(accountId: string, period: Period = 'last_30d'): Promise<GoogleAdsResult | null> {
@@ -117,11 +133,18 @@ export async function getGoogleAdsData(accountId: string, period: Period = 'last
     fetchRows(buildUrl('city,cost,clicks,conversions', dateFrom, dateTo, accountId)).catch(() => []),
   ])
 
-  if (campRows.length === 0 && dailyRows.length === 0) return null
+  // Filter every result set to only this client's account rows
+  const filteredCamp = filterByAccount(campRows, accountId)
+  const filteredDaily = filterByAccount(dailyRows, accountId)
+  const filteredKw = filterByAccount(kwRows, accountId)
+  const filteredDevice = filterByAccount(deviceRows, accountId)
+  const filteredGeo = filterByAccount(geoRows, accountId)
+
+  if (filteredCamp.length === 0 && filteredDaily.length === 0) return null
 
   // Campaigns
   const campMap = new Map<string, GoogleAdsCampaign>()
-  for (const row of campRows) {
+  for (const row of filteredCamp) {
     const id = String(row.campaign_id ?? '')
     if (!id) continue
     const existing = campMap.get(id)
@@ -156,7 +179,7 @@ export async function getGoogleAdsData(accountId: string, period: Period = 'last
 
   // Daily
   const dailyMap = new Map<string, { spend: number; clicks: number; impressions: number; conversions: number }>()
-  for (const row of dailyRows) {
+  for (const row of filteredDaily) {
     const date = String(row.date ?? '').slice(0, 10)
     if (!date) continue
     const ex = dailyMap.get(date) ?? { spend: 0, clicks: 0, impressions: 0, conversions: 0 }
@@ -170,7 +193,7 @@ export async function getGoogleAdsData(accountId: string, period: Period = 'last
 
   // Keywords
   const kwMap = new Map<string, GoogleAdsKeyword>()
-  for (const row of kwRows) {
+  for (const row of filteredKw) {
     const kw = String(row.keyword_text ?? row.keyword ?? '').trim()
     if (!kw || kw === '--') continue
     const ex = kwMap.get(kw) ?? { keyword: kw, spend: 0, clicks: 0, impressions: 0, ctr: 0, avgCpc: 0, conversions: 0, conversionRate: 0 }
@@ -189,7 +212,7 @@ export async function getGoogleAdsData(accountId: string, period: Period = 'last
 
   // Devices
   const deviceMap = new Map<string, GoogleAdsDevice>()
-  for (const row of deviceRows) {
+  for (const row of filteredDevice) {
     const device = String(row.device ?? '').trim()
     if (!device) continue
     const label = device.toLowerCase().includes('mobile') ? 'Mobile' : device.toLowerCase().includes('computer') ? 'Desktop' : device.toLowerCase().includes('tablet') ? 'Tablet' : device
@@ -206,7 +229,7 @@ export async function getGoogleAdsData(accountId: string, period: Period = 'last
 
   // Geo
   const geoMap = new Map<string, GoogleAdsGeo>()
-  for (const row of geoRows) {
+  for (const row of filteredGeo) {
     const city = String(row.city ?? '').trim()
     if (!city || city === '(not set)') continue
     const ex = geoMap.get(city) ?? { city, spend: 0, clicks: 0, conversions: 0 }
