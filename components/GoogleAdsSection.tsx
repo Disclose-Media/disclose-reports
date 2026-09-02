@@ -238,7 +238,7 @@ function AccountTrendChart({ daily }: { daily: GoogleAdsResult['daily'] }) {
           ],
         },
         options: {
-          responsive: true, maintainAspectRatio: true,
+          responsive: true, maintainAspectRatio: false,
           interaction: { mode: 'index', intersect: false },
           plugins: { legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 10, padding: 14, font: { size: 10, family: 'Inter, sans-serif' }, color: '#888888' } }, tooltip: { backgroundColor: '#111111', titleColor: '#FFF', bodyColor: '#CCC', padding: 10, cornerRadius: 6 } },
           scales: {
@@ -312,9 +312,9 @@ export function GoogleAdsSection({ data, clientName, period }: Props) {
         <div className="border-b border-[#1E1E1E] px-5 py-3">
           <p className="text-[10px] uppercase tracking-[0.18em]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#C8972D' }}>Account Totals</p>
         </div>
-        <div className="flex flex-wrap divide-x divide-[#1E1E1E]">
+        <div className="grid divide-x divide-[#1E1E1E]" style={{ gridTemplateColumns: `repeat(${kpiItems.length}, minmax(0, 1fr))` }}>
           {kpiItems.map(item => (
-            <div key={item.label} className="px-5 py-4 flex-1 min-w-[100px]">
+            <div key={item.label} className="px-5 py-4">
               <p className="text-[9px] uppercase tracking-[0.14em] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#555555' }}>{item.label}</p>
               <p className={`text-[20px] font-bold leading-none ${'gold' in item && item.gold ? 'text-[#C8972D]' : 'green' in item && item.green ? 'text-emerald-400' : 'text-white'}`} style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.02em' }}>{item.value}</p>
             </div>
