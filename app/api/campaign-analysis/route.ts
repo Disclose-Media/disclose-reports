@@ -55,13 +55,19 @@ export async function POST(req: NextRequest) {
     ? `Best lead ad: "${topAdByLeads?.ad_name || topAdByLeads?.name || 'N/A'}" with ${topAdByLeads?.lead ?? 0} leads at $${parseFloat(String(topAdByLeads?.amount_spent ?? 0)).toFixed(2)} spend`
     : `Best CTR ad: "${topAdByCtr?.ad_name || topAdByCtr?.name || 'N/A'}" with ${parseFloat(String(topAdByCtr?.ctr ?? 0)).toFixed(2)}% CTR at $${parseFloat(String(topAdByCtr?.amount_spent ?? 0)).toFixed(2)} spend`
 
+  const primaryResultInstruction = isLeadForm
+    ? `CRITICAL: This campaign generated EXACTLY ${leads} lead${leads !== 1 ? 's' : ''}. You MUST write "${leads} lead${leads !== 1 ? 's' : ''}" in the overview. Writing any other number is a factual error.`
+    : isTraffic
+    ? `CRITICAL: This campaign generated EXACTLY ${lpv} landing page view${lpv !== 1 ? 's' : ''}. You MUST write "${lpv} landing page view${lpv !== 1 ? 's' : ''}" in the overview. Writing any other number is a factual error.`
+    : `CRITICAL: This campaign delivered EXACTLY ${impressions.toLocaleString()} impressions to ${reach.toLocaleString()} people. Use these exact numbers.`
+
   const prompt = `You are writing a campaign performance summary for a client report. Use ONLY the numbers below — do not invent, round, or substitute any figure.
 
 CLIENT: ${clientName}
 CAMPAIGN: ${campaign.campaign_name || campaign.name}
 PERIOD: ${period}
 
-KEY RESULTS (use these exact numbers — no others):
+KEY RESULTS (these are the ONLY numbers you may use — no others exist):
 - Spend: $${spend.toFixed(2)}
 - ${resultLine}
 - CTR: ${ctr.toFixed(2)}%
@@ -73,15 +79,18 @@ KEY RESULTS (use these exact numbers — no others):
 
 TOP AD: ${topAdLine}
 
+${primaryResultInstruction}
+
 Write exactly 3 short sections. Each is 1-2 sentences. Return JSON only.
 
-OVERVIEW: State the primary result (${isLeadForm ? `${leads} leads` : isTraffic ? `${lpv} landing page views` : `${impressions.toLocaleString()} impressions`}) and total spend. Be direct and positive.
+OVERVIEW: State the primary result and total spend. Be direct and positive.
 HIGHLIGHTS: Name the top ad and one standout metric. Use exact numbers.
 OPPORTUNITIES: One specific, data-backed recommendation.
 
 RULES:
 - Use ONLY the numbers listed above. NEVER use a different number.
-- ${isLeadForm ? 'This is a lead generation campaign. Do not mention landing page views.' : isTraffic ? `This is a traffic/landing page campaign. LPV = ${lpv}. Do NOT say 0 landing page views. Do NOT say "undefined". The result is ${lpv} landing page views.` : 'This is an awareness campaign.'}
+- NEVER write "0 ${isLeadForm ? 'leads' : isTraffic ? 'landing page views' : 'impressions'}" — the actual number is stated above.
+- ${isLeadForm ? 'This is a lead generation campaign. Do not mention landing page views.' : isTraffic ? 'This is a traffic campaign. Do not mention leads.' : 'This is an awareness campaign.'}
 - No em dashes. No markdown. No bullet points. Positive tone only.
 
 Respond with ONLY this JSON (no other text):
@@ -106,6 +115,19 @@ Respond with ONLY this JSON (no other text):
     if (!text) return NextResponse.json({ analysis: null })
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     const analysis = jsonMatch ? JSON.parse(jsonMatch[0]) : null
+
+    // Validate: if the AI contradicts the actual numbers, reject it so the
+    // client falls back to the locally-built narrative (which is always accurate).
+    if (analysis) {
+      const overviewText: string = (analysis.overview ?? '').toLowerCase()
+      if (isLeadForm && leads > 0 && overviewText.includes('0 lead')) {
+        return NextResponse.json({ analysis: null })
+      }
+      if (isTraffic && lpv > 0 && overviewText.includes('0 landing')) {
+        return NextResponse.json({ analysis: null })
+      }
+    }
+
     return NextResponse.json({ analysis })
   } catch {
     return NextResponse.json({ analysis: null })
