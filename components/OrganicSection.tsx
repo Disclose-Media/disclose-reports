@@ -417,7 +417,7 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
         platform="instagram"
         clientName={clientName}
         period={period}
-        metrics={{ views: ig.views, reach: ig.reach, interactions: ig.interactions, accountsEngaged: ig.accountsEngaged, likes: ig.likes, comments: ig.comments, saves: ig.saves, shares: ig.shares, engagementRate, profileViews: profileVisits ?? 0, newFollows: ig.newFollows, username: ig.username }}
+        metrics={{ views: ig.views, reach: ig.reach, interactions: ig.interactions, accountsEngaged: ig.accountsEngaged, likes: ig.likes, comments: ig.comments, saves: ig.saves, shares: ig.shares, engagementRate, profileViews: 0, newFollows: ig.newFollows, username: ig.username }}
         fallback={`The Instagram account ${ig.username ? `(@${ig.username}) ` : ''}reached ${fmt(ig.reach)} unique accounts with ${fmt(ig.views)} content views this period. Posts, reels and stories generated ${fmt(ig.interactions)} total interactions: ${fmt(ig.likes)} likes, ${fmt(ig.comments)} comments, ${fmt(ig.saves)} saves and ${fmt(ig.shares)} shares.`}
       />
 
