@@ -621,40 +621,7 @@ function CampaignSummary({ campaign, ads, obj, clientName, period }: { campaign:
   const impressions = parseInt(campaign.impressions || '0')
   const reach = parseInt(campaign.reach || '0')
   const freq = impressions > 0 && reach > 0 ? impressions / reach : 0
-  const fallback = buildNarrative(campaign, ads)
-  const [aiAnalysis, setAiAnalysis] = useState<{ overview: string; highlights: string; opportunities: string } | null>(null)
-  const [aiLoading, setAiLoading] = useState(false)
-  const fetchedRef = useRef(false)
-  useEffect(() => {
-    if (!clientName || fetchedRef.current) return
-    fetchedRef.current = true
-    setAiLoading(true)
-    // Pass pre-computed values that exactly match the KPI tiles shown to the user
-    const computedMetrics = {
-      spend: parseFloat(campaign.amount_spent || '0'),
-      impressions: parseInt(campaign.impressions || '0'),
-      reach: parseInt(campaign.reach || '0'),
-      clicks: parseInt(campaign.clicks || '0'),
-      ctr,
-      cpm,
-      cpc,
-      leads,
-      lpv,
-      cpl,
-      cplpv,
-      frequency: freq,
-    }
-    fetch('/api/campaign-analysis', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ campaign, ads, objective: obj, clientName, period: period ?? 'Last 30 Days', computedMetrics }),
-    })
-      .then(r => r.json())
-      .then(({ analysis }) => { if (analysis) setAiAnalysis(analysis) })
-      .catch(() => {})
-      .finally(() => setAiLoading(false))
-  }, [campaign, ads, obj, clientName, period])
-  const { overview, highlights, opportunities } = aiAnalysis ?? fallback
+  const { overview, highlights, opportunities } = buildNarrative(campaign, ads)
 
   const clicks = parseInt(campaign.clicks || '0')
   const engRate = impressions > 0 ? (clicks / impressions) * 100 : 0
