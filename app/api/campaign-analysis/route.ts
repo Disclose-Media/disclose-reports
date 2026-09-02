@@ -116,15 +116,18 @@ Respond with ONLY this JSON (no other text):
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     const analysis = jsonMatch ? JSON.parse(jsonMatch[0]) : null
 
-    // Validate: if the AI contradicts the actual numbers, reject it so the
-    // client falls back to the locally-built narrative (which is always accurate).
+    // Validate: confirm the AI actually used the correct primary metric.
+    // Any hallucinated number → return null so the client uses the accurate local narrative.
     if (analysis) {
-      const overviewText: string = (analysis.overview ?? '').toLowerCase()
-      if (isLeadForm && leads > 0 && overviewText.includes('0 lead')) {
-        return NextResponse.json({ analysis: null })
+      const allText = `${analysis.overview ?? ''} ${analysis.highlights ?? ''} ${analysis.opportunities ?? ''}`
+      if (isLeadForm && leads > 0) {
+        // The correct lead count must appear somewhere in the response
+        const mentionsCorrectLeads = allText.includes(`${leads} lead`) || allText.includes(`${leads} conversion`)
+        if (!mentionsCorrectLeads) return NextResponse.json({ analysis: null })
       }
-      if (isTraffic && lpv > 0 && overviewText.includes('0 landing')) {
-        return NextResponse.json({ analysis: null })
+      if (isTraffic && lpv > 0) {
+        const mentionsCorrectLpv = allText.includes(`${lpv} landing`) || allText.includes(`${lpv} page view`) || allText.includes(`${lpv} LPV`)
+        if (!mentionsCorrectLpv) return NextResponse.json({ analysis: null })
       }
     }
 
