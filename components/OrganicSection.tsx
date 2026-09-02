@@ -377,10 +377,6 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
   const { summary: ig, daily, hasThirtyDayData } = windsorInstagram
   const hasData = ig.views > 0 || ig.reach > 0 || ig.interactions > 0 || ig.newFollows > 0
 
-  // Windsor is source of truth for link clicks and profile visits
-  const linkClicks = hasThirtyDayData ? (ig.linkClicks > 0 ? ig.linkClicks : null) : null
-  const profileVisits = hasThirtyDayData ? (ig.profileViews > 0 ? ig.profileViews : null) : null
-
   const engagementRate = ig.reach > 0 ? ((ig.interactions / ig.reach) * 100).toFixed(1) : '0.0'
   const na = '—'
 
@@ -411,7 +407,7 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
           <KpiTile label="Reach" value={fmt(ig.reach)} />
           <KpiTile label="Interactions" value={fmt(ig.interactions)} />
           <KpiTile label="Accounts Engaged" value={ig.accountsEngaged > 0 ? fmt(ig.accountsEngaged) : na} />
-          <KpiTile label="Profile Visits" value={profileVisits !== null ? fmt(profileVisits) : na} />
+          <KpiTile label="Shares" value={ig.shares > 0 ? fmt(ig.shares) : na} />
           <KpiTile label="New Follows" value={hasThirtyDayData ? fmt(ig.newFollows) : na} />
         </div>
       </div>
@@ -466,8 +462,6 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
         <MetricRow label="Comments" value={ig.comments} />
         <MetricRow label="Saves" value={ig.saves} />
         <MetricRow label="Shares" value={ig.shares} />
-        <MetricRow label="Link Clicks" value={linkClicks !== null ? linkClicks : '—'} />
-        <MetricRow label="Profile Visits" value={profileVisits !== null ? profileVisits : '—'} />
         <MetricRow label="New Follows" value={hasThirtyDayData ? ig.newFollows : '—'} green />
       </div>
     </div>
