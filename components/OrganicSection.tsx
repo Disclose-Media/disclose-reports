@@ -375,7 +375,8 @@ function FacebookSection({ windsorOrganic, clientName, period }: { windsorOrgani
 
 function InstagramSection({ windsorInstagram, igInsights, clientName, period }: { windsorInstagram: WindsorInstagramResult; igInsights?: IgInsightsSummary | null; clientName?: string; period?: string }) {
   const { summary: ig, daily, hasThirtyDayData } = windsorInstagram
-  const newFollows = ig.newFollows
+  // Windsor follower_count_1d first; fall back to Meta API igInsights.follows when Windsor returns 0
+  const newFollows = ig.newFollows > 0 ? ig.newFollows : (igInsights?.follows ?? 0)
   const hasData = ig.views > 0 || ig.reach > 0 || ig.interactions > 0
 
   const engagementRate = ig.reach > 0 ? ((ig.interactions / ig.reach) * 100).toFixed(1) : '0.0'
@@ -418,7 +419,7 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
         platform="instagram"
         clientName={clientName}
         period={period}
-        metrics={{ views: ig.views, reach: ig.reach, interactions: ig.interactions, accountsEngaged: ig.accountsEngaged, likes: ig.likes, comments: ig.comments, saves: ig.saves, shares: ig.shares, engagementRate, profileViews: 0, newFollows: ig.newFollows, username: ig.username }}
+        metrics={{ views: ig.views, reach: ig.reach, interactions: ig.interactions, accountsEngaged: ig.accountsEngaged, likes: ig.likes, comments: ig.comments, saves: ig.saves, shares: ig.shares, engagementRate, profileViews: 0, newFollows, username: ig.username }}
         fallback={`The Instagram account ${ig.username ? `(@${ig.username}) ` : ''}reached ${fmt(ig.reach)} unique accounts with ${fmt(ig.views)} content views this period. Posts, reels and stories generated ${fmt(ig.interactions)} total interactions: ${fmt(ig.likes)} likes, ${fmt(ig.comments)} comments, ${fmt(ig.saves)} saves and ${fmt(ig.shares)} shares.`}
       />
 
@@ -463,7 +464,7 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
         <MetricRow label="Comments" value={ig.comments} />
         <MetricRow label="Saves" value={ig.saves} />
         <MetricRow label="Shares" value={ig.shares} />
-        <MetricRow label="New Follows" value={ig.newFollows} green />
+        <MetricRow label="New Follows" value={newFollows} green />
       </div>
     </div>
   )
