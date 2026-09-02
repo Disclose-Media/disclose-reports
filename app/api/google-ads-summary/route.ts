@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 Client: ${clientName ?? 'this account'}
 Period: ${period ?? 'this period'}
 
-Account totals:
+AUTHORITATIVE ACCOUNT TOTALS — use ONLY these numbers, no others:
 - Spend: $${s.spend.toFixed(2)}
 - Impressions: ${s.impressions.toLocaleString()}
 - Clicks: ${s.clicks.toLocaleString()}
@@ -35,6 +35,11 @@ ${hasConversions ? `- Conversions: ${s.conversions}
 
 Top campaign by spend: ${topCampaign?.name ?? 'N/A'} ($${topCampaign?.spend.toFixed(2) ?? 0} spend, ${topCampaign?.clicks ?? 0} clicks)
 ${topConvCampaign ? `Top campaign by conversions: ${topConvCampaign.name} (${topConvCampaign.conversions} conversions at $${topConvCampaign.costPerConversion.toFixed(2)}/conv)` : ''}
+
+CRITICAL: You MUST use the exact numbers above. Do not invent, round differently, or use any other figures.
+- Total spend is EXACTLY $${s.spend.toFixed(2)} — do not write a different dollar amount.
+- Total clicks is EXACTLY ${s.clicks.toLocaleString()} — do not write a different click count.
+${hasConversions ? `- Total conversions is EXACTLY ${s.conversions} — do not write a different conversion count.` : ''}
 
 Write exactly 2 sentences:
 1. Overall account performance with key numbers (spend, clicks, ${hasConversions ? 'conversions' : 'CTR'}).
@@ -60,7 +65,23 @@ Rules:
       }),
     })
     const json = await res.json()
-    const summary = json?.content?.[0]?.text ?? null
+    const summary: string | null = json?.content?.[0]?.text ?? null
+    if (!summary) return NextResponse.json({ summary: null })
+
+    // Reject if the AI used numbers that contradict the actual totals.
+    // A hallucinated summary is worse than no summary — return null so the
+    // component shows nothing rather than wrong data.
+    const spendStr = s.spend.toFixed(2)
+    const clicksStr = s.clicks.toLocaleString()
+    // Check that the summary mentions the real spend (allow minor rounding: $2409 or $2,409)
+    const spendInt = Math.round(s.spend)
+    const summaryLower = summary.toLowerCase()
+    const mentionsCorrectSpend = summary.includes(spendStr) || summary.includes(`$${spendInt}`) || summary.includes(`$${spendInt.toLocaleString()}`)
+    const mentionsCorrectClicks = summary.includes(clicksStr) || summary.includes(String(s.clicks))
+    if (!mentionsCorrectSpend || !mentionsCorrectClicks) {
+      return NextResponse.json({ summary: null })
+    }
+
     return NextResponse.json({ summary })
   } catch {
     return NextResponse.json({ summary: null })
