@@ -197,17 +197,11 @@ export async function getWindsorInstagramData(
 ): Promise<WindsorInstagramResult> {
   const { dateFrom, dateTo } = periodToDates(period)
 
-  // follower_count_1d, profile_links_taps, profile_views only support last 30 days
-  const thirtyDaysAgoStr = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-  const includeFollowers = dateFrom >= thirtyDaysAgoStr
-
   const url = new URL(`${BASE}/instagram`)
   url.searchParams.set('api_key', KEY)
-  // profile_links_taps, profile_views, and follower_count_1d all only support last 30 days
-  const thirtyDayExtras = includeFollowers ? ',profile_links_taps,profile_views,profile_views_1d,follower_count_1d' : ''
   url.searchParams.set(
     'fields',
-    `date,account_id,account_name,views,reach_1d,total_interactions,accounts_engaged,likes,comments,saves,shares${thirtyDayExtras}`
+    'date,account_id,account_name,views,reach_1d,total_interactions,accounts_engaged,likes,comments,saves,shares,profile_links_taps,profile_views,profile_views_1d,follower_count_1d'
   )
   url.searchParams.set('date_from', dateFrom)
   url.searchParams.set('date_to', dateTo)
@@ -216,7 +210,7 @@ export async function getWindsorInstagramData(
   const empty: WindsorInstagramResult = {
     summary: { views: 0, reach: 0, interactions: 0, likes: 0, comments: 0, saves: 0, shares: 0, newFollows: 0, totalFollowers: 0, accountsEngaged: 0, linkClicks: 0, profileViews: 0, username: '' },
     daily: [],
-    hasThirtyDayData: includeFollowers,
+    hasThirtyDayData: true,
   }
 
   try {
@@ -274,7 +268,7 @@ export async function getWindsorInstagramData(
     return {
       summary: { views, reach, interactions, likes, comments, saves, shares, newFollows, totalFollowers, accountsEngaged, linkClicks, profileViews, username },
       daily,
-      hasThirtyDayData: includeFollowers,
+      hasThirtyDayData: true,
     }
   } catch {
     return empty

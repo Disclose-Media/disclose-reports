@@ -375,7 +375,8 @@ function FacebookSection({ windsorOrganic, clientName, period }: { windsorOrgani
 
 function InstagramSection({ windsorInstagram, igInsights, clientName, period }: { windsorInstagram: WindsorInstagramResult; igInsights?: IgInsightsSummary | null; clientName?: string; period?: string }) {
   const { summary: ig, daily, hasThirtyDayData } = windsorInstagram
-  const hasData = ig.views > 0 || ig.reach > 0 || ig.interactions > 0 || ig.newFollows > 0
+  const newFollows = ig.newFollows
+  const hasData = ig.views > 0 || ig.reach > 0 || ig.interactions > 0
 
   const engagementRate = ig.reach > 0 ? ((ig.interactions / ig.reach) * 100).toFixed(1) : '0.0'
   const na = '—'
@@ -408,7 +409,7 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
           <KpiTile label="Interactions" value={fmt(ig.interactions)} />
           <KpiTile label="Accounts Engaged" value={ig.accountsEngaged > 0 ? fmt(ig.accountsEngaged) : na} />
           <KpiTile label="Shares" value={ig.shares > 0 ? fmt(ig.shares) : na} />
-          <KpiTile label="New Follows" value={fmt(ig.newFollows)} />
+          <KpiTile label="New Follows" value={fmt(newFollows)} />
         </div>
       </div>
 
