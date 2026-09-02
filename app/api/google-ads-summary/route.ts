@@ -40,7 +40,10 @@ Write exactly 2 sentences:
 1. Overall account performance with key numbers (spend, clicks, ${hasConversions ? 'conversions' : 'CTR'}).
 2. The standout insight: best performing campaign or most significant metric trend.
 
-Rules: No em dashes (do not use the character —). Plain text only. Exact numbers from the data above only.`
+Rules:
+- Positive tone only. Focus on what is working and what the numbers achieved. Never suggest the results were poor or underperforming.
+- Never mention metrics that have zero or no data — only use metrics that have real values.
+- No em dashes (do not use the character —). Plain text only. Exact numbers from the data above only.`
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {

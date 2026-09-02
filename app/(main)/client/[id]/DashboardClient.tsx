@@ -629,10 +629,25 @@ function CampaignSummary({ campaign, ads, obj, clientName, period }: { campaign:
     if (!clientName || fetchedRef.current) return
     fetchedRef.current = true
     setAiLoading(true)
+    // Pass pre-computed values that exactly match the KPI tiles shown to the user
+    const computedMetrics = {
+      spend: parseFloat(campaign.amount_spent || '0'),
+      impressions: parseInt(campaign.impressions || '0'),
+      reach: parseInt(campaign.reach || '0'),
+      clicks: parseInt(campaign.clicks || '0'),
+      ctr,
+      cpm,
+      cpc,
+      leads,
+      lpv,
+      cpl,
+      cplpv,
+      frequency: freq,
+    }
     fetch('/api/campaign-analysis', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ campaign, ads, objective: obj, clientName, period: period ?? 'Last 30 Days' }),
+      body: JSON.stringify({ campaign, ads, objective: obj, clientName, period: period ?? 'Last 30 Days', computedMetrics }),
     })
       .then(r => r.json())
       .then(({ analysis }) => { if (analysis) setAiAnalysis(analysis) })
