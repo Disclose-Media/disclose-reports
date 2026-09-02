@@ -48,6 +48,34 @@ export type GoogleAdsGeo = {
   conversions: number
 }
 
+export type GoogleAdsAdGroup = {
+  name: string
+  spend: number
+  clicks: number
+  impressions: number
+  ctr: number
+  avgCpc: number
+  conversions: number
+  conversionRate: number
+}
+
+export type GoogleAdsHourly = {
+  hour: number
+  spend: number
+  clicks: number
+  impressions: number
+  conversions: number
+  ctr: number
+}
+
+export type GoogleAdsDayOfWeek = {
+  day: string
+  spend: number
+  clicks: number
+  impressions: number
+  conversions: number
+}
+
 export type GoogleAdsResult = {
   summary: {
     spend: number
@@ -58,11 +86,15 @@ export type GoogleAdsResult = {
     conversions: number
     costPerConversion: number
     conversionRate: number
+    searchImpressionShare: number
   }
   campaigns: GoogleAdsCampaign[]
   keywords: GoogleAdsKeyword[]
   devices: GoogleAdsDevice[]
   geo: GoogleAdsGeo[]
+  adGroups: GoogleAdsAdGroup[]
+  hourly: GoogleAdsHourly[]
+  dayOfWeek: GoogleAdsDayOfWeek[]
   daily: { date: string; spend: number; clicks: number; impressions: number; conversions: number }[]
 }
 
@@ -125,12 +157,14 @@ function filterByAccount(rows: Record<string, unknown>[], accountId: string): Re
 export async function getGoogleAdsData(accountId: string, period: Period = 'last_30d'): Promise<GoogleAdsResult | null> {
   const { dateFrom, dateTo } = periodToDates(period)
 
-  const [campRows, dailyRows, kwRows, deviceRows, geoRows] = await Promise.all([
+  const [campRows, dailyRows, kwRows, deviceRows, geoRows, adGroupRows, hourlyRows] = await Promise.all([
     fetchRows(buildUrl('campaign_id,campaign_name,campaign_status,cost,impressions,clicks,ctr,average_cpc,conversions,cost_per_conversion,conversion_rate,search_impression_share', dateFrom, dateTo, accountId)),
     fetchRows(buildUrl('date,cost,impressions,clicks,conversions', dateFrom, dateTo, accountId)),
     fetchRows(buildUrl('keyword_text,cost,impressions,clicks,conversions', dateFrom, dateTo, accountId)).catch(() => []),
     fetchRows(buildUrl('device,cost,impressions,clicks,conversions', dateFrom, dateTo, accountId)).catch(() => []),
     fetchRows(buildUrl('city,cost,clicks,conversions', dateFrom, dateTo, accountId)).catch(() => []),
+    fetchRows(buildUrl('ad_group_name,cost,impressions,clicks,conversions', dateFrom, dateTo, accountId)).catch(() => []),
+    fetchRows(buildUrl('hour_of_day,cost,impressions,clicks,conversions', dateFrom, dateTo, accountId)).catch(() => []),
   ])
 
   // Filter every result set to only this client's account rows
@@ -139,6 +173,8 @@ export async function getGoogleAdsData(accountId: string, period: Period = 'last
   const filteredKw = filterByAccount(kwRows, accountId)
   const filteredDevice = filterByAccount(deviceRows, accountId)
   const filteredGeo = filterByAccount(geoRows, accountId)
+  const filteredAdGroups = filterByAccount(adGroupRows, accountId)
+  const filteredHourly = filterByAccount(hourlyRows, accountId)
 
   if (filteredCamp.length === 0 && filteredDaily.length === 0) return null
 
@@ -240,5 +276,66 @@ export async function getGoogleAdsData(accountId: string, period: Period = 'last
   }
   const geo: GoogleAdsGeo[] = Array.from(geoMap.values()).sort((a, b) => b.spend - a.spend).slice(0, 15)
 
-  return { summary, campaigns, keywords, devices, geo, daily }
+  // Ad Groups
+  const agMap = new Map<string, GoogleAdsAdGroup>()
+  for (const row of filteredAdGroups) {
+    const name = String(row.ad_group_name ?? row.adgroup_name ?? '').trim()
+    if (!name) continue
+    const ex = agMap.get(name) ?? { name, spend: 0, clicks: 0, impressions: 0, ctr: 0, avgCpc: 0, conversions: 0, conversionRate: 0 }
+    ex.spend += Number(row.cost) || 0
+    ex.clicks += Number(row.clicks) || 0
+    ex.impressions += Number(row.impressions) || 0
+    ex.conversions += Number(row.conversions) || 0
+    agMap.set(name, ex)
+  }
+  const adGroups: GoogleAdsAdGroup[] = Array.from(agMap.values()).map(ag => ({
+    ...ag,
+    ctr: ag.impressions > 0 ? (ag.clicks / ag.impressions) * 100 : 0,
+    avgCpc: ag.clicks > 0 ? ag.spend / ag.clicks : 0,
+    conversionRate: ag.clicks > 0 ? (ag.conversions / ag.clicks) * 100 : 0,
+  })).sort((a, b) => b.spend - a.spend)
+
+  // Hourly
+  const hourMap = new Map<number, { spend: number; clicks: number; impressions: number; conversions: number }>()
+  for (const row of filteredHourly) {
+    const h = Number(row.hour_of_day ?? row.hour ?? -1)
+    if (h < 0 || h > 23) continue
+    const ex = hourMap.get(h) ?? { spend: 0, clicks: 0, impressions: 0, conversions: 0 }
+    ex.spend += Number(row.cost) || 0
+    ex.clicks += Number(row.clicks) || 0
+    ex.impressions += Number(row.impressions) || 0
+    ex.conversions += Number(row.conversions) || 0
+    hourMap.set(h, ex)
+  }
+  const hourly: GoogleAdsHourly[] = Array.from(hourMap.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([hour, v]) => ({ hour, ...v, ctr: v.impressions > 0 ? (v.clicks / v.impressions) * 100 : 0 }))
+
+  // Day of week (derived from daily data)
+  const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const dowMap = new Map<string, { spend: number; clicks: number; impressions: number; conversions: number }>()
+  for (const row of daily) {
+    const d = new Date(row.date + 'T12:00:00Z')
+    const day = DOW[d.getUTCDay()]
+    const ex = dowMap.get(day) ?? { spend: 0, clicks: 0, impressions: 0, conversions: 0 }
+    ex.spend += row.spend
+    ex.clicks += row.clicks
+    ex.impressions += row.impressions
+    ex.conversions += row.conversions
+    dowMap.set(day, ex)
+  }
+  const dowOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  const dayOfWeek: GoogleAdsDayOfWeek[] = dowOrder
+    .filter(d => dowMap.has(d))
+    .map(day => ({ day, ...dowMap.get(day)! }))
+
+  // Summary search impression share (average of active campaigns)
+  const activeCamps = campaigns.filter(c => c.searchImpressionShare > 0)
+  const searchImpressionShare = activeCamps.length > 0
+    ? activeCamps.reduce((s, c) => s + c.searchImpressionShare, 0) / activeCamps.length
+    : 0
+
+  const summaryWithSis = { ...summary, searchImpressionShare }
+
+  return { summary: summaryWithSis, campaigns, keywords, devices, geo, adGroups, hourly, dayOfWeek, daily }
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import type { GoogleAdsResult, GoogleAdsCampaign } from '@/lib/google-ads'
+import type { GoogleAdsResult, GoogleAdsCampaign, GoogleAdsAdGroup } from '@/lib/google-ads'
 
 type Props = { data: GoogleAdsResult; clientName?: string; period?: string }
 
@@ -386,18 +386,159 @@ function AiSummary({ data, clientName, period }: { data: GoogleAdsResult; client
   )
 }
 
+function AdGroupSection({ adGroups }: { adGroups: GoogleAdsAdGroup[] }) {
+  const hasConversions = adGroups.some(ag => ag.conversions > 0)
+  if (adGroups.length === 0) return null
+  return (
+    <div className="bg-white border border-[#E8E4DC] rounded-[8px] overflow-hidden mb-5">
+      <div className="px-4 py-3 border-b border-[#F0EEE9] flex items-center justify-between">
+        <SectionHeader title="Ad Group Performance" />
+        <span className="text-[10px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>{adGroups.length} ad groups</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-[11px]" style={{ fontFamily: 'Inter, sans-serif' }}>
+          <thead>
+            <tr className="border-b border-[#F0EEE9]">
+              {['Ad Group', 'Spend', 'Clicks', 'Impr.', 'CTR', 'Avg CPC', ...(hasConversions ? ['Conv.', 'Conv. Rate'] : [])].map(h => (
+                <th key={h} className={`px-4 py-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#AAAAAA] ${h === 'Ad Group' ? 'text-left' : 'text-right'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {adGroups.map((ag, i) => (
+              <tr key={ag.name} className={`${i < adGroups.length - 1 ? 'border-b border-[#F0EEE9]' : ''} hover:bg-[#FAFAF8]`}>
+                <td className="px-4 py-2.5 font-medium text-[#333333] max-w-[220px]"><span className="block truncate" title={ag.name}>{ag.name}</span></td>
+                <td className="px-4 py-2.5 text-right tabular-nums text-[#C8972D] font-semibold">{fmtDollar(ag.spend)}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums">{fmt(ag.clicks)}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums">{fmt(ag.impressions)}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums">{fmtPct(ag.ctr)}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums">{fmtDollar(ag.avgCpc)}</td>
+                {hasConversions && <>
+                  <td className="px-4 py-2.5 text-right tabular-nums text-emerald-600 font-medium">{ag.conversions > 0 ? fmt(ag.conversions) : '—'}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">{ag.conversionRate > 0 ? fmtPct(ag.conversionRate) : '—'}</td>
+                </>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function DayOfWeekSection({ dayOfWeek }: { dayOfWeek: GoogleAdsResult['dayOfWeek'] }) {
+  if (dayOfWeek.length === 0) return null
+  const maxSpend = Math.max(...dayOfWeek.map(d => d.spend))
+  return (
+    <div className="bg-white border border-[#E8E4DC] rounded-[8px] overflow-hidden mb-5">
+      <div className="px-4 py-3 border-b border-[#F0EEE9]">
+        <SectionHeader title="Day of Week Performance" />
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-[11px]" style={{ fontFamily: 'Inter, sans-serif' }}>
+          <thead>
+            <tr className="border-b border-[#F0EEE9]">
+              {['Day', 'Spend', 'Spend Bar', 'Clicks', 'Impressions', 'Conversions'].map(h => (
+                <th key={h} className={`px-4 py-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#AAAAAA] ${h === 'Day' || h === 'Spend Bar' ? 'text-left' : 'text-right'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {dayOfWeek.map((d, i) => (
+              <tr key={d.day} className={`${i < dayOfWeek.length - 1 ? 'border-b border-[#F0EEE9]' : ''} hover:bg-[#FAFAF8]`}>
+                <td className="px-4 py-2.5 font-medium text-[#333333]">{d.day}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums text-[#C8972D] font-semibold">{fmtDollar(d.spend)}</td>
+                <td className="px-4 py-2.5">
+                  <div className="w-28 bg-[#F0EEE9] rounded-full h-1.5">
+                    <div className="h-1.5 rounded-full bg-[#C8972D]" style={{ width: `${maxSpend > 0 ? (d.spend / maxSpend) * 100 : 0}%` }} />
+                  </div>
+                </td>
+                <td className="px-4 py-2.5 text-right tabular-nums">{fmt(d.clicks)}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums">{fmt(d.impressions)}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums text-emerald-600 font-medium">{d.conversions > 0 ? fmt(d.conversions) : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function HourlyChart({ hourly }: { hourly: GoogleAdsResult['hourly'] }) {
+  const ref = useRef<HTMLCanvasElement>(null)
+  const obj = useRef<unknown>(null)
+
+  useEffect(() => {
+    if (!ref.current || hourly.length === 0) return
+    import('chart.js/auto').then(({ default: Chart }) => {
+      if (obj.current) (obj.current as { destroy: () => void }).destroy()
+      const labels = hourly.map(h => {
+        if (h.hour === 0) return '12am'
+        if (h.hour === 12) return '12pm'
+        return h.hour < 12 ? `${h.hour}am` : `${h.hour - 12}pm`
+      })
+      obj.current = new Chart(ref.current!, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Clicks',
+              data: hourly.map(h => h.clicks),
+              backgroundColor: 'rgba(200,151,45,0.7)',
+              borderRadius: 3,
+              yAxisID: 'y',
+            },
+            {
+              label: 'Conversions',
+              data: hourly.map(h => h.conversions),
+              backgroundColor: 'rgba(16,185,129,0.7)',
+              borderRadius: 3,
+              yAxisID: 'y',
+            },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: true,
+          plugins: {
+            legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 10, padding: 14, font: { size: 10, family: 'Inter, sans-serif' }, color: '#888888' } },
+            tooltip: { backgroundColor: '#111111', titleColor: '#FFFFFF', bodyColor: '#CCCCCC', padding: 10, cornerRadius: 6 },
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 9, family: 'Inter, sans-serif' }, color: '#AAAAAA', maxRotation: 0 }, border: { display: false } },
+            y: { grid: { color: '#F0EEE9' }, ticks: { font: { size: 10, family: 'Inter, sans-serif' }, color: '#AAAAAA' }, border: { display: false } },
+          },
+        },
+      })
+    })
+    return () => { if (obj.current) (obj.current as { destroy: () => void }).destroy() }
+  }, [hourly])
+
+  if (hourly.length === 0) return null
+  return (
+    <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-4 mb-5">
+      <SectionHeader title="Hour of Day Performance" />
+      <div className="relative h-44">
+        <canvas ref={ref} />
+      </div>
+    </div>
+  )
+}
+
 export function GoogleAdsSection({ data, clientName, period }: Props) {
   const { summary: s } = data
   const hasConversions = s.conversions > 0
+  const hasSis = s.searchImpressionShare > 0
 
   return (
     <div>
       {/* KPI Summary bar */}
-      <div className="bg-[#111111] border border-[#1E1E1E] rounded-[8px] mb-5 overflow-hidden" style={{ borderRadius: '8px 8px 8px 8px' }}>
-        <div className="border-b border-[#1E1E1E] px-5 py-3" style={{ borderRadius: '8px 8px 0 0', background: '#111111' }}>
+      <div className="bg-[#111111] border border-[#1E1E1E] rounded-[8px] mb-5 overflow-hidden">
+        <div className="border-b border-[#1E1E1E] px-5 py-3">
           <p className="text-[10px] uppercase tracking-[0.18em]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#C8972D' }}>Account Totals</p>
         </div>
-        <div className={`grid divide-x divide-[#1E1E1E] ${hasConversions ? 'grid-cols-2 sm:grid-cols-4 md:grid-cols-7' : 'grid-cols-2 sm:grid-cols-4'}`}>
+        <div className="grid divide-x divide-[#1E1E1E]" style={{ gridTemplateColumns: `repeat(${[5, hasConversions ? 2 : 0, hasSis ? 1 : 0].reduce((a, b) => a + b, 0)}, minmax(0,1fr))` }}>
           {[
             { label: 'Total Spend', value: fmtDollar(s.spend), gold: true },
             { label: 'Clicks', value: fmt(s.clicks) },
@@ -408,6 +549,7 @@ export function GoogleAdsSection({ data, clientName, period }: Props) {
               { label: 'Conversions', value: fmt(s.conversions), green: true },
               { label: 'Cost / Conv.', value: fmtDollar(s.costPerConversion) },
             ] : []),
+            ...(hasSis ? [{ label: 'Impr. Share', value: fmtPct(s.searchImpressionShare * 100) }] : []),
           ].map((item) => (
             <div key={item.label} className="px-5 py-4">
               <p className="text-[9px] uppercase tracking-[0.14em] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#555555' }}>{item.label}</p>
@@ -426,6 +568,9 @@ export function GoogleAdsSection({ data, clientName, period }: Props) {
       {/* Campaign Table */}
       <CampaignTable campaigns={data.campaigns} />
 
+      {/* Ad Groups */}
+      <AdGroupSection adGroups={data.adGroups} />
+
       {/* Device Breakdown */}
       <DeviceSection devices={data.devices} />
 
@@ -434,6 +579,12 @@ export function GoogleAdsSection({ data, clientName, period }: Props) {
 
       {/* Geo */}
       <GeoSection geo={data.geo} />
+
+      {/* Day of Week */}
+      <DayOfWeekSection dayOfWeek={data.dayOfWeek} />
+
+      {/* Hourly */}
+      <HourlyChart hourly={data.hourly} />
     </div>
   )
 }
