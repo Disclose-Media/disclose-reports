@@ -531,18 +531,13 @@ function CampaignSection({ campaign, ads, thumbnails, clientName, period }: { ca
   )
 }
 
-function buildNarrative(campaign: CampaignInsight, ads: AdInsight[]): { overview: string; highlights: string; opportunities: string } {
-  const leads = parseInt(campaign.lead || '0') || 0
-  const lpvMatch = campaign.results?.value?.match(/^(\d+)/)
-  const lpv = lpvMatch ? parseInt(lpvMatch[1]) : 0
-  const cplMatch = campaign.cost_per_action_type_lead?.match(/[\d.]+/)
-  const cpl = cplMatch ? parseFloat(cplMatch[0]) : 0
-  const ctr = parseFloat(campaign.ctr || '0')
-  const cpm = parseFloat(campaign.cpm || '0')
-  const spend = parseFloat(campaign.amount_spent || '0')
-  const impressions = parseInt(campaign.impressions || '0')
-  const reach = parseInt(campaign.reach || '0')
-  const freq = impressions > 0 && reach > 0 ? impressions / reach : 0
+type NarrativeMetrics = {
+  leads: number; lpv: number; cpl: number; ctr: number; cpm: number
+  spend: number; impressions: number; reach: number; freq: number
+}
+
+function buildNarrative(campaign: CampaignInsight, ads: AdInsight[], metrics: NarrativeMetrics): { overview: string; highlights: string; opportunities: string } {
+  const { leads, lpv, cpl, ctr, cpm, spend, impressions, reach, freq } = metrics
 
   const topAdByLeads = [...ads].sort((a, b) => (parseInt(b.lead || '0') || 0) - (parseInt(a.lead || '0') || 0))[0]
   const topAdByCtr = [...ads].sort((a, b) => parseFloat(b.ctr || '0') - parseFloat(a.ctr || '0'))[0]
@@ -608,6 +603,11 @@ function buildNarrative(campaign: CampaignInsight, ads: AdInsight[]): { overview
 }
 
 function CampaignSummary({ campaign, ads, obj, clientName, period }: { campaign: CampaignInsight; ads: AdInsight[]; obj: EffectiveObjective; clientName?: string; period?: string }) {
+  // Compute all metrics once — shared by tiles AND narrative so they always match
+  const spend = parseFloat(campaign.amount_spent || '0')
+  const impressions = parseInt(campaign.impressions || '0')
+  const reach = parseInt(campaign.reach || '0')
+  const clicks = parseInt(campaign.clicks || '0')
   const ctr = parseFloat(campaign.ctr || '0')
   const cpm = parseFloat(campaign.cpm || '0')
   const cpc = parseFloat(campaign.cpc || '0')
@@ -618,15 +618,12 @@ function CampaignSummary({ campaign, ads, obj, clientName, period }: { campaign:
   const cplpv = cplpvMatch ? parseFloat(cplpvMatch[0]) : 0
   const cplMatch = campaign.cost_per_action_type_lead?.match(/[\d.]+/)
   const cpl = cplMatch ? parseFloat(cplMatch[0]) : 0
-  const impressions = parseInt(campaign.impressions || '0')
-  const reach = parseInt(campaign.reach || '0')
   const freq = impressions > 0 && reach > 0 ? impressions / reach : 0
-  const { overview, highlights, opportunities } = buildNarrative(campaign, ads)
-
-  const clicks = parseInt(campaign.clicks || '0')
   const engRate = impressions > 0 ? (clicks / impressions) * 100 : 0
-  const spend = parseFloat(campaign.amount_spent || '0')
   const cpe = clicks > 0 && spend > 0 ? spend / clicks : 0
+
+  // Pass the same computed values into the narrative builder — tiles and text share one source of truth
+  const { overview, highlights, opportunities } = buildNarrative(campaign, ads, { leads, lpv, cpl, ctr, cpm, spend, impressions, reach, freq })
 
   const analysisMetrics =
     obj === 'leads'
