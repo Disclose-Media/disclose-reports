@@ -100,11 +100,11 @@ function CampaignTrendChart({ daily }: { daily: GoogleAdsCampaign['daily'] }) {
     return () => { if (obj.current) (obj.current as { destroy: () => void }).destroy() }
   }, [daily])
   if (daily.length === 0) return null
-  return <div className="relative h-40"><canvas ref={ref} /></div>
+  return <div className="relative w-full h-40"><canvas ref={ref} style={{ width: '100%' }} /></div>
 }
 
 function CampaignSection({ campaign, clientName, period }: { campaign: GoogleAdsCampaign; clientName?: string; period?: string }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   const hasConversions = campaign.conversions > 0
 
   const kpiTiles = [
@@ -255,7 +255,7 @@ function AccountTrendChart({ daily }: { daily: GoogleAdsResult['daily'] }) {
   return (
     <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-4 mb-5">
       <SectionHeader title="Account Daily Trend" />
-      <div className="relative h-52"><canvas ref={ref} /></div>
+      <div className="relative w-full h-52"><canvas ref={ref} style={{ width: '100%' }} /></div>
     </div>
   )
 }
