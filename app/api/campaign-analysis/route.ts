@@ -17,65 +17,75 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const topAdByCtr = [...ads].sort((a, b) => parseFloat(String(b.ctr || 0)) - parseFloat(String(a.ctr || 0)))[0]
-  const topAdByLeads = [...ads].sort((a, b) => (parseInt(String(b.lead || 0)) || 0) - (parseInt(String(a.lead || 0)) || 0))[0]
-
-  // Use pre-computed values from the UI (exact match to KPI tiles) if provided
-  const spend = computedMetrics?.spend ?? parseFloat(String(campaign.amount_spent || 0))
-  const impressions = computedMetrics?.impressions ?? parseInt(String(campaign.impressions || 0))
-  const reach = computedMetrics?.reach ?? parseInt(String(campaign.reach || 0))
-  const clicks = computedMetrics?.clicks ?? parseInt(String(campaign.clicks || 0))
-  const ctr = computedMetrics?.ctr ?? parseFloat(String(campaign.ctr || 0))
-  const cpm = computedMetrics?.cpm ?? parseFloat(String(campaign.cpm || 0))
-  const cpc = computedMetrics?.cpc ?? parseFloat(String(campaign.cpc || 0))
-  const leads = computedMetrics?.leads ?? parseInt(String(campaign.lead || 0))
-  const lpv = computedMetrics?.lpv ?? 0
-  const cpl = computedMetrics?.cpl ?? 0
-  const cplpv = computedMetrics?.cplpv ?? 0
+  // ALWAYS use computedMetrics — these are the exact values shown in the KPI tiles.
+  // If computedMetrics is absent (legacy), fall back to raw fields.
+  const spend    = computedMetrics?.spend    ?? parseFloat(String(campaign.amount_spent ?? 0))
+  const impressions = computedMetrics?.impressions ?? parseInt(String(campaign.impressions ?? 0))
+  const reach    = computedMetrics?.reach    ?? parseInt(String(campaign.reach ?? 0))
+  const clicks   = computedMetrics?.clicks   ?? parseInt(String(campaign.clicks ?? 0))
+  const ctr      = computedMetrics?.ctr      ?? parseFloat(String(campaign.ctr ?? 0))
+  const cpm      = computedMetrics?.cpm      ?? parseFloat(String(campaign.cpm ?? 0))
+  const cpc      = computedMetrics?.cpc      ?? parseFloat(String(campaign.cpc ?? 0))
+  const leads    = computedMetrics?.leads    ?? 0
+  const lpv      = computedMetrics?.lpv      ?? 0
+  const cpl      = computedMetrics?.cpl      ?? 0
+  const cplpv    = computedMetrics?.cplpv    ?? 0
   const frequency = computedMetrics?.frequency ?? (impressions > 0 && reach > 0 ? impressions / reach : 0)
 
-  const isLeadForm = leads > 0 && (lpv === 0 || leads >= lpv)
+  // Objective type
+  const isLeadForm = objective === 'leads' || (leads > 0 && lpv === 0)
+  const isTraffic  = objective === 'traffic' || (lpv > 0 && leads === 0)
 
-  const prompt = `You are a senior performance marketing strategist writing a campaign analysis for a client report.
+  // Top ads
+  const topAdByCtr   = [...ads].sort((a, b) => parseFloat(String(b.ctr ?? 0)) - parseFloat(String(a.ctr ?? 0)))[0]
+  const topAdByLeads = [...ads].sort((a, b) => (Number(b.lead ?? 0)) - (Number(a.lead ?? 0)))[0]
+  const topAdByLpv   = [...ads].sort((a, b) => {
+    const av = String(a.results && typeof a.results === 'object' ? (a.results as Record<string,string>).value : '0')
+    const bv = String(b.results && typeof b.results === 'object' ? (b.results as Record<string,string>).value : '0')
+    return parseInt(bv || '0') - parseInt(av || '0')
+  })[0]
 
-Client: ${clientName}
-Campaign: ${campaign.campaign_name}
-Objective: ${objective}
-Period: ${period}
-Campaign type: ${isLeadForm ? 'Meta Lead Form (prospects submit details directly within Meta, no landing page involved)' : 'Landing Page (traffic sent to external website)'}
+  const resultLine = isLeadForm
+    ? `Leads: ${leads} | Cost Per Lead: ${cpl > 0 ? '$' + cpl.toFixed(2) : 'N/A'}`
+    : isTraffic
+    ? `Landing Page Views: ${lpv} | Cost Per LPV: ${cplpv > 0 ? '$' + cplpv.toFixed(2) : 'N/A'}`
+    : `Impressions: ${impressions.toLocaleString()} | Reach: ${reach.toLocaleString()}`
 
-Campaign metrics (these are the EXACT numbers shown in the report — use them verbatim):
+  const topAdLine = isLeadForm
+    ? `Best lead ad: "${topAdByLeads?.ad_name || topAdByLeads?.name || 'N/A'}" with ${topAdByLeads?.lead ?? 0} leads at $${parseFloat(String(topAdByLeads?.amount_spent ?? 0)).toFixed(2)} spend`
+    : `Best CTR ad: "${topAdByCtr?.ad_name || topAdByCtr?.name || 'N/A'}" with ${parseFloat(String(topAdByCtr?.ctr ?? 0)).toFixed(2)}% CTR at $${parseFloat(String(topAdByCtr?.amount_spent ?? 0)).toFixed(2)} spend`
+
+  const prompt = `You are writing a campaign performance summary for a client report. Use ONLY the numbers below — do not invent, round, or substitute any figure.
+
+CLIENT: ${clientName}
+CAMPAIGN: ${campaign.campaign_name || campaign.name}
+PERIOD: ${period}
+
+KEY RESULTS (use these exact numbers — no others):
 - Spend: $${spend.toFixed(2)}
+- ${resultLine}
+- CTR: ${ctr.toFixed(2)}%
+- CPC: $${cpc.toFixed(2)}
+- CPM: $${cpm.toFixed(2)}
 - Impressions: ${impressions.toLocaleString()}
 - Reach: ${reach.toLocaleString()}
-- Clicks: ${clicks.toLocaleString()}
-- CTR: ${ctr.toFixed(2)}%
-- CPM: $${cpm.toFixed(2)}
-- CPC: $${cpc.toFixed(2)}
-- Leads: ${leads}
-${isLeadForm ? '- Lead form type: Native Meta lead forms (no landing page conversion rate applies)' : `- Landing Page Views: ${lpv}\n- LPV Conversion Rate: ${lpv > 0 ? ((leads / lpv) * 100).toFixed(1) : 0}%\n- Cost Per LPV: $${cplpv.toFixed(2)}`}
-- Cost Per Lead: ${cpl > 0 ? `$${cpl.toFixed(2)}` : 'N/A'}
-- Frequency: ${frequency > 0 ? frequency.toFixed(1) : 'N/A'}x
+- Frequency: ${frequency > 0 ? frequency.toFixed(1) + 'x' : 'N/A'}
 
-Top performing ads:
-- Best CTR: "${topAdByCtr?.ad_name || topAdByCtr?.name || 'N/A'}" (${parseFloat(String(topAdByCtr?.ctr || 0)).toFixed(2)}% CTR, $${parseFloat(String(topAdByCtr?.amount_spent || 0)).toFixed(2)} spend)
-- Most Leads: "${topAdByLeads?.ad_name || topAdByLeads?.name || 'N/A'}" (${topAdByLeads?.lead || 0} leads, $${parseFloat(String(topAdByLeads?.amount_spent || 0)).toFixed(2)} spend)
+TOP AD: ${topAdLine}
 
-IMPORTANT: ${isLeadForm ? 'This is a Meta lead form campaign. Do NOT mention landing page views or conversion rates. Leads were captured via native Meta forms.' : 'This is a landing page campaign.'}
+Write exactly 3 short sections. Each is 1-2 sentences. Return JSON only.
 
-Write a structured campaign analysis with exactly 3 parts, 1-2 sentences each. Analyse only the data above.
+OVERVIEW: State the primary result (${isLeadForm ? `${leads} leads` : isTraffic ? `${lpv} landing page views` : `${impressions.toLocaleString()} impressions`}) and total spend. Be direct and positive.
+HIGHLIGHTS: Name the top ad and one standout metric. Use exact numbers.
+OPPORTUNITIES: One specific, data-backed recommendation.
 
-OVERVIEW: State the campaign total result (total leads or traffic) with exact spend and cost-per-result from the metrics above.
-HIGHLIGHTS: Name the best performing ad and one standout metric. Be specific with exact numbers.
-OPPORTUNITIES: One data-backed opportunity from the numbers above.
+RULES:
+- Use ONLY the numbers listed above. NEVER use a different number.
+- ${isLeadForm ? 'This is a lead generation campaign. Do not mention landing page views.' : isTraffic ? `This is a traffic/landing page campaign. LPV = ${lpv}. Do NOT say 0 landing page views. Do NOT say "undefined". The result is ${lpv} landing page views.` : 'This is an awareness campaign.'}
+- No em dashes. No markdown. No bullet points. Positive tone only.
 
-Rules:
-- Use ONLY the exact numbers from "Campaign metrics" above. Never use ad-level numbers in the OVERVIEW.
-- No em dashes (do not use the character —). Use commas or full stops instead.
-- Plain text only. No markdown, no bullet points.
-
-Format your response as JSON:
-{"overview": "...", "highlights": "...", "opportunities": "..."}`
+Respond with ONLY this JSON (no other text):
+{"overview":"...","highlights":"...","opportunities":"..."}`
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
