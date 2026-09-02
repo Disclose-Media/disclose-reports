@@ -45,19 +45,20 @@ Period: ${period}
 Total posts analysed: ${posts.length}
 
 Top performing posts (by views):
-${topPosts.map((p, i) => `${i + 1}. "${p.caption}..." — ${p.views.toLocaleString()} views, ${p.reach.toLocaleString()} reach, ${p.likes} likes${p.comments ? `, ${p.comments} comments` : ''}${p.shares ? `, ${p.shares} shares` : ''}${p.saves ? `, ${p.saves} saves` : ''} [${p.type}, ${p.date}]`).join('\n')}
+${topPosts.map((p, i) => `${i + 1}. "${p.caption}..." (${p.views.toLocaleString()} views, ${p.reach.toLocaleString()} reach, ${p.likes} likes${p.comments ? `, ${p.comments} comments` : ''}${p.shares ? `, ${p.shares} shares` : ''}${p.saves ? `, ${p.saves} saves` : ''}, ${p.type}, ${p.date})`).join('\n')}
 
 Lowest performing posts:
-${bottomPosts.map((p, i) => `${i + 1}. "${p.caption}..." — ${p.views.toLocaleString()} views, ${p.reach.toLocaleString()} reach`).join('\n')}
+${bottomPosts.map((p, i) => `${i + 1}. "${p.caption}..." (${p.views.toLocaleString()} views, ${p.reach.toLocaleString()} reach)`).join('\n')}
 
 Write exactly 3 separate paragraphs, separated by a blank line. Each paragraph is 1-2 sentences.
 
-Paragraph 1 — Top performer: Quote a snippet of the caption, state exact views and reach, explain what made it stand out.
-Paragraph 2 — What worked and what didn't: Compare the themes/formats of strong vs weak performers. Use exact numbers.
-Paragraph 3 — Content direction: One specific, data-backed observation about what the audience responds to.
+Paragraph 1: Quote a snippet of the top post caption, state exact views and reach, explain what made it stand out.
+Paragraph 2: Compare the themes and formats of strong vs weak performers. Use exact numbers.
+Paragraph 3: One specific, data-backed observation about what the audience responds to.
 
 Rules:
-- Plain text only — no markdown, no #, no bullets, no headers
+- Plain text only. No markdown, no #, no bullets, no headers.
+- No em dashes (do not use the character —). Use commas or full stops instead.
 - Third person ("the page", "the account")
 - Exact numbers always (e.g. "3,881 views" not "nearly 4K")
 - Blank line between each paragraph`

@@ -38,7 +38,9 @@ ${topConvCampaign ? `Top campaign by conversions: ${topConvCampaign.name} (${top
 
 Write exactly 2 sentences:
 1. Overall account performance with key numbers (spend, clicks, ${hasConversions ? 'conversions' : 'CTR'}).
-2. The standout insight — best performing campaign or most significant metric trend.`
+2. The standout insight: best performing campaign or most significant metric trend.
+
+Rules: No em dashes (do not use the character —). Plain text only. Exact numbers from the data above only.`
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
