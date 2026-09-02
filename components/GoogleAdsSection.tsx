@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import type { GoogleAdsResult, GoogleAdsCampaign, GoogleAdsAdGroup } from '@/lib/google-ads'
+import type { GoogleAdsResult, GoogleAdsCampaign } from '@/lib/google-ads'
 
 type Props = { data: GoogleAdsResult; clientName?: string; period?: string }
 
@@ -31,16 +31,6 @@ function SectionHeader({ title }: { title: string }) {
   )
 }
 
-function KpiCard({ label, value, sub, gold, green }: { label: string; value: string; sub?: string; gold?: boolean; green?: boolean }) {
-  return (
-    <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-4">
-      <p className="text-[9px] uppercase tracking-[0.15em] text-[#AAAAAA] mb-2" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>{label}</p>
-      <p className={`text-[22px] font-bold tracking-tight leading-none ${gold ? 'text-[#C8972D]' : green ? 'text-emerald-600' : 'text-[#111111]'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>{value}</p>
-      {sub && <p className="text-[10px] text-[#AAAAAA] mt-1.5" style={{ fontFamily: 'Inter, sans-serif' }}>{sub}</p>}
-    </div>
-  )
-}
-
 function StatusBadge({ status }: { status: string }) {
   const s = status.toUpperCase()
   if (s === 'ENABLED') return <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Active</span>
@@ -48,62 +38,209 @@ function StatusBadge({ status }: { status: string }) {
   return <span className="text-[9px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">{status}</span>
 }
 
-type SortKey = 'name' | 'spend' | 'clicks' | 'impressions' | 'ctr' | 'avgCpc' | 'conversions' | 'costPerConversion' | 'conversionRate'
-type SortDir = 'asc' | 'desc'
-
-function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
+function MiniTable({ headers, rows }: { headers: string[]; rows: (string | number)[][] }) {
   return (
-    <span className={`inline-flex flex-col ml-1 gap-[1px] ${active ? 'text-[#C8972D]' : 'text-[#CCCCCC]'}`}>
-      <svg width="6" height="4" viewBox="0 0 6 4" fill="currentColor" className={active && dir === 'asc' ? 'opacity-100' : 'opacity-40'}><path d="M3 0L6 4H0L3 0Z"/></svg>
-      <svg width="6" height="4" viewBox="0 0 6 4" fill="currentColor" className={active && dir === 'desc' ? 'opacity-100' : 'opacity-40'}><path d="M3 4L0 0H6L3 4Z"/></svg>
-    </span>
+    <div className="overflow-x-auto rounded-[6px] border border-[#E8E4DC]">
+      <table className="w-full text-[11px]" style={{ fontFamily: 'Inter, sans-serif' }}>
+        <thead>
+          <tr className="border-b border-[#F0EEE9] bg-[#FAFAF8]">
+            {headers.map((h, i) => (
+              <th key={h} className={`px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#AAAAAA] ${i === 0 ? 'text-left' : 'text-right'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i} className={`${i < rows.length - 1 ? 'border-b border-[#F0EEE9]' : ''} hover:bg-[#FAFAF8]`}>
+              {row.map((cell, j) => (
+                <td key={j} className={`px-3 py-2 ${j === 0 ? 'font-medium text-[#333333] max-w-[180px]' : 'text-right tabular-nums'} ${j === 1 ? 'text-[#C8972D] font-semibold' : 'text-[#555555]'}`}>
+                  {j === 0 ? <span className="block truncate" title={String(cell)}>{cell}</span> : cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+          {rows.length === 0 && (
+            <tr><td colSpan={headers.length} className="px-3 py-4 text-center text-[#AAAAAA] text-[11px]">No data</td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
   )
 }
 
-function TrendChart({ daily }: { daily: GoogleAdsResult['daily'] }) {
+function CampaignTrendChart({ daily }: { daily: GoogleAdsCampaign['daily'] }) {
   const ref = useRef<HTMLCanvasElement>(null)
   const obj = useRef<unknown>(null)
-
   useEffect(() => {
     if (!ref.current || daily.length === 0) return
     import('chart.js/auto').then(({ default: Chart }) => {
       if (obj.current) (obj.current as { destroy: () => void }).destroy()
-      const labels = daily.map(d => fmtDate(d.date))
       obj.current = new Chart(ref.current!, {
         type: 'line',
         data: {
-          labels,
+          labels: daily.map(d => fmtDate(d.date)),
           datasets: [
-            {
-              label: 'Clicks',
-              data: daily.map(d => d.clicks),
-              borderColor: 'rgba(200,151,45,0.9)',
-              backgroundColor: 'rgba(200,151,45,0.08)',
-              tension: 0.3, fill: true, pointRadius: daily.length > 20 ? 0 : 3, borderWidth: 2, yAxisID: 'y',
-            },
-            {
-              label: 'Impressions',
-              data: daily.map(d => d.impressions),
-              borderColor: 'rgba(99,179,237,0.9)',
-              backgroundColor: 'rgba(99,179,237,0.04)',
-              tension: 0.3, fill: false, pointRadius: daily.length > 20 ? 0 : 3, borderWidth: 1.5, yAxisID: 'y1',
-            },
-            {
-              label: 'Conversions',
-              data: daily.map(d => d.conversions),
-              borderColor: 'rgba(16,185,129,0.9)',
-              backgroundColor: 'rgba(16,185,129,0.08)',
-              tension: 0.3, fill: false, pointRadius: daily.length > 20 ? 0 : 3, borderWidth: 2, yAxisID: 'y',
-            },
+            { label: 'Clicks', data: daily.map(d => d.clicks), borderColor: 'rgba(200,151,45,0.9)', backgroundColor: 'rgba(200,151,45,0.08)', tension: 0.3, fill: true, pointRadius: daily.length > 20 ? 0 : 3, borderWidth: 2, yAxisID: 'y' },
+            { label: 'Conversions', data: daily.map(d => d.conversions), borderColor: 'rgba(16,185,129,0.9)', backgroundColor: 'rgba(16,185,129,0.06)', tension: 0.3, fill: false, pointRadius: daily.length > 20 ? 0 : 3, borderWidth: 2, yAxisID: 'y' },
+            { label: 'Impressions', data: daily.map(d => d.impressions), borderColor: 'rgba(99,179,237,0.7)', tension: 0.3, fill: false, pointRadius: 0, borderWidth: 1.5, yAxisID: 'y1' },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 9, padding: 12, font: { size: 9, family: 'Inter, sans-serif' }, color: '#888888' } }, tooltip: { backgroundColor: '#111111', titleColor: '#FFF', bodyColor: '#CCC', padding: 8, cornerRadius: 5 } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 9, family: 'Inter, sans-serif' }, color: '#AAAAAA', maxTicksLimit: 8 }, border: { display: false } },
+            y: { position: 'left', grid: { color: '#F0EEE9' }, ticks: { font: { size: 9, family: 'Inter, sans-serif' }, color: '#AAAAAA' }, border: { display: false } },
+            y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { font: { size: 9, family: 'Inter, sans-serif' }, color: '#99BBDD' }, border: { display: false } },
+          },
+        },
+      })
+    })
+    return () => { if (obj.current) (obj.current as { destroy: () => void }).destroy() }
+  }, [daily])
+  if (daily.length === 0) return null
+  return <div className="relative h-40"><canvas ref={ref} /></div>
+}
+
+function CampaignSection({ campaign, clientName, period }: { campaign: GoogleAdsCampaign; clientName?: string; period?: string }) {
+  const [open, setOpen] = useState(false)
+  const hasConversions = campaign.conversions > 0
+
+  const kpiTiles = [
+    { label: 'Spend', value: fmtDollar(campaign.spend), gold: true },
+    { label: 'Clicks', value: fmt(campaign.clicks) },
+    { label: 'Impressions', value: fmt(campaign.impressions) },
+    { label: 'CTR', value: fmtPct(campaign.ctr) },
+    { label: 'Avg CPC', value: fmtDollar(campaign.avgCpc) },
+    ...(hasConversions ? [
+      { label: 'Conversions', value: fmt(campaign.conversions), green: true },
+      { label: 'Cost / Conv.', value: fmtDollar(campaign.costPerConversion) },
+      { label: 'Conv. Rate', value: fmtPct(campaign.conversionRate) },
+    ] : []),
+  ]
+
+  const kwRows = campaign.keywords.map(k => [k.keyword, fmtDollar(k.spend), fmt(k.clicks), fmtPct(k.ctr), fmtDollar(k.avgCpc), ...(k.conversions > 0 ? [fmt(k.conversions)] : [])])
+  const kwHeaders = ['Keyword', 'Spend', 'Clicks', 'CTR', 'Avg CPC', ...(campaign.keywords.some(k => k.conversions > 0) ? ['Conv.'] : [])]
+
+  const devRows = campaign.devices.map(d => [d.device, fmtDollar(d.spend), fmt(d.clicks), fmt(d.impressions), ...(d.conversions > 0 ? [fmt(d.conversions)] : [])])
+  const devHeaders = ['Device', 'Spend', 'Clicks', 'Impr.', ...(campaign.devices.some(d => d.conversions > 0) ? ['Conv.'] : [])]
+
+  const geoRows = campaign.geo.map(g => [g.city, fmtDollar(g.spend), fmt(g.clicks), ...(g.conversions > 0 ? [fmt(g.conversions)] : [])])
+  const geoHeaders = ['City', 'Spend', 'Clicks', ...(campaign.geo.some(g => g.conversions > 0) ? ['Conv.'] : [])]
+
+  const agRows = campaign.adGroups.map(ag => [ag.name, fmtDollar(ag.spend), fmt(ag.clicks), fmtPct(ag.ctr), ...(ag.conversions > 0 ? [fmt(ag.conversions)] : [])])
+  const agHeaders = ['Ad Group', 'Spend', 'Clicks', 'CTR', ...(campaign.adGroups.some(ag => ag.conversions > 0) ? ['Conv.'] : [])]
+
+  return (
+    <div className="mb-4">
+      {/* Campaign header — matches Meta style */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full bg-[#111111] text-white px-5 py-4 flex items-center justify-between hover:bg-[#1C1C1C] transition-colors duration-150"
+        style={{ borderRadius: open ? '8px 8px 0 0' : '8px' }}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div style={{ width: '2px', height: '18px', background: '#C8972D', borderRadius: '1px', flexShrink: 0 }} />
+          <span className="font-bold text-sm text-white text-left truncate" style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.01em' }}>
+            {campaign.name}
+          </span>
+        </div>
+        <div className="flex items-center gap-3 shrink-0 ml-3">
+          <span className="hidden sm:flex items-center gap-1.5 text-[11px]" style={{ fontFamily: 'Inter, sans-serif' }}>
+            <span className="text-[#AAAAAA]">Spend</span>
+            <span className="font-bold text-[#C8972D]">{fmtDollar(campaign.spend)}</span>
+          </span>
+          <StatusBadge status={campaign.status} />
+          {hasConversions && (
+            <span className="text-[11px] text-emerald-400 font-semibold" style={{ fontFamily: 'Inter, sans-serif' }}>{fmt(campaign.conversions)} conv.</span>
+          )}
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className={`text-[#888888] transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
+            <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+      </button>
+
+      {open && (
+        <div className="border border-t-0 border-[#E8E4DC] rounded-b-[8px] bg-[#F8F6F2] p-5 space-y-5">
+
+          {/* KPI tiles */}
+          <div className={`grid gap-3 ${kpiTiles.length >= 6 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'}`}>
+            {kpiTiles.map(tile => (
+              <div key={tile.label} className="bg-white border border-[#E8E4DC] rounded-[8px] px-4 py-3">
+                <p className="text-[9px] uppercase tracking-[0.14em] text-[#AAAAAA] mb-1.5" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600 }}>{tile.label}</p>
+                <p className={`text-[18px] font-bold leading-none ${'gold' in tile && tile.gold ? 'text-[#C8972D]' : 'green' in tile && tile.green ? 'text-emerald-600' : 'text-[#111111]'}`} style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.02em' }}>{tile.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Daily trend chart */}
+          {campaign.daily.length > 0 && (
+            <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-4">
+              <SectionHeader title="Daily Trend" />
+              <CampaignTrendChart daily={campaign.daily} />
+            </div>
+          )}
+
+          {/* Two-column: Ad Groups + Devices */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {campaign.adGroups.length > 0 && (
+              <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-4">
+                <SectionHeader title="Ad Groups" />
+                <MiniTable headers={agHeaders} rows={agRows} />
+              </div>
+            )}
+            {campaign.devices.length > 0 && (
+              <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-4">
+                <SectionHeader title="Devices" />
+                <MiniTable headers={devHeaders} rows={devRows} />
+              </div>
+            )}
+          </div>
+
+          {/* Keywords */}
+          {campaign.keywords.length > 0 && (
+            <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-4">
+              <SectionHeader title="Top Keywords" />
+              <MiniTable headers={kwHeaders} rows={kwRows} />
+            </div>
+          )}
+
+          {/* Geo */}
+          {campaign.geo.length > 0 && (
+            <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-4">
+              <SectionHeader title="Geographic Breakdown" />
+              <MiniTable headers={geoHeaders} rows={geoRows} />
+            </div>
+          )}
+
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AccountTrendChart({ daily }: { daily: GoogleAdsResult['daily'] }) {
+  const ref = useRef<HTMLCanvasElement>(null)
+  const obj = useRef<unknown>(null)
+  useEffect(() => {
+    if (!ref.current || daily.length === 0) return
+    import('chart.js/auto').then(({ default: Chart }) => {
+      if (obj.current) (obj.current as { destroy: () => void }).destroy()
+      obj.current = new Chart(ref.current!, {
+        type: 'line',
+        data: {
+          labels: daily.map(d => fmtDate(d.date)),
+          datasets: [
+            { label: 'Clicks', data: daily.map(d => d.clicks), borderColor: 'rgba(200,151,45,0.9)', backgroundColor: 'rgba(200,151,45,0.08)', tension: 0.3, fill: true, pointRadius: daily.length > 20 ? 0 : 3, borderWidth: 2, yAxisID: 'y' },
+            { label: 'Impressions', data: daily.map(d => d.impressions), borderColor: 'rgba(99,179,237,0.9)', backgroundColor: 'rgba(99,179,237,0.04)', tension: 0.3, fill: false, pointRadius: 0, borderWidth: 1.5, yAxisID: 'y1' },
+            { label: 'Conversions', data: daily.map(d => d.conversions), borderColor: 'rgba(16,185,129,0.9)', tension: 0.3, fill: false, pointRadius: daily.length > 20 ? 0 : 3, borderWidth: 2, yAxisID: 'y' },
           ],
         },
         options: {
           responsive: true, maintainAspectRatio: true,
           interaction: { mode: 'index', intersect: false },
-          plugins: {
-            legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 10, padding: 14, font: { size: 10, family: 'Inter, sans-serif' }, color: '#888888' } },
-            tooltip: { backgroundColor: '#111111', titleColor: '#FFFFFF', bodyColor: '#CCCCCC', padding: 10, cornerRadius: 6, titleFont: { size: 11 }, bodyFont: { size: 11 } },
-          },
+          plugins: { legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 10, padding: 14, font: { size: 10, family: 'Inter, sans-serif' }, color: '#888888' } }, tooltip: { backgroundColor: '#111111', titleColor: '#FFF', bodyColor: '#CCC', padding: 10, cornerRadius: 6 } },
           scales: {
             x: { grid: { display: false }, ticks: { font: { size: 10, family: 'Inter, sans-serif' }, color: '#AAAAAA', maxTicksLimit: 10 }, border: { display: false } },
             y: { position: 'left', grid: { color: '#F0EEE9' }, ticks: { font: { size: 10, family: 'Inter, sans-serif' }, color: '#AAAAAA' }, border: { display: false } },
@@ -114,232 +251,11 @@ function TrendChart({ daily }: { daily: GoogleAdsResult['daily'] }) {
     })
     return () => { if (obj.current) (obj.current as { destroy: () => void }).destroy() }
   }, [daily])
-
   if (daily.length === 0) return null
   return (
     <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-4 mb-5">
-      <SectionHeader title="Daily Performance Trend" />
-      <div className="relative h-52">
-        <canvas ref={ref} />
-      </div>
-    </div>
-  )
-}
-
-function DeviceSection({ devices }: { devices: GoogleAdsResult['devices'] }) {
-  if (devices.length === 0) return null
-  const total = devices.reduce((s, d) => s + d.spend, 0)
-  return (
-    <div className="bg-white border border-[#E8E4DC] rounded-[8px] overflow-hidden mb-5">
-      <div className="px-4 py-3 border-b border-[#F0EEE9]">
-        <SectionHeader title="Device Breakdown" />
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-[11px]" style={{ fontFamily: 'Inter, sans-serif' }}>
-          <thead>
-            <tr className="border-b border-[#F0EEE9]">
-              {['Device', 'Spend', 'Spend %', 'Clicks', 'Impressions', 'Conversions', 'Conv. Rate'].map(h => (
-                <th key={h} className={`px-4 py-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#AAAAAA] ${h === 'Device' ? 'text-left' : 'text-right'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {devices.map((d, i) => (
-              <tr key={d.device} className={`${i < devices.length - 1 ? 'border-b border-[#F0EEE9]' : ''} hover:bg-[#FAFAF8]`}>
-                <td className="px-4 py-2.5 font-medium text-[#333333]">
-                  <span className="flex items-center gap-2">
-                    <span className="text-[10px]">{d.device === 'Mobile' ? '📱' : d.device === 'Desktop' ? '🖥️' : '📟'}</span>
-                    {d.device}
-                  </span>
-                </td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-[#C8972D] font-semibold">{fmtDollar(d.spend)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-[#888888]">
-                  <div className="flex items-center justify-end gap-2">
-                    <div className="w-16 bg-[#F0EEE9] rounded-full h-1.5">
-                      <div className="h-1.5 rounded-full bg-[#C8972D]" style={{ width: `${total > 0 ? (d.spend / total) * 100 : 0}%` }} />
-                    </div>
-                    {total > 0 ? `${((d.spend / total) * 100).toFixed(0)}%` : '—'}
-                  </div>
-                </td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmt(d.clicks)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmt(d.impressions)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-emerald-600 font-medium">{d.conversions > 0 ? fmt(d.conversions) : '—'}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{d.conversionRate > 0 ? fmtPct(d.conversionRate) : '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-function KeywordSection({ keywords }: { keywords: GoogleAdsResult['keywords'] }) {
-  const [showAll, setShowAll] = useState(false)
-  const hasConversions = keywords.some(k => k.conversions > 0)
-  const visible = showAll ? keywords : keywords.slice(0, 10)
-  if (keywords.length === 0) return null
-  return (
-    <div className="bg-white border border-[#E8E4DC] rounded-[8px] overflow-hidden mb-5">
-      <div className="px-4 py-3 border-b border-[#F0EEE9] flex items-center justify-between">
-        <SectionHeader title="Keyword Performance" />
-        <span className="text-[10px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>{keywords.length} keywords</span>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-[11px]" style={{ fontFamily: 'Inter, sans-serif' }}>
-          <thead>
-            <tr className="border-b border-[#F0EEE9]">
-              {['Keyword', 'Spend', 'Clicks', 'Impr.', 'CTR', 'Avg CPC', ...(hasConversions ? ['Conv.', 'Conv. Rate'] : [])].map(h => (
-                <th key={h} className={`px-4 py-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#AAAAAA] ${h === 'Keyword' ? 'text-left' : 'text-right'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {visible.map((k, i) => (
-              <tr key={k.keyword} className={`${i < visible.length - 1 ? 'border-b border-[#F0EEE9]' : ''} hover:bg-[#FAFAF8]`}>
-                <td className="px-4 py-2.5 font-medium text-[#333333] max-w-[200px]"><span className="block truncate" title={k.keyword}>{k.keyword}</span></td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-[#C8972D] font-semibold">{fmtDollar(k.spend)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmt(k.clicks)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmt(k.impressions)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmtPct(k.ctr)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmtDollar(k.avgCpc)}</td>
-                {hasConversions && <>
-                  <td className="px-4 py-2.5 text-right tabular-nums text-emerald-600 font-medium">{k.conversions > 0 ? fmt(k.conversions) : '—'}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">{k.conversionRate > 0 ? fmtPct(k.conversionRate) : '—'}</td>
-                </>}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {keywords.length > 10 && (
-        <button onClick={() => setShowAll(v => !v)} className="w-full py-2.5 text-[10px] text-[#888888] hover:text-[#C8972D] hover:bg-[#FAFAF8] transition-colors border-t border-[#F0EEE9]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-          {showAll ? 'Show less' : `Show all ${keywords.length} keywords`}
-        </button>
-      )}
-    </div>
-  )
-}
-
-function GeoSection({ geo }: { geo: GoogleAdsResult['geo'] }) {
-  const hasConversions = geo.some(g => g.conversions > 0)
-  const totalSpend = geo.reduce((s, g) => s + g.spend, 0)
-  if (geo.length === 0) return null
-  return (
-    <div className="bg-white border border-[#E8E4DC] rounded-[8px] overflow-hidden mb-5">
-      <div className="px-4 py-3 border-b border-[#F0EEE9] flex items-center justify-between">
-        <SectionHeader title="Geographic Performance" />
-        <span className="text-[10px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>{geo.length} locations</span>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-[11px]" style={{ fontFamily: 'Inter, sans-serif' }}>
-          <thead>
-            <tr className="border-b border-[#F0EEE9]">
-              {['City / Region', 'Spend', 'Share', 'Clicks', ...(hasConversions ? ['Conversions'] : [])].map(h => (
-                <th key={h} className={`px-4 py-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#AAAAAA] ${h === 'City / Region' ? 'text-left' : 'text-right'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {geo.map((g, i) => (
-              <tr key={g.city} className={`${i < geo.length - 1 ? 'border-b border-[#F0EEE9]' : ''} hover:bg-[#FAFAF8]`}>
-                <td className="px-4 py-2.5 font-medium text-[#333333]">{g.city}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-[#C8972D] font-semibold">{fmtDollar(g.spend)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">
-                  <div className="flex items-center justify-end gap-2">
-                    <div className="w-14 bg-[#F0EEE9] rounded-full h-1.5">
-                      <div className="h-1.5 rounded-full bg-[#C8972D] opacity-60" style={{ width: `${totalSpend > 0 ? Math.min((g.spend / totalSpend) * 100, 100) : 0}%` }} />
-                    </div>
-                    <span className="text-[#888888] w-8 text-right">{totalSpend > 0 ? `${((g.spend / totalSpend) * 100).toFixed(0)}%` : '—'}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmt(g.clicks)}</td>
-                {hasConversions && <td className="px-4 py-2.5 text-right tabular-nums text-emerald-600 font-medium">{g.conversions > 0 ? fmt(g.conversions) : '—'}</td>}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-function CampaignTable({ campaigns }: { campaigns: GoogleAdsCampaign[] }) {
-  const [sortKey, setSortKey] = useState<SortKey>('spend')
-  const [sortDir, setSortDir] = useState<SortDir>('desc')
-  const hasConversions = campaigns.some(c => c.conversions > 0)
-
-  function handleSort(key: SortKey) {
-    if (sortKey === key) setSortDir(d => d === 'desc' ? 'asc' : 'desc')
-    else { setSortKey(key); setSortDir('desc') }
-  }
-
-  const sorted = [...campaigns].sort((a, b) => {
-    const av = a[sortKey as keyof GoogleAdsCampaign]
-    const bv = b[sortKey as keyof GoogleAdsCampaign]
-    if (typeof av === 'string' && typeof bv === 'string') return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av)
-    return sortDir === 'asc' ? (av as number) - (bv as number) : (bv as number) - (av as number)
-  })
-
-  const cols: { key: SortKey; label: string }[] = [
-    { key: 'name', label: 'Campaign' },
-    { key: 'spend', label: 'Spend' },
-    { key: 'impressions', label: 'Impr.' },
-    { key: 'clicks', label: 'Clicks' },
-    { key: 'ctr', label: 'CTR' },
-    { key: 'avgCpc', label: 'Avg CPC' },
-    ...(hasConversions ? [{ key: 'conversions' as SortKey, label: 'Conv.' }, { key: 'costPerConversion' as SortKey, label: 'Cost/Conv.' }, { key: 'conversionRate' as SortKey, label: 'Conv. Rate' }] : []),
-  ]
-
-  function cellVal(c: GoogleAdsCampaign, key: SortKey): string {
-    switch (key) {
-      case 'name': return c.name
-      case 'spend': return fmtDollar(c.spend)
-      case 'impressions': return fmt(c.impressions)
-      case 'clicks': return fmt(c.clicks)
-      case 'ctr': return fmtPct(c.ctr)
-      case 'avgCpc': return fmtDollar(c.avgCpc)
-      case 'conversions': return c.conversions > 0 ? fmt(c.conversions) : '—'
-      case 'costPerConversion': return c.costPerConversion > 0 ? fmtDollar(c.costPerConversion) : '—'
-      case 'conversionRate': return c.conversionRate > 0 ? fmtPct(c.conversionRate) : '—'
-    }
-  }
-
-  return (
-    <div className="bg-white border border-[#E8E4DC] rounded-[8px] overflow-hidden mb-5">
-      <div className="px-4 py-3 border-b border-[#F0EEE9] flex items-center justify-between">
-        <SectionHeader title="Campaign Breakdown" />
-        <span className="text-[10px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>{campaigns.length} campaigns</span>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-[11px]" style={{ fontFamily: 'Inter, sans-serif' }}>
-          <thead>
-            <tr className="border-b border-[#F0EEE9]">
-              {cols.map(col => (
-                <th key={col.key} className={`px-3 py-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#AAAAAA] cursor-pointer select-none whitespace-nowrap hover:text-[#C8972D] transition-colors ${col.key === 'name' ? 'text-left' : 'text-right'}`} style={{ fontFamily: 'Montserrat, sans-serif' }} onClick={() => handleSort(col.key)}>
-                  {col.label}<SortIcon active={sortKey === col.key} dir={sortDir} />
-                </th>
-              ))}
-              <th className="px-3 py-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#AAAAAA] text-left" style={{ fontFamily: 'Montserrat, sans-serif' }}>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((c, i) => (
-              <tr key={c.id} className={`${i < sorted.length - 1 ? 'border-b border-[#F0EEE9]' : ''} hover:bg-[#FAFAF8] transition-colors`}>
-                {cols.map(col => (
-                  <td key={col.key} className={`px-3 py-2.5 text-[#333333] ${col.key === 'name' ? 'text-left font-medium max-w-[220px]' : 'text-right tabular-nums'} ${col.key === 'spend' ? 'text-[#C8972D] font-semibold' : ''} ${col.key === 'conversions' && c.conversions > 0 ? 'text-emerald-600 font-medium' : ''}`}>
-                    {col.key === 'name' ? <span className="block truncate" title={c.name}>{c.name}</span> : cellVal(c, col.key)}
-                  </td>
-                ))}
-                <td className="px-3 py-2.5"><StatusBadge status={c.status} /></td>
-              </tr>
-            ))}
-            {sorted.length === 0 && (
-              <tr><td colSpan={cols.length + 1} className="px-4 py-8 text-center text-[#AAAAAA] text-[12px]">No campaign data for this period</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <SectionHeader title="Account Daily Trend" />
+      <div className="relative h-52"><canvas ref={ref} /></div>
     </div>
   )
 }
@@ -348,36 +264,21 @@ function AiSummary({ data, clientName, period }: { data: GoogleAdsResult; client
   const [summary, setSummary] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const fetched = useRef(false)
-
   useEffect(() => {
     if (fetched.current) return
     fetched.current = true
     setLoading(true)
-    fetch('/api/google-ads-summary', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ data, clientName, period }),
-    })
-      .then(r => r.json())
-      .then(j => setSummary(j.summary ?? null))
-      .catch(() => null)
-      .finally(() => setLoading(false))
+    fetch('/api/google-ads-summary', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ data, clientName, period }) })
+      .then(r => r.json()).then(j => setSummary(j.summary ?? null)).catch(() => null).finally(() => setLoading(false))
   }, [])
-
   const { summary: s } = data
   const fallback = `${clientName ?? 'This account'} generated ${fmt(s.clicks)} clicks from ${fmt(s.impressions)} impressions at a ${fmtPct(s.ctr)} CTR, investing ${fmtDollar(s.spend)} across Google Ads${period ? ` during ${period}` : ''}.${s.conversions > 0 ? ` The account recorded ${fmt(s.conversions)} conversions at ${fmtDollar(s.costPerConversion)} per conversion.` : ''}`
-
   return (
     <div className="bg-white border border-[#E8E4DC] rounded-[8px] overflow-hidden mb-5">
-      <div className="px-4 py-3 border-b border-[#F0EEE9]">
-        <SectionHeader title="Performance Snapshot" />
-      </div>
+      <div className="px-4 py-3 border-b border-[#F0EEE9]"><SectionHeader title="Performance Snapshot" /></div>
       <div className="px-4 py-4">
         {loading ? (
-          <div className="space-y-2">
-            <div className="h-3 bg-[#F0EEE9] rounded animate-pulse w-full" />
-            <div className="h-3 bg-[#F0EEE9] rounded animate-pulse w-5/6" />
-          </div>
+          <div className="space-y-2"><div className="h-3 bg-[#F0EEE9] rounded animate-pulse w-full" /><div className="h-3 bg-[#F0EEE9] rounded animate-pulse w-5/6" /></div>
         ) : (
           <p className="text-[12px] leading-relaxed text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{summary ?? fallback}</p>
         )}
@@ -386,172 +287,34 @@ function AiSummary({ data, clientName, period }: { data: GoogleAdsResult; client
   )
 }
 
-function AdGroupSection({ adGroups }: { adGroups: GoogleAdsAdGroup[] }) {
-  const hasConversions = adGroups.some(ag => ag.conversions > 0)
-  if (adGroups.length === 0) return null
-  return (
-    <div className="bg-white border border-[#E8E4DC] rounded-[8px] overflow-hidden mb-5">
-      <div className="px-4 py-3 border-b border-[#F0EEE9] flex items-center justify-between">
-        <SectionHeader title="Ad Group Performance" />
-        <span className="text-[10px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>{adGroups.length} ad groups</span>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-[11px]" style={{ fontFamily: 'Inter, sans-serif' }}>
-          <thead>
-            <tr className="border-b border-[#F0EEE9]">
-              {['Ad Group', 'Spend', 'Clicks', 'Impr.', 'CTR', 'Avg CPC', ...(hasConversions ? ['Conv.', 'Conv. Rate'] : [])].map(h => (
-                <th key={h} className={`px-4 py-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#AAAAAA] ${h === 'Ad Group' ? 'text-left' : 'text-right'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {adGroups.map((ag, i) => (
-              <tr key={ag.name} className={`${i < adGroups.length - 1 ? 'border-b border-[#F0EEE9]' : ''} hover:bg-[#FAFAF8]`}>
-                <td className="px-4 py-2.5 font-medium text-[#333333] max-w-[220px]"><span className="block truncate" title={ag.name}>{ag.name}</span></td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-[#C8972D] font-semibold">{fmtDollar(ag.spend)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmt(ag.clicks)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmt(ag.impressions)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmtPct(ag.ctr)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmtDollar(ag.avgCpc)}</td>
-                {hasConversions && <>
-                  <td className="px-4 py-2.5 text-right tabular-nums text-emerald-600 font-medium">{ag.conversions > 0 ? fmt(ag.conversions) : '—'}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">{ag.conversionRate > 0 ? fmtPct(ag.conversionRate) : '—'}</td>
-                </>}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-function DayOfWeekSection({ dayOfWeek }: { dayOfWeek: GoogleAdsResult['dayOfWeek'] }) {
-  if (dayOfWeek.length === 0) return null
-  const maxSpend = Math.max(...dayOfWeek.map(d => d.spend))
-  return (
-    <div className="bg-white border border-[#E8E4DC] rounded-[8px] overflow-hidden mb-5">
-      <div className="px-4 py-3 border-b border-[#F0EEE9]">
-        <SectionHeader title="Day of Week Performance" />
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-[11px]" style={{ fontFamily: 'Inter, sans-serif' }}>
-          <thead>
-            <tr className="border-b border-[#F0EEE9]">
-              {['Day', 'Spend', 'Spend Bar', 'Clicks', 'Impressions', 'Conversions'].map(h => (
-                <th key={h} className={`px-4 py-2.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[#AAAAAA] ${h === 'Day' || h === 'Spend Bar' ? 'text-left' : 'text-right'}`} style={{ fontFamily: 'Montserrat, sans-serif' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {dayOfWeek.map((d, i) => (
-              <tr key={d.day} className={`${i < dayOfWeek.length - 1 ? 'border-b border-[#F0EEE9]' : ''} hover:bg-[#FAFAF8]`}>
-                <td className="px-4 py-2.5 font-medium text-[#333333]">{d.day}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-[#C8972D] font-semibold">{fmtDollar(d.spend)}</td>
-                <td className="px-4 py-2.5">
-                  <div className="w-28 bg-[#F0EEE9] rounded-full h-1.5">
-                    <div className="h-1.5 rounded-full bg-[#C8972D]" style={{ width: `${maxSpend > 0 ? (d.spend / maxSpend) * 100 : 0}%` }} />
-                  </div>
-                </td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmt(d.clicks)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmt(d.impressions)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-emerald-600 font-medium">{d.conversions > 0 ? fmt(d.conversions) : '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-function HourlyChart({ hourly }: { hourly: GoogleAdsResult['hourly'] }) {
-  const ref = useRef<HTMLCanvasElement>(null)
-  const obj = useRef<unknown>(null)
-
-  useEffect(() => {
-    if (!ref.current || hourly.length === 0) return
-    import('chart.js/auto').then(({ default: Chart }) => {
-      if (obj.current) (obj.current as { destroy: () => void }).destroy()
-      const labels = hourly.map(h => {
-        if (h.hour === 0) return '12am'
-        if (h.hour === 12) return '12pm'
-        return h.hour < 12 ? `${h.hour}am` : `${h.hour - 12}pm`
-      })
-      obj.current = new Chart(ref.current!, {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [
-            {
-              label: 'Clicks',
-              data: hourly.map(h => h.clicks),
-              backgroundColor: 'rgba(200,151,45,0.7)',
-              borderRadius: 3,
-              yAxisID: 'y',
-            },
-            {
-              label: 'Conversions',
-              data: hourly.map(h => h.conversions),
-              backgroundColor: 'rgba(16,185,129,0.7)',
-              borderRadius: 3,
-              yAxisID: 'y',
-            },
-          ],
-        },
-        options: {
-          responsive: true, maintainAspectRatio: true,
-          plugins: {
-            legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 10, padding: 14, font: { size: 10, family: 'Inter, sans-serif' }, color: '#888888' } },
-            tooltip: { backgroundColor: '#111111', titleColor: '#FFFFFF', bodyColor: '#CCCCCC', padding: 10, cornerRadius: 6 },
-          },
-          scales: {
-            x: { grid: { display: false }, ticks: { font: { size: 9, family: 'Inter, sans-serif' }, color: '#AAAAAA', maxRotation: 0 }, border: { display: false } },
-            y: { grid: { color: '#F0EEE9' }, ticks: { font: { size: 10, family: 'Inter, sans-serif' }, color: '#AAAAAA' }, border: { display: false } },
-          },
-        },
-      })
-    })
-    return () => { if (obj.current) (obj.current as { destroy: () => void }).destroy() }
-  }, [hourly])
-
-  if (hourly.length === 0) return null
-  return (
-    <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-4 mb-5">
-      <SectionHeader title="Hour of Day Performance" />
-      <div className="relative h-44">
-        <canvas ref={ref} />
-      </div>
-    </div>
-  )
-}
-
 export function GoogleAdsSection({ data, clientName, period }: Props) {
   const { summary: s } = data
   const hasConversions = s.conversions > 0
-  const hasSis = s.searchImpressionShare > 0
+  const hasSis = (s.searchImpressionShare ?? 0) > 0
+
+  const kpiItems = [
+    { label: 'Total Spend', value: fmtDollar(s.spend), gold: true },
+    { label: 'Clicks', value: fmt(s.clicks) },
+    { label: 'Impressions', value: fmt(s.impressions) },
+    { label: 'CTR', value: fmtPct(s.ctr) },
+    { label: 'Avg CPC', value: fmtDollar(s.avgCpc) },
+    ...(hasConversions ? [
+      { label: 'Conversions', value: fmt(s.conversions), green: true },
+      { label: 'Cost / Conv.', value: fmtDollar(s.costPerConversion) },
+    ] : []),
+    ...(hasSis ? [{ label: 'Impr. Share', value: fmtPct((s.searchImpressionShare ?? 0) * 100) }] : []),
+  ]
 
   return (
     <div>
-      {/* KPI Summary bar */}
+      {/* Account KPI bar */}
       <div className="bg-[#111111] border border-[#1E1E1E] rounded-[8px] mb-5 overflow-hidden">
         <div className="border-b border-[#1E1E1E] px-5 py-3">
           <p className="text-[10px] uppercase tracking-[0.18em]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#C8972D' }}>Account Totals</p>
         </div>
-        <div className="grid divide-x divide-[#1E1E1E]" style={{ gridTemplateColumns: `repeat(${[5, hasConversions ? 2 : 0, hasSis ? 1 : 0].reduce((a, b) => a + b, 0)}, minmax(0,1fr))` }}>
-          {[
-            { label: 'Total Spend', value: fmtDollar(s.spend), gold: true },
-            { label: 'Clicks', value: fmt(s.clicks) },
-            { label: 'Impressions', value: fmt(s.impressions) },
-            { label: 'CTR', value: fmtPct(s.ctr) },
-            { label: 'Avg CPC', value: fmtDollar(s.avgCpc) },
-            ...(hasConversions ? [
-              { label: 'Conversions', value: fmt(s.conversions), green: true },
-              { label: 'Cost / Conv.', value: fmtDollar(s.costPerConversion) },
-            ] : []),
-            ...(hasSis ? [{ label: 'Impr. Share', value: fmtPct(s.searchImpressionShare * 100) }] : []),
-          ].map((item) => (
-            <div key={item.label} className="px-5 py-4">
+        <div className="flex flex-wrap divide-x divide-[#1E1E1E]">
+          {kpiItems.map(item => (
+            <div key={item.label} className="px-5 py-4 flex-1 min-w-[100px]">
               <p className="text-[9px] uppercase tracking-[0.14em] mb-1" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 600, color: '#555555' }}>{item.label}</p>
               <p className={`text-[20px] font-bold leading-none ${'gold' in item && item.gold ? 'text-[#C8972D]' : 'green' in item && item.green ? 'text-emerald-400' : 'text-white'}`} style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '-0.02em' }}>{item.value}</p>
             </div>
@@ -562,29 +325,19 @@ export function GoogleAdsSection({ data, clientName, period }: Props) {
       {/* AI Snapshot */}
       <AiSummary data={data} clientName={clientName} period={period} />
 
-      {/* Trend Chart */}
-      <TrendChart daily={data.daily} />
+      {/* Account-level trend */}
+      <AccountTrendChart daily={data.daily} />
 
-      {/* Campaign Table */}
-      <CampaignTable campaigns={data.campaigns} />
-
-      {/* Ad Groups */}
-      <AdGroupSection adGroups={data.adGroups} />
-
-      {/* Device Breakdown */}
-      <DeviceSection devices={data.devices} />
-
-      {/* Keywords */}
-      <KeywordSection keywords={data.keywords} />
-
-      {/* Geo */}
-      <GeoSection geo={data.geo} />
-
-      {/* Day of Week */}
-      <DayOfWeekSection dayOfWeek={data.dayOfWeek} />
-
-      {/* Hourly */}
-      <HourlyChart hourly={data.hourly} />
+      {/* Individual campaign sections */}
+      <div className="mb-2">
+        <div className="flex items-center gap-2.5 mb-3">
+          <div style={{ width: '3px', height: '16px', background: '#C8972D', borderRadius: '2px' }} />
+          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#888888]" style={{ fontFamily: 'Montserrat, sans-serif' }}>Campaigns ({data.campaigns.length})</span>
+        </div>
+      </div>
+      {data.campaigns.map(campaign => (
+        <CampaignSection key={campaign.id} campaign={campaign} clientName={clientName} period={period} />
+      ))}
     </div>
   )
 }
