@@ -380,7 +380,7 @@ function InstagramSection({ windsorInstagram, igInsights, clientName, period }: 
   const hasData = ig.views > 0 || ig.reach > 0 || ig.interactions > 0
 
   const engagementRate = ig.reach > 0 ? ((ig.interactions / ig.reach) * 100).toFixed(1) : '0.0'
-  const na = '—'
+  const na = 'N/A'
 
   if (!hasData) {
     return (
