@@ -28,7 +28,7 @@ type Props = {
 
 function fmt(n: string | number | undefined, decimals = 0) {
   const num = parseFloat(String(n || '0'))
-  if (isNaN(num)) return '—'
+  if (isNaN(num)) return 'N/A'
   return num.toLocaleString('en-NZ', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
@@ -37,7 +37,7 @@ function fmt(n: string | number | undefined, decimals = 0) {
 
 function fmtDollar(n: string | number | undefined) {
   const num = parseFloat(String(n || '0'))
-  if (isNaN(num) || num === 0) return '—'
+  if (isNaN(num) || num === 0) return 'N/A'
   return `$${num.toLocaleString('en-NZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
@@ -243,30 +243,30 @@ function CampaignSection({ campaign, ads, thumbnails, clientName, period }: { ca
   const kpiRow2: { label: string; value: string; gold?: boolean; green?: boolean }[] =
     obj === 'leads'
       ? [
-          { label: 'Landing Page Views', value: lpv > 0 ? fmt(lpv) : '—' },
-          { label: 'Cost Per LPV', value: cplpv > 0 ? `$${cplpv.toFixed(2)}` : '—' },
-          { label: 'Leads', value: leads > 0 ? String(leads) : '—', green: leads > 0 },
-          { label: 'Cost Per Lead', value: cpl > 0 ? fmtDollar(cpl) : '—', gold: cpl > 0 },
+          { label: 'Landing Page Views', value: lpv > 0 ? fmt(lpv) : 'N/A' },
+          { label: 'Cost Per LPV', value: cplpv > 0 ? `$${cplpv.toFixed(2)}` : 'N/A' },
+          { label: 'Leads', value: leads > 0 ? String(leads) : 'N/A', green: leads > 0 },
+          { label: 'Cost Per Lead', value: cpl > 0 ? fmtDollar(cpl) : 'N/A', gold: cpl > 0 },
         ]
       : obj === 'traffic'
       ? [
           { label: 'CTR', value: `${ctr.toFixed(2)}%` },
-          { label: 'Landing Page Views', value: lpv > 0 ? fmt(lpv) : '—' },
-          { label: 'Cost Per LPV', value: cplpv > 0 ? `$${cplpv.toFixed(2)}` : '—' },
-          { label: 'CPC', value: cpc > 0 ? `$${cpc.toFixed(2)}` : '—' },
+          { label: 'Landing Page Views', value: lpv > 0 ? fmt(lpv) : 'N/A' },
+          { label: 'Cost Per LPV', value: cplpv > 0 ? `$${cplpv.toFixed(2)}` : 'N/A' },
+          { label: 'CPC', value: cpc > 0 ? `$${cpc.toFixed(2)}` : 'N/A' },
         ]
       : obj === 'engagement'
       ? [
-          { label: 'Engagements', value: clicks > 0 ? fmt(clicks) : '—', green: clicks > 0 },
-          { label: 'Engagement Rate', value: engRate > 0 ? `${engRate.toFixed(2)}%` : '—' },
-          { label: 'Cost Per Engagement', value: cpe > 0 ? `$${cpe.toFixed(2)}` : '—', gold: cpe > 0 },
-          { label: 'Frequency', value: freq > 0 ? freq.toFixed(2) : '—' },
+          { label: 'Engagements', value: clicks > 0 ? fmt(clicks) : 'N/A', green: clicks > 0 },
+          { label: 'Engagement Rate', value: engRate > 0 ? `${engRate.toFixed(2)}%` : 'N/A' },
+          { label: 'Cost Per Engagement', value: cpe > 0 ? `$${cpe.toFixed(2)}` : 'N/A', gold: cpe > 0 },
+          { label: 'Frequency', value: freq > 0 ? freq.toFixed(2) : 'N/A' },
         ]
       : [
-          { label: 'CPM', value: cpm > 0 ? `$${cpm.toFixed(2)}` : '—' },
-          { label: 'Frequency', value: freq > 0 ? freq.toFixed(2) : '—' },
+          { label: 'CPM', value: cpm > 0 ? `$${cpm.toFixed(2)}` : 'N/A' },
+          { label: 'Frequency', value: freq > 0 ? freq.toFixed(2) : 'N/A' },
           { label: 'CTR', value: `${ctr.toFixed(2)}%` },
-          { label: 'CPC', value: cpc > 0 ? `$${cpc.toFixed(2)}` : '—' },
+          { label: 'CPC', value: cpc > 0 ? `$${cpc.toFixed(2)}` : 'N/A' },
         ]
 
   // Table columns per objective
@@ -462,14 +462,14 @@ function CampaignSection({ campaign, ads, thumbnails, clientName, period }: { ca
 
                       const varCells = varCols.map((col) => {
                         switch (col.key) {
-                          case 'lpv': return <td key="lpv" className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{adLpv > 0 ? fmt(adLpv) : '—'}</td>
-                          case 'cplpv': return <td key="cplpv" className={`py-3 px-4 text-right text-xs font-medium ${adCplpv > 0 && adCplpv < 0.75 ? 'text-emerald-600' : adCplpv > 1 ? 'text-amber-600' : 'text-[#444444]'}`} style={{ fontFamily: 'Inter, sans-serif' }}>{adCplpv > 0 ? `$${adCplpv.toFixed(2)}` : '—'}</td>
-                          case 'leads': return <td key="leads" className={`py-3 px-4 text-right text-xs font-bold ${adLeads > 0 ? 'text-emerald-600' : 'text-[#CCCCCC]'}`} style={{ fontFamily: 'Inter, sans-serif' }}>{adLeads > 0 ? adLeads : '—'}</td>
-                          case 'cpl': return <td key="cpl" className={`py-3 px-4 text-right text-xs font-medium ${adCpl > 0 ? 'text-[#C8972D]' : 'text-[#CCCCCC]'}`} style={{ fontFamily: 'Inter, sans-serif' }}>{adCpl > 0 ? `$${adCpl.toFixed(2)}` : '—'}</td>
-                          case 'freq': return <td key="freq" className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{adFreq > 0 ? adFreq.toFixed(2) : '—'}</td>
+                          case 'lpv': return <td key="lpv" className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{adLpv > 0 ? fmt(adLpv) : 'N/A'}</td>
+                          case 'cplpv': return <td key="cplpv" className={`py-3 px-4 text-right text-xs font-medium ${adCplpv > 0 && adCplpv < 0.75 ? 'text-emerald-600' : adCplpv > 1 ? 'text-amber-600' : 'text-[#444444]'}`} style={{ fontFamily: 'Inter, sans-serif' }}>{adCplpv > 0 ? `$${adCplpv.toFixed(2)}` : 'N/A'}</td>
+                          case 'leads': return <td key="leads" className={`py-3 px-4 text-right text-xs font-bold ${adLeads > 0 ? 'text-emerald-600' : 'text-[#CCCCCC]'}`} style={{ fontFamily: 'Inter, sans-serif' }}>{adLeads > 0 ? adLeads : 'N/A'}</td>
+                          case 'cpl': return <td key="cpl" className={`py-3 px-4 text-right text-xs font-medium ${adCpl > 0 ? 'text-[#C8972D]' : 'text-[#CCCCCC]'}`} style={{ fontFamily: 'Inter, sans-serif' }}>{adCpl > 0 ? `$${adCpl.toFixed(2)}` : 'N/A'}</td>
+                          case 'freq': return <td key="freq" className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{adFreq > 0 ? adFreq.toFixed(2) : 'N/A'}</td>
                           case 'ctr': return <td key="ctr" className={`py-3 px-4 text-right text-xs font-medium ${adCtr >= 2 ? 'text-emerald-600' : adCtr < 1 ? 'text-amber-600' : 'text-[#444444]'}`} style={{ fontFamily: 'Inter, sans-serif' }}>{`${adCtr.toFixed(2)}%`}</td>
-                          case 'cpm': return <td key="cpm" className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{adCpm > 0 ? `$${adCpm.toFixed(2)}` : '—'}</td>
-                          case 'cpc': return <td key="cpc" className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{adCpc > 0 ? `$${adCpc.toFixed(2)}` : '—'}</td>
+                          case 'cpm': return <td key="cpm" className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{adCpm > 0 ? `$${adCpm.toFixed(2)}` : 'N/A'}</td>
+                          case 'cpc': return <td key="cpc" className="py-3 px-4 text-right text-xs text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{adCpc > 0 ? `$${adCpc.toFixed(2)}` : 'N/A'}</td>
                           default: return null
                         }
                       })
@@ -629,29 +629,29 @@ function CampaignSummary({ campaign, ads, obj, clientName, period }: { campaign:
     obj === 'leads'
       ? [
           { label: 'CTR', value: `${ctr.toFixed(2)}%`, hl: ctr >= 2 ? 'good' : ctr >= 1 ? 'neutral' : 'warn' },
-          { label: 'LPV', value: lpv > 0 ? lpv.toLocaleString() : '—', hl: lpv > 0 ? 'good' : 'neutral' },
-          { label: 'Leads', value: leads > 0 ? String(leads) : '—', hl: leads > 0 ? 'good' : 'neutral' },
-          { label: 'Cost Per Lead', value: cpl > 0 ? `$${cpl.toFixed(2)}` : '—', hl: 'neutral' },
+          { label: 'LPV', value: lpv > 0 ? lpv.toLocaleString() : 'N/A', hl: lpv > 0 ? 'good' : 'neutral' },
+          { label: 'Leads', value: leads > 0 ? String(leads) : 'N/A', hl: leads > 0 ? 'good' : 'neutral' },
+          { label: 'Cost Per Lead', value: cpl > 0 ? `$${cpl.toFixed(2)}` : 'N/A', hl: 'neutral' },
         ]
       : obj === 'traffic'
       ? [
           { label: 'CTR', value: `${ctr.toFixed(2)}%`, hl: ctr >= 2 ? 'good' : ctr >= 1 ? 'neutral' : 'warn' },
-          { label: 'LPV', value: lpv > 0 ? lpv.toLocaleString() : '—', hl: lpv > 0 ? 'good' : 'neutral' },
-          { label: 'Cost Per LPV', value: cplpv > 0 ? `$${cplpv.toFixed(2)}` : '—', hl: cplpv > 0 && cplpv < 0.75 ? 'good' : cplpv > 1.5 ? 'warn' : 'neutral' },
-          { label: 'CPC', value: cpc > 0 ? `$${cpc.toFixed(2)}` : '—', hl: 'neutral' },
+          { label: 'LPV', value: lpv > 0 ? lpv.toLocaleString() : 'N/A', hl: lpv > 0 ? 'good' : 'neutral' },
+          { label: 'Cost Per LPV', value: cplpv > 0 ? `$${cplpv.toFixed(2)}` : 'N/A', hl: cplpv > 0 && cplpv < 0.75 ? 'good' : cplpv > 1.5 ? 'warn' : 'neutral' },
+          { label: 'CPC', value: cpc > 0 ? `$${cpc.toFixed(2)}` : 'N/A', hl: 'neutral' },
         ]
       : obj === 'engagement'
       ? [
-          { label: 'Engagements', value: clicks > 0 ? clicks.toLocaleString() : '—', hl: clicks > 0 ? 'good' : 'neutral' },
-          { label: 'Engagement Rate', value: engRate > 0 ? `${engRate.toFixed(2)}%` : '—', hl: engRate >= 3 ? 'good' : engRate >= 1 ? 'neutral' : 'warn' },
-          { label: 'Cost Per Engagement', value: cpe > 0 ? `$${cpe.toFixed(2)}` : '—', hl: 'neutral' },
-          { label: 'Frequency', value: freq > 0 ? freq.toFixed(2) : '—', hl: freq > 4 ? 'warn' : freq > 0 ? 'good' : 'neutral' },
+          { label: 'Engagements', value: clicks > 0 ? clicks.toLocaleString() : 'N/A', hl: clicks > 0 ? 'good' : 'neutral' },
+          { label: 'Engagement Rate', value: engRate > 0 ? `${engRate.toFixed(2)}%` : 'N/A', hl: engRate >= 3 ? 'good' : engRate >= 1 ? 'neutral' : 'warn' },
+          { label: 'Cost Per Engagement', value: cpe > 0 ? `$${cpe.toFixed(2)}` : 'N/A', hl: 'neutral' },
+          { label: 'Frequency', value: freq > 0 ? freq.toFixed(2) : 'N/A', hl: freq > 4 ? 'warn' : freq > 0 ? 'good' : 'neutral' },
         ]
       : [
           { label: 'CPM', value: `$${cpm.toFixed(2)}`, hl: cpm < 15 ? 'good' : cpm < 25 ? 'neutral' : 'warn' },
-          { label: 'Frequency', value: freq > 0 ? freq.toFixed(2) : '—', hl: freq > 4 ? 'warn' : freq > 0 ? 'good' : 'neutral' },
+          { label: 'Frequency', value: freq > 0 ? freq.toFixed(2) : 'N/A', hl: freq > 4 ? 'warn' : freq > 0 ? 'good' : 'neutral' },
           { label: 'CTR', value: `${ctr.toFixed(2)}%`, hl: ctr >= 2 ? 'good' : ctr >= 1 ? 'neutral' : 'warn' },
-          { label: 'CPC', value: cpc > 0 ? `$${cpc.toFixed(2)}` : '—', hl: 'neutral' },
+          { label: 'CPC', value: cpc > 0 ? `$${cpc.toFixed(2)}` : 'N/A', hl: 'neutral' },
         ]
 
   return (
@@ -748,22 +748,22 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
     accountObj === 'leads'
       ? [
           { label: 'Avg CTR', value: `${avgCtr.toFixed(2)}%` },
-          { label: 'Total LPV', value: totalLpv > 0 ? fmt(totalLpv) : '—' },
-          { label: 'Total Leads', value: totalLeads > 0 ? String(totalLeads) : '—', green: totalLeads > 0 },
-          { label: 'Cost Per Lead', value: cpl > 0 ? fmtDollar(cpl) : '—', gold: cpl > 0 },
+          { label: 'Total LPV', value: totalLpv > 0 ? fmt(totalLpv) : 'N/A' },
+          { label: 'Total Leads', value: totalLeads > 0 ? String(totalLeads) : 'N/A', green: totalLeads > 0 },
+          { label: 'Cost Per Lead', value: cpl > 0 ? fmtDollar(cpl) : 'N/A', gold: cpl > 0 },
         ]
       : accountObj === 'traffic'
       ? [
           { label: 'Avg CTR', value: `${avgCtr.toFixed(2)}%` },
-          { label: 'Total LPV', value: totalLpv > 0 ? fmt(totalLpv) : '—' },
-          { label: 'Cost Per LPV', value: avgCplpv > 0 ? fmtDollar(avgCplpv) : '—', gold: avgCplpv > 0 },
-          { label: 'Avg CPC', value: avgCpc > 0 ? fmtDollar(avgCpc) : '—' },
+          { label: 'Total LPV', value: totalLpv > 0 ? fmt(totalLpv) : 'N/A' },
+          { label: 'Cost Per LPV', value: avgCplpv > 0 ? fmtDollar(avgCplpv) : 'N/A', gold: avgCplpv > 0 },
+          { label: 'Avg CPC', value: avgCpc > 0 ? fmtDollar(avgCpc) : 'N/A' },
         ]
       : [
           { label: 'Avg CTR', value: `${avgCtr.toFixed(2)}%` },
-          { label: 'Avg CPM', value: avgCpm > 0 ? `$${avgCpm.toFixed(2)}` : '—' },
-          { label: 'Avg Frequency', value: freq > 0 ? freq.toFixed(2) : '—' },
-          { label: 'Avg CPC', value: avgCpc > 0 ? fmtDollar(avgCpc) : '—' },
+          { label: 'Avg CPM', value: avgCpm > 0 ? `$${avgCpm.toFixed(2)}` : 'N/A' },
+          { label: 'Avg Frequency', value: freq > 0 ? freq.toFixed(2) : 'N/A' },
+          { label: 'Avg CPC', value: avgCpc > 0 ? fmtDollar(avgCpc) : 'N/A' },
         ]
 
   const hasPaid = client.type === 'paid' && campaigns.length > 0
