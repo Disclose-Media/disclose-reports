@@ -197,12 +197,20 @@ export async function getWindsorInstagramData(
 ): Promise<WindsorInstagramResult> {
   const { dateFrom, dateTo } = periodToDates(period)
 
+  // follower_count_1d only works for the last 30 days — omit it for historical queries
+  // to avoid a 400 error that wipes out all data for the period.
+  const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  const isHistorical = new Date(dateTo) < thirtyDaysAgo
+  const fields = [
+    'date', 'account_id', 'account_name', 'views', 'reach_1d', 'total_interactions',
+    'accounts_engaged', 'likes', 'comments', 'saves', 'shares',
+    'profile_links_taps', 'profile_views', 'profile_views_1d',
+    ...(isHistorical ? [] : ['follower_count_1d']),
+  ].join(',')
+
   const url = new URL(`${BASE}/instagram`)
   url.searchParams.set('api_key', KEY)
-  url.searchParams.set(
-    'fields',
-    'date,account_id,account_name,views,reach_1d,total_interactions,accounts_engaged,likes,comments,saves,shares,profile_links_taps,profile_views,profile_views_1d,follower_count_1d'
-  )
+  url.searchParams.set('fields', fields)
   url.searchParams.set('date_from', dateFrom)
   url.searchParams.set('date_to', dateTo)
   url.searchParams.set('_account_id', igAccountId)
