@@ -97,6 +97,16 @@ export const CLIENTS: Client[] = [
     hasLeadGen: false,
     shareToken: 'hfj-u7a4h2xq1f',
   },
+  {
+    id: 'bledisloe',
+    name: 'Bledisloe Holiday Park',
+    accountId: '207746867894854',
+    type: 'paid',
+    status: 'active',
+    currency: 'NZD',
+    hasLeadGen: false,
+    shareToken: 'bl-p4k9w2xm7r',
+  },
   // ── Google Ads-only clients ───────────────────────────────────────────────
   {
     id: 'co-kids-google',
