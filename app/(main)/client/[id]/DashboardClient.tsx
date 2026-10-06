@@ -686,18 +686,9 @@ function CampaignSummary({ campaign, ads, obj, clientName, period }: { campaign:
 
         {/* Narrative sections */}
         <div className="space-y-5">
-          {aiLoading && !aiAnalysis ? (
-            <div className="flex items-center gap-2 py-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#C8972D] animate-pulse" />
-              <span className="text-[11px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>Generating campaign analysis…</span>
-            </div>
-          ) : (
-            <>
-              <NarrativeSection title="Overview" icon="○" color="#C8972D" text={overview} />
-              <NarrativeSection title="What's Working" icon="↑" color="#059669" text={highlights} />
-              <NarrativeSection title="Growth Opportunities" icon="◇" color="#C8972D" text={opportunities} />
-            </>
-          )}
+          <NarrativeSection title="Overview" icon="○" color="#C8972D" text={overview} />
+          <NarrativeSection title="What's Working" icon="↑" color="#059669" text={highlights} />
+          <NarrativeSection title="Growth Opportunities" icon="◇" color="#C8972D" text={opportunities} />
         </div>
       </div>
     </div>
