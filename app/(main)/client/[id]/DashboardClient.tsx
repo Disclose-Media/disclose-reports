@@ -766,7 +766,7 @@ export function DashboardClient({ client, summary, campaigns, ads, thumbnails, p
           { label: 'Avg CPC', value: avgCpc > 0 ? fmtDollar(avgCpc) : 'N/A' },
         ]
 
-  const hasPaid = client.type === 'paid' && campaigns.length > 0
+  const hasPaid = client.type === 'paid'
   const hasOrganic = !!windsorOrganic
   const hasGoogle = !!googleAdsData
   const isGoogleOnly = client.type === 'google'
