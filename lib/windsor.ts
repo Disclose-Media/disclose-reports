@@ -222,7 +222,7 @@ export async function getWindsorInstagramData(
   }
 
   try {
-    const res = await fetch(url.toString(), { cache: 'no-store' })
+    const res = await fetch(url.toString(), { next: { revalidate: 300 } })
     if (!res.ok) return empty
     const json = await res.json()
     const rows: Record<string, unknown>[] = json.data ?? json.result ?? (Array.isArray(json) ? json : [])
@@ -330,7 +330,7 @@ async function windsorLifetimeFetch(connector: string, fields: string, accountId
   url.searchParams.set('fields', fields)
   url.searchParams.set('_account_id', accountId)
   try {
-    const res = await fetch(url.toString(), { cache: 'no-store' })
+    const res = await fetch(url.toString(), { next: { revalidate: 3600 } })
     if (!res.ok) return []
     const json = await res.json()
     return (json.data ?? json.result ?? (Array.isArray(json) ? json : [])) as Record<string, unknown>[]

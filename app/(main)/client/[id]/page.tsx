@@ -77,17 +77,14 @@ export default async function ClientPage({
     const isOrganic = client.type === 'organic'
     const hasGoogleAds = !!client.googleAdsId
 
-    const paidIgUserId = client.type === 'paid' && hasWindsor
-      ? await getLinkedIgAccount(client.windsorPageId!).catch(() => null)
-      : null
-
-    const [summaryRes, campaignsRes, adsRes, thumbnailsRes, windsorRes, igRes, windsorIgRes, fbPostsRes, igPostsRes, igAudienceRes, fbAudienceRes, googleAdsRes] = await Promise.all([
+    const [paidIgUserIdRes, summaryRes, campaignsRes, adsRes, thumbnailsRes, windsorRes, igRes, windsorIgRes, fbPostsRes, igPostsRes, igAudienceRes, fbAudienceRes, googleAdsRes] = await Promise.all([
+      client.type === 'paid' && hasWindsor ? getLinkedIgAccount(client.windsorPageId!).catch(() => null) : Promise.resolve(null),
       hasPaid ? getAccountSummary(client.accountId, period) : Promise.resolve(null),
       hasPaid ? getCampaigns(client.accountId, period) : Promise.resolve([]),
       hasPaid ? getAds(client.accountId, period) : Promise.resolve([]),
       hasPaid ? getAdThumbnails(client.accountId) : Promise.resolve({}),
       hasWindsor ? getWindsorOrganicData(client.windsorPageId!, period) : Promise.resolve(null),
-      paidIgUserId ? getIgInsights(paidIgUserId, period).catch(() => null) : (isOrganic && client.igUserId ? getIgInsights(client.igUserId, period).catch(() => null) : Promise.resolve(null)),
+      isOrganic && client.igUserId ? getIgInsights(client.igUserId, period).catch(() => null) : Promise.resolve(null),
       client.igUserId && isOrganic ? getWindsorInstagramData(client.igUserId, period) : Promise.resolve(null),
       isOrganic && hasWindsor ? getWindsorFacebookPosts(client.windsorPageId!, period).catch(() => []) : Promise.resolve([]),
       isOrganic && client.igUserId ? getWindsorInstagramPosts(client.igUserId, period).catch(() => []) : Promise.resolve([]),
@@ -95,15 +92,24 @@ export default async function ClientPage({
       isOrganic && hasWindsor ? getWindsorFbAudience(client.windsorPageId!).catch(() => null) : Promise.resolve(null),
       hasGoogleAds ? getGoogleAdsData(client.googleAdsId!, period).catch(() => null) : Promise.resolve(null),
     ])
+    const paidIgUserId = paidIgUserIdRes as string | null
+
+    // For paid clients: fetch IG insights now that we know the linked IG account ID.
+    // Also run Windsor fallback in parallel if Windsor returned no data.
+    const windsorHasData = windsorRes && (windsorRes.summary.views > 0 || windsorRes.summary.viewers > 0 || windsorRes.summary.visits > 0)
+    const needsFallback = !windsorHasData && isOrganic && !!client.windsorPageId
+    const [paidIgInsights, metaFbFallback] = await Promise.all([
+      paidIgUserId ? getIgInsights(paidIgUserId, period).catch(() => null) : Promise.resolve(null),
+      needsFallback ? getPageInsights(client.windsorPageId!, period).catch(() => null) : Promise.resolve(null),
+    ])
 
     summary = summaryRes
     campaigns = campaignsRes as Awaited<ReturnType<typeof getCampaigns>>
     ads = adsRes as Awaited<ReturnType<typeof getAds>>
     thumbnails = thumbnailsRes as Record<string, string>
-    // If Windsor returned no data (plan limit hit), fall back to Meta Graph API for page insights
-    const windsorHasData = windsorRes && (windsorRes.summary.views > 0 || windsorRes.summary.viewers > 0 || windsorRes.summary.visits > 0)
-    if (!windsorHasData && isOrganic && client.windsorPageId) {
-      const metaFb = await getPageInsights(client.windsorPageId, period).catch(() => null)
+
+    if (needsFallback) {
+      const metaFb = metaFbFallback
       if (metaFb && (metaFb.views > 0 || metaFb.viewers > 0 || metaFb.visits > 0)) {
         windsorOrganic = {
           summary: { views: metaFb.views, viewers: metaFb.viewers, interactions: metaFb.interactions, linkClicks: metaFb.linkClicks, visits: metaFb.visits, follows: metaFb.follows, totalPageLikes: 0 },
@@ -115,7 +121,7 @@ export default async function ClientPage({
     } else {
       windsorOrganic = windsorRes
     }
-    igInsights = igRes as IgInsightsSummary | null
+    igInsights = (paidIgInsights ?? igRes) as IgInsightsSummary | null
     windsorInstagram = windsorIgRes as WindsorInstagramResult | null
     igAudience = igAudienceRes as WindsorIgAudienceData | null
     fbAudience = fbAudienceRes as WindsorFbAudienceData | null
