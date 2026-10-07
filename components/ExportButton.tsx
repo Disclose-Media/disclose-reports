@@ -1,13 +1,22 @@
 'use client'
 
-export function ExportButton({ clientId, period, customFrom, customTo }: {
+export function ExportButton({ clientId, clientType, period, customFrom, customTo }: {
   clientId: string
+  clientType?: string
   period: string
   customFrom?: string
   customTo?: string
 }) {
   function handleExport() {
     const isCustom = period === 'custom'
+    // Organic and Google clients don't have a dedicated PDF route — use print view instead
+    if (clientType === 'organic' || clientType === 'google') {
+      let url = `/client/${clientId}?period=${period}`
+      if (isCustom && customFrom && customTo) url += `&from=${customFrom}&to=${customTo}`
+      const win = window.open(url, '_blank')
+      if (win) win.onload = () => setTimeout(() => win.print(), 800)
+      return
+    }
     let url = `/pdf/${clientId}?period=${period}`
     if (isCustom && customFrom && customTo) {
       url += `&from=${customFrom}&to=${customTo}`
