@@ -54,7 +54,7 @@ async function gaqlSearch(customerId: string, query: string): Promise<Record<str
       'login-customer-id': loginCustomerId,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ query, pageSize: 10000 }),
+    body: JSON.stringify({ query }),
     next: { revalidate: 300 },
   })
 
