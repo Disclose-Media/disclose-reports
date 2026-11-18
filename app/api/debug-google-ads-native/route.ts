@@ -52,7 +52,7 @@ export async function GET() {
           'login-customer-id': process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID!,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query, pageSize: 10000 }),
+        body: JSON.stringify({ query }),
         cache: 'no-store',
       })
       const data = await res.json() as { results?: unknown[]; error?: unknown }
