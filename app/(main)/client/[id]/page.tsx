@@ -95,7 +95,9 @@ export default async function ClientPage({
       isOrganic && hasWindsor ? getWindsorFbAudience(client.windsorPageId!).catch(() => null) : Promise.resolve(null),
       hasGoogleAds
         ? (isGoogleAdsNativeConfigured()
-            ? getGoogleAdsNativeData(client.googleAdsId!, period).catch(() => getGoogleAdsData(client.googleAdsId!, period).catch(() => null))
+            ? getGoogleAdsNativeData(client.googleAdsId!, period)
+                .then(d => d ?? getGoogleAdsData(client.googleAdsId!, period).catch(() => null))
+                .catch(() => getGoogleAdsData(client.googleAdsId!, period).catch(() => null))
             : getGoogleAdsData(client.googleAdsId!, period).catch(() => null))
         : Promise.resolve(null),
     ])

@@ -61,7 +61,7 @@ async function gaqlSearch(customerId: string, query: string): Promise<Record<str
   if (!res.ok) {
     const err = await res.text().catch(() => '')
     console.error(`Google Ads API error ${res.status} for ${customerId}:`, err.slice(0, 300))
-    return []
+    throw new Error(`Google Ads API ${res.status} for ${customerId}`)
   }
 
   const data = await res.json() as { results?: Record<string, unknown>[] }
@@ -212,7 +212,7 @@ export async function getGoogleAdsNativeData(
       FROM campaign
       WHERE ${dateClause}
         AND campaign.status != 'REMOVED'
-    `),
+    `).catch(() => []),
 
     // Geographic (cities)
     gaqlSearch(accountId, `
@@ -234,7 +234,7 @@ export async function getGoogleAdsNativeData(
       WHERE ${dateClause}
         AND ad_group.status != 'REMOVED'
       ORDER BY metrics.cost_micros DESC
-    `),
+    `).catch(() => []),
 
     // Daily
     gaqlSearch(accountId, `
@@ -243,7 +243,7 @@ export async function getGoogleAdsNativeData(
       FROM campaign
       WHERE ${dateClause}
         AND campaign.status != 'REMOVED'
-    `),
+    `).catch(() => []),
 
     // Hourly
     gaqlSearch(accountId, `
@@ -252,7 +252,7 @@ export async function getGoogleAdsNativeData(
       FROM campaign
       WHERE ${dateClause}
         AND campaign.status != 'REMOVED'
-    `),
+    `).catch(() => []),
   ])
 
   console.log(`[GoogleAds] campRows=${campRows.length} kwRows=${kwRows.length} for ${accountId}`)
@@ -260,8 +260,8 @@ export async function getGoogleAdsNativeData(
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
-  const micros = (row: Record<string, unknown>, key = 'metrics.cost_micros') =>
-    Number((row as Record<string, Record<string, unknown>>).metrics?.cost_micros ?? 0) / 1_000_000
+  const micros = (row: Record<string, unknown>) =>
+    Number((row as Record<string, Record<string, unknown>>).metrics?.costMicros ?? 0) / 1_000_000
 
   const metric = (row: Record<string, unknown>, path: string): number => {
     const parts = path.split('.')
@@ -289,7 +289,7 @@ export async function getGoogleAdsNativeData(
     const imps = metric(row, 'metrics.impressions')
     const clicks = metric(row, 'metrics.clicks')
     const convs = metric(row, 'metrics.conversions')
-    const sis = metric(row, 'metrics.search_impression_share')
+    const sis = metric(row, 'metrics.searchImpressionShare')
     campMap.set(id, {
       id,
       name: str(row, 'campaign.name'),
@@ -308,7 +308,7 @@ export async function getGoogleAdsNativeData(
 
   const keywords: (GoogleAdsKeyword & { qualityScore?: number })[] = []
   for (const row of kwRows) {
-    const kw = str(row, 'ad_group_criterion.keyword.text').trim()
+    const kw = str(row, 'adGroupCriterion.keyword.text').trim()
     if (!kw) continue
     const spend = micros(row)
     const clicks = metric(row, 'metrics.clicks')
@@ -320,7 +320,7 @@ export async function getGoogleAdsNativeData(
       ctr: imps > 0 ? (clicks / imps) * 100 : 0,
       avgCpc: clicks > 0 ? spend / clicks : 0,
       conversionRate: clicks > 0 ? (convs / clicks) * 100 : 0,
-      qualityScore: metric(row, 'ad_group_criterion.quality_info.quality_score') || undefined,
+      qualityScore: metric(row, 'adGroupCriterion.qualityInfo.qualityScore') || undefined,
     })
   }
 
@@ -332,8 +332,8 @@ export async function getGoogleAdsNativeData(
     const imps = metric(row, 'metrics.impressions')
     const convs = metric(row, 'metrics.conversions')
     return {
-      searchTerm: str(row, 'search_term_view.search_term'),
-      matchType: str(row, 'search_term_view.status'),
+      searchTerm: str(row, 'searchTermView.searchTerm'),
+      matchType: str(row, 'searchTermView.status'),
       campaignName: str(row, 'campaign.name'),
       spend, clicks, impressions: imps, conversions: convs,
       ctr: imps > 0 ? (clicks / imps) * 100 : 0,
@@ -357,10 +357,10 @@ export async function getGoogleAdsNativeData(
     const rsaDescs: any[] = (row as any)?.adGroupAd?.ad?.responsiveSearchAd?.descriptions ?? []
 
     return {
-      id: str(row, 'ad_group_ad.ad.id'),
+      id: str(row, 'adGroupAd.ad.id'),
       campaignName: str(row, 'campaign.name'),
-      adGroupName: str(row, 'ad_group.name'),
-      status: str(row, 'ad_group_ad.status'),
+      adGroupName: str(row, 'adGroup.name'),
+      status: str(row, 'adGroupAd.status'),
       headlines: rsaHeadlines.map((h: { text?: string }) => h.text ?? '').filter(Boolean),
       descriptions: rsaDescs.map((d: { text?: string }) => d.text ?? '').filter(Boolean),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -391,7 +391,7 @@ export async function getGoogleAdsNativeData(
 
   const geoMap = new Map<string, GoogleAdsGeo>()
   for (const row of geoRows) {
-    const city = str(row, 'geographic_view.country_criterion_id') || 'Unknown'
+    const city = str(row, 'geographicView.countryCriterionId') || 'Unknown'
     const ex = geoMap.get(city) ?? { city, spend: 0, clicks: 0, conversions: 0 }
     ex.spend += micros(row); ex.clicks += metric(row, 'metrics.clicks'); ex.conversions += metric(row, 'metrics.conversions')
     geoMap.set(city, ex)
@@ -402,7 +402,7 @@ export async function getGoogleAdsNativeData(
 
   const agMap = new Map<string, GoogleAdsAdGroup>()
   for (const row of adGroupRows) {
-    const name = str(row, 'ad_group.name').trim()
+    const name = str(row, 'adGroup.name').trim()
     if (!name) continue
     const ex = agMap.get(name) ?? { name, spend: 0, clicks: 0, impressions: 0, ctr: 0, avgCpc: 0, conversions: 0, conversionRate: 0 }
     ex.spend += micros(row); ex.clicks += metric(row, 'metrics.clicks')
