@@ -36,14 +36,14 @@ export async function GET() {
     tokenResult = `ERROR: ${e}`
   }
 
-  // Test full GAQL campaign query with date filter (what getGoogleAdsNativeData actually runs)
+  // Test the EXACT campaigns query from getGoogleAdsNativeData
   let apiResult: string = 'skipped'
-  let campCount = 0
   if (accessToken) {
     try {
       const today = new Date().toISOString().slice(0, 10)
       const monthStart = today.slice(0, 8) + '01'
-      const query = `SELECT campaign.id, campaign.name, campaign.status, metrics.cost_micros, metrics.impressions, metrics.clicks, metrics.conversions FROM campaign WHERE segments.date BETWEEN '${monthStart}' AND '${today}' AND campaign.status != 'REMOVED' ORDER BY metrics.cost_micros DESC`
+      const dateClause = `segments.date BETWEEN '${monthStart}' AND '${today}'`
+      const query = `SELECT campaign.id, campaign.name, campaign.status, metrics.cost_micros, metrics.impressions, metrics.clicks, metrics.conversions, metrics.ctr, metrics.average_cpc, metrics.cost_per_conversion, metrics.conversion_rate, metrics.search_impression_share FROM campaign WHERE ${dateClause} AND campaign.status != 'REMOVED' ORDER BY metrics.cost_micros DESC`
       const res = await fetch('https://googleads.googleapis.com/v23/customers/4035238447/googleAds:search', {
         method: 'POST',
         headers: {
@@ -55,9 +55,8 @@ export async function GET() {
         body: JSON.stringify({ query }),
         cache: 'no-store',
       })
-      const data = await res.json() as { results?: unknown[]; error?: unknown }
-      campCount = data.results?.length ?? 0
-      apiResult = `HTTP ${res.status}, campaigns=${campCount}, error=${JSON.stringify(data.error ?? null)}`
+      const data = await res.json() as { results?: unknown[]; error?: { message?: string } }
+      apiResult = `HTTP ${res.status}, results=${data.results?.length ?? 0}, error=${data.error?.message ?? 'none'}`
     } catch (e) {
       apiResult = `ERROR: ${e}`
     }
