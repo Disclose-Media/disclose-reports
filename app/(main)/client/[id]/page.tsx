@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getClient } from '@/lib/clients'
@@ -221,6 +223,11 @@ export default async function ClientPage({
             </div>
             <p className="text-[#111111] font-semibold mb-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>Unable to load data</p>
             <p className="text-[#888888] text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>{error}</p>
+          </div>
+        ) : client.type === 'google' && !googleAdsData ? (
+          <div className="bg-white border border-amber-100 rounded-[8px] p-8 text-center max-w-lg mx-auto shadow-sm">
+            <p className="text-[#111111] font-semibold mb-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>No Google Ads data returned</p>
+            <p className="text-[#888888] text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>The API returned no campaigns for this period. Try a different date range.</p>
           </div>
         ) : (
           <DashboardClient
