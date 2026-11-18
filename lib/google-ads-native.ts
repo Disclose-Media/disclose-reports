@@ -154,8 +154,7 @@ export async function getGoogleAdsNativeData(
       SELECT campaign.id, campaign.name, campaign.status,
         metrics.cost_micros, metrics.impressions, metrics.clicks,
         metrics.conversions, metrics.ctr, metrics.average_cpc,
-        metrics.cost_per_conversion, metrics.conversion_rate,
-        metrics.search_impression_share
+        metrics.cost_per_conversion, metrics.search_impression_share
       FROM campaign
       WHERE ${dateClause}
         AND campaign.status != 'REMOVED'
@@ -168,8 +167,6 @@ export async function getGoogleAdsNativeData(
         ad_group_criterion.keyword.text, ad_group_criterion.keyword.match_type,
         ad_group_criterion.quality_info.quality_score,
         ad_group_criterion.quality_info.search_predicted_ctr,
-        ad_group_criterion.quality_info.ad_relevance,
-        ad_group_criterion.quality_info.landing_page_experience,
         metrics.cost_micros, metrics.impressions, metrics.clicks,
         metrics.conversions, metrics.ctr, metrics.average_cpc
       FROM keyword_view
