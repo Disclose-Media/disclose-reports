@@ -36,10 +36,14 @@ export async function GET() {
     tokenResult = `ERROR: ${e}`
   }
 
-  // Test API call if token worked
+  // Test full GAQL campaign query with date filter (what getGoogleAdsNativeData actually runs)
   let apiResult: string = 'skipped'
+  let campCount = 0
   if (accessToken) {
     try {
+      const today = new Date().toISOString().slice(0, 10)
+      const monthStart = today.slice(0, 8) + '01'
+      const query = `SELECT campaign.id, campaign.name, campaign.status, metrics.cost_micros, metrics.impressions, metrics.clicks, metrics.conversions FROM campaign WHERE segments.date BETWEEN '${monthStart}' AND '${today}' AND campaign.status != 'REMOVED' ORDER BY metrics.cost_micros DESC`
       const res = await fetch('https://googleads.googleapis.com/v23/customers/4035238447/googleAds:search', {
         method: 'POST',
         headers: {
@@ -48,15 +52,32 @@ export async function GET() {
           'login-customer-id': process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID!,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: 'SELECT campaign.id, campaign.name, metrics.impressions FROM campaign LIMIT 3' }),
+        body: JSON.stringify({ query, pageSize: 10000 }),
         cache: 'no-store',
       })
-      const text = await res.text()
-      apiResult = `HTTP ${res.status}: ${text.slice(0, 300)}`
+      const data = await res.json() as { results?: unknown[]; error?: unknown }
+      campCount = data.results?.length ?? 0
+      apiResult = `HTTP ${res.status}, campaigns=${campCount}, error=${JSON.stringify(data.error ?? null)}`
     } catch (e) {
       apiResult = `ERROR: ${e}`
     }
   }
 
-  return NextResponse.json({ configured, tokenResult, apiResult })
+  // Test isGoogleAdsNativeConfigured
+  const { isGoogleAdsNativeConfigured, getGoogleAdsNativeData } = await import('@/lib/google-ads-native')
+  const isConfigured = isGoogleAdsNativeConfigured()
+
+  let nativeDataResult: string = 'skipped'
+  if (isConfigured) {
+    try {
+      const data = await getGoogleAdsNativeData('403-523-8447', 'this_month')
+      nativeDataResult = data === null
+        ? 'NULL (campRows was empty)'
+        : `OK — campaigns=${data.campaigns.length}, keywords=${data.keywords.length}, searchTerms=${data.searchTerms.length}, ads=${data.ads.length}`
+    } catch (e) {
+      nativeDataResult = `THREW: ${e}`
+    }
+  }
+
+  return NextResponse.json({ configured, tokenResult, isConfigured, apiResult, nativeDataResult })
 }
