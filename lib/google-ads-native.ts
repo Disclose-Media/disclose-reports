@@ -10,7 +10,7 @@ import type { GoogleAdsResult, GoogleAdsCampaign, GoogleAdsKeyword, GoogleAdsDev
 
 type Period = DatePreset | CustomRange
 
-const GA_VERSION = 'v18'
+const GA_VERSION = 'v23'
 const GA_BASE = `https://googleads.googleapis.com/${GA_VERSION}`
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
