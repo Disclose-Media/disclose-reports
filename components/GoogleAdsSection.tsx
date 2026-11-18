@@ -2,8 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { GoogleAdsResult, GoogleAdsCampaign } from '@/lib/google-ads'
+import type { GoogleAdsNativeResult, GoogleAdsSearchTerm, GoogleAdsAd } from '@/lib/google-ads-native'
 
-type Props = { data: GoogleAdsResult; clientName?: string; period?: string }
+type Props = { data: GoogleAdsResult | GoogleAdsNativeResult; clientName?: string; period?: string }
+
+function isNative(d: GoogleAdsResult | GoogleAdsNativeResult): d is GoogleAdsNativeResult {
+  return 'searchTerms' in d
+}
 
 function fmt(n: number) {
   if (isNaN(n) || n === 0) return '0'
@@ -287,6 +292,99 @@ function AiSummary({ data, clientName, period }: { data: GoogleAdsResult; client
   )
 }
 
+function SearchTermsSection({ searchTerms }: { searchTerms: GoogleAdsSearchTerm[] }) {
+  const hasConversions = searchTerms.some(s => s.conversions > 0)
+  return (
+    <div className="mb-5">
+      <div className="flex items-center gap-2.5 mb-3">
+        <div style={{ width: '3px', height: '16px', background: '#C8972D', borderRadius: '2px' }} />
+        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#888888]" style={{ fontFamily: 'Montserrat, sans-serif' }}>Search Terms ({searchTerms.length})</span>
+      </div>
+      <div className="bg-white border border-[#E8E4DC] rounded-[8px] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-[11px]" style={{ fontFamily: 'Inter, sans-serif' }}>
+            <thead>
+              <tr className="border-b border-[#F0EEE9]">
+                <th className="text-left px-4 py-2.5 text-[9px] uppercase tracking-[0.12em] text-[#999999] font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>Search Term</th>
+                <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-[0.12em] text-[#999999] font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>Campaign</th>
+                <th className="text-right px-3 py-2.5 text-[9px] uppercase tracking-[0.12em] text-[#999999] font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>Spend</th>
+                <th className="text-right px-3 py-2.5 text-[9px] uppercase tracking-[0.12em] text-[#999999] font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>Clicks</th>
+                <th className="text-right px-3 py-2.5 text-[9px] uppercase tracking-[0.12em] text-[#999999] font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>CTR</th>
+                {hasConversions && <th className="text-right px-3 py-2.5 text-[9px] uppercase tracking-[0.12em] text-[#999999] font-semibold" style={{ fontFamily: 'Montserrat, sans-serif' }}>Convs</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {searchTerms.slice(0, 25).map((s, i) => (
+                <tr key={i} className={`border-b border-[#F0EEE9] last:border-0 ${i % 2 === 0 ? '' : 'bg-[#FAFAF8]'}`}>
+                  <td className="px-4 py-2.5 text-[#111111] font-medium max-w-[260px] truncate">{s.searchTerm}</td>
+                  <td className="px-3 py-2.5 text-[#888888] max-w-[160px] truncate">{s.campaignName}</td>
+                  <td className="px-3 py-2.5 text-right text-[#111111]">{fmtDollar(s.spend)}</td>
+                  <td className="px-3 py-2.5 text-right text-[#444444]">{fmt(s.clicks)}</td>
+                  <td className="px-3 py-2.5 text-right text-[#444444]">{fmtPct(s.ctr)}</td>
+                  {hasConversions && <td className="px-3 py-2.5 text-right text-emerald-600">{s.conversions > 0 ? fmt(s.conversions) : '—'}</td>}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AdsSection({ ads }: { ads: GoogleAdsAd[] }) {
+  return (
+    <div className="mb-5">
+      <div className="flex items-center gap-2.5 mb-3">
+        <div style={{ width: '3px', height: '16px', background: '#C8972D', borderRadius: '2px' }} />
+        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#888888]" style={{ fontFamily: 'Montserrat, sans-serif' }}>Ad Copy ({ads.length})</span>
+      </div>
+      <div className="grid gap-3">
+        {ads.slice(0, 10).map((ad, i) => (
+          <div key={i} className="bg-white border border-[#E8E4DC] rounded-[8px] p-4">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.14em] text-[#C8972D] font-semibold mb-0.5" style={{ fontFamily: 'Montserrat, sans-serif' }}>{ad.campaignName}</p>
+                <p className="text-[9px] text-[#888888]" style={{ fontFamily: 'Inter, sans-serif' }}>{ad.adGroupName}</p>
+              </div>
+              <div className="flex items-center gap-3 text-right shrink-0">
+                <div>
+                  <p className="text-[9px] uppercase tracking-[0.1em] text-[#999999]" style={{ fontFamily: 'Montserrat, sans-serif' }}>Spend</p>
+                  <p className="text-[13px] font-bold text-[#C8972D]" style={{ fontFamily: 'Montserrat, sans-serif' }}>{fmtDollar(ad.spend)}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] uppercase tracking-[0.1em] text-[#999999]" style={{ fontFamily: 'Montserrat, sans-serif' }}>Clicks</p>
+                  <p className="text-[13px] font-bold text-[#111111]" style={{ fontFamily: 'Montserrat, sans-serif' }}>{fmt(ad.clicks)}</p>
+                </div>
+              </div>
+            </div>
+            {ad.headlines.length > 0 && (
+              <div className="mb-1.5">
+                <p className="text-[9px] uppercase tracking-[0.1em] text-[#BBBBBB] mb-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>Headlines</p>
+                <div className="flex flex-wrap gap-1">
+                  {ad.headlines.map((h, j) => (
+                    <span key={j} className="text-[11px] bg-[#F8F6F2] border border-[#E8E4DC] rounded px-2 py-0.5 text-[#111111]" style={{ fontFamily: 'Inter, sans-serif' }}>{h}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {ad.descriptions.length > 0 && (
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.1em] text-[#BBBBBB] mb-1" style={{ fontFamily: 'Montserrat, sans-serif' }}>Descriptions</p>
+                <div className="space-y-0.5">
+                  {ad.descriptions.map((d, j) => (
+                    <p key={j} className="text-[11px] text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{d}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function GoogleAdsSection({ data, clientName, period }: Props) {
   const { summary: s } = data
   const hasConversions = s.conversions > 0
@@ -338,6 +436,16 @@ export function GoogleAdsSection({ data, clientName, period }: Props) {
       {data.campaigns.map(campaign => (
         <CampaignSection key={campaign.id} campaign={campaign} clientName={clientName} period={period} />
       ))}
+
+      {/* Search Terms (native API only) */}
+      {isNative(data) && data.searchTerms.length > 0 && (
+        <SearchTermsSection searchTerms={data.searchTerms} />
+      )}
+
+      {/* Ad Copy (native API only) */}
+      {isNative(data) && data.ads.length > 0 && (
+        <AdsSection ads={data.ads} />
+      )}
     </div>
   )
 }

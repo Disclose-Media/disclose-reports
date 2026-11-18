@@ -8,6 +8,7 @@ import {
 } from '@/lib/meta'
 import { getWindsorOrganicData, getWindsorInstagramData, getWindsorFacebookPosts, getWindsorInstagramPosts, getWindsorIgAudience, getWindsorFbAudience, type WindsorInstagramResult, type WindsorPost, type WindsorIgAudienceData, type WindsorFbAudienceData, type CustomRange } from '@/lib/windsor'
 import { getGoogleAdsData, type GoogleAdsResult } from '@/lib/google-ads'
+import { getGoogleAdsNativeData, isGoogleAdsNativeConfigured, type GoogleAdsNativeResult } from '@/lib/google-ads-native'
 import { DashboardClient } from './DashboardClient'
 import { ExportButton } from '@/components/ExportButton'
 import { ShareButton } from '@/components/ShareButton'
@@ -90,7 +91,11 @@ export default async function ClientPage({
       isOrganic && client.igUserId ? getWindsorInstagramPosts(client.igUserId, period).catch(() => []) : Promise.resolve([]),
       isOrganic && client.igUserId ? getWindsorIgAudience(client.igUserId).catch(() => null) : Promise.resolve(null),
       isOrganic && hasWindsor ? getWindsorFbAudience(client.windsorPageId!).catch(() => null) : Promise.resolve(null),
-      hasGoogleAds ? getGoogleAdsData(client.googleAdsId!, period).catch(() => null) : Promise.resolve(null),
+      hasGoogleAds
+        ? (isGoogleAdsNativeConfigured()
+            ? getGoogleAdsNativeData(client.googleAdsId!, period).catch(() => getGoogleAdsData(client.googleAdsId!, period).catch(() => null))
+            : getGoogleAdsData(client.googleAdsId!, period).catch(() => null))
+        : Promise.resolve(null),
     ])
     const paidIgUserId = paidIgUserIdRes as string | null
 

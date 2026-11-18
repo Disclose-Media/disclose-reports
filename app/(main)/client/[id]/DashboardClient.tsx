@@ -5,6 +5,7 @@ import type { Client } from '@/lib/clients'
 import type { CampaignInsight, AdInsight, IgInsightsSummary } from '@/lib/meta'
 import type { WindsorOrganicResult, WindsorInstagramResult, WindsorPost, WindsorIgAudienceData, WindsorFbAudienceData } from '@/lib/windsor'
 import type { GoogleAdsResult } from '@/lib/google-ads'
+import type { GoogleAdsNativeResult } from '@/lib/google-ads-native'
 import { OrganicSection } from '@/components/OrganicSection'
 import { ContentTable } from '@/components/ContentTable'
 import { GoogleAdsSection } from '@/components/GoogleAdsSection'
@@ -22,7 +23,7 @@ type Props = {
   igAudience?: WindsorIgAudienceData | null
   fbAudience?: WindsorFbAudienceData | null
   posts?: WindsorPost[]
-  googleAdsData?: GoogleAdsResult | null
+  googleAdsData?: GoogleAdsResult | GoogleAdsNativeResult | null
   initialTab?: string
 }
 
