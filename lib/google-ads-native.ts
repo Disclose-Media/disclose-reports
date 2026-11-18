@@ -55,7 +55,7 @@ async function gaqlSearch(customerId: string, query: string): Promise<Record<str
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ query }),
-    next: { revalidate: 300 },
+    cache: 'no-store',
   })
 
   if (!res.ok) {
@@ -255,6 +255,7 @@ export async function getGoogleAdsNativeData(
     `),
   ])
 
+  console.log(`[GoogleAds] campRows=${campRows.length} kwRows=${kwRows.length} for ${accountId}`)
   if (campRows.length === 0) return null
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
