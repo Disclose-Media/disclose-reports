@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { GoogleAdsResult, GoogleAdsCampaign } from '@/lib/google-ads'
-import type { GoogleAdsNativeResult, GoogleAdsSearchTerm, GoogleAdsAd } from '@/lib/google-ads-native'
+import type { GoogleAdsNativeResult, GoogleAdsSearchTerm, GoogleAdsAd, GoogleAdsShoppingProduct } from '@/lib/google-ads-native'
 
 type Props = { data: GoogleAdsResult | GoogleAdsNativeResult; clientName?: string; period?: string }
 
@@ -749,6 +749,82 @@ function SearchTermsSection({ searchTerms }: { searchTerms: GoogleAdsSearchTerm[
   )
 }
 
+function ShoppingSection({ products }: { products: GoogleAdsShoppingProduct[] }) {
+  if (products.length === 0) return null
+  const hasConv = products.some(p => p.conversions > 0)
+  const hasRoas = products.some(p => p.roas > 0)
+
+  // Brand rollup
+  const brandMap = new Map<string, { spend: number; clicks: number; conversions: number; conversionValue: number }>()
+  for (const p of products) {
+    const b = p.brand === '—' ? 'Unknown' : p.brand
+    const ex = brandMap.get(b) ?? { spend: 0, clicks: 0, conversions: 0, conversionValue: 0 }
+    ex.spend += p.spend; ex.clicks += p.clicks; ex.conversions += p.conversions; ex.conversionValue += p.conversionValue
+    brandMap.set(b, ex)
+  }
+  const brands = Array.from(brandMap.entries())
+    .map(([brand, v]) => ({ brand, ...v, roas: v.spend > 0 ? v.conversionValue / v.spend : 0 }))
+    .sort((a, b) => b.conversions - a.conversions || b.clicks - a.clicks)
+  const totalSpend = products.reduce((s, p) => s + p.spend, 0)
+
+  const productHeaders: { label: string; numeric?: boolean; title?: string }[] = [
+    { label: 'Product' },
+    { label: 'Brand' },
+    { label: 'Spend', numeric: true },
+    { label: 'Clicks', numeric: true },
+    { label: 'Impr.', numeric: true },
+    { label: 'CTR', numeric: true },
+    { label: 'Avg CPC', numeric: true },
+    ...(hasConv ? [{ label: 'Conv.', numeric: true }] : []),
+    ...(hasRoas ? [{ label: 'ROAS', numeric: true, title: 'Return on Ad Spend (revenue ÷ spend)' }] : []),
+  ]
+
+  const productRows = products.map(p => [
+    p.title,
+    p.brand === '—' ? '' : p.brand,
+    fmtDollar(p.spend),
+    fmt(p.clicks),
+    fmt(p.impressions),
+    fmtPct(p.ctr),
+    fmtDollar(p.avgCpc),
+    ...(hasConv ? [p.conversions > 0 ? fmt(p.conversions) : '—'] : []),
+    ...(hasRoas ? [p.roas > 0 ? `${p.roas.toFixed(2)}x` : '—'] : []),
+  ])
+
+  return (
+    <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-4 mb-5">
+      <SectionHeader title="Shopping Products" count={products.length} />
+
+      {/* Brand breakdown — only show if more than one brand */}
+      {brands.length > 1 && (
+        <div className="mb-5">
+          <p className="text-[9px] uppercase tracking-[0.12em] text-[#BBBBBB] mb-3" style={{ fontFamily: 'Montserrat, sans-serif' }}>By Brand</p>
+          <div className="space-y-3">
+            {brands.map(b => (
+              <div key={b.brand}>
+                <div className="flex justify-between items-baseline mb-1">
+                  <span className="text-[12px] font-semibold text-[#222222]">{b.brand}</span>
+                  <div className="flex items-center gap-4 text-[11px]">
+                    <span className="text-[#C8972D] font-semibold">{fmtDollar(b.spend)}</span>
+                    <span className="text-[#555555]">{fmt(b.clicks)} clicks</span>
+                    {hasConv && b.conversions > 0 && <span className="text-emerald-600">{fmt(b.conversions)} conv.</span>}
+                    {hasRoas && b.roas > 0 && <span className="text-indigo-600">{b.roas.toFixed(2)}x ROAS</span>}
+                  </div>
+                </div>
+                <PctBar value={b.spend} max={totalSpend} />
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-[#F0EEE9] mt-4 mb-4" />
+        </div>
+      )}
+
+      {/* Product table */}
+      <SortableTable headers={productHeaders} rows={productRows} maxRows={25} />
+    </div>
+  )
+}
+
 function AdsSection({ ads }: { ads: GoogleAdsAd[] }) {
   const [expanded, setExpanded] = useState<number | null>(null)
   return (
@@ -887,6 +963,11 @@ export function GoogleAdsSection({ data, clientName, period }: Props) {
 
       {/* Account-level keywords (native only) */}
       {isNative(data) && <AccountKeywords data={data} />}
+
+      {/* Shopping products (native only, only renders if account has shopping/pmax with feed) */}
+      {isNative(data) && data.shoppingProducts.length > 0 && (
+        <ShoppingSection products={data.shoppingProducts} />
+      )}
 
       {/* Campaigns */}
       <div className="mb-3">

@@ -124,9 +124,27 @@ export type GoogleAdsAd = {
   avgCpc: number
 }
 
+export type GoogleAdsShoppingProduct = {
+  title: string
+  brand: string
+  itemId: string
+  productType: string
+  category: string
+  spend: number
+  clicks: number
+  impressions: number
+  conversions: number
+  conversionValue: number
+  ctr: number
+  avgCpc: number
+  conversionRate: number
+  roas: number
+}
+
 export type GoogleAdsNativeResult = GoogleAdsResult & {
   searchTerms: GoogleAdsSearchTerm[]
   ads: GoogleAdsAd[]
+  shoppingProducts: GoogleAdsShoppingProduct[]
 }
 
 // ── Main fetch ────────────────────────────────────────────────────────────────
@@ -148,6 +166,7 @@ export async function getGoogleAdsNativeData(
     adGroupRows,
     dailyRows,
     hourlyRows,
+    shoppingRows,
   ] = await Promise.all([
     // Campaigns
     gaqlSearch(accountId, `
@@ -252,6 +271,28 @@ export async function getGoogleAdsNativeData(
       FROM campaign
       WHERE ${dateClause}
         AND campaign.status != 'REMOVED'
+    `).catch(() => []),
+
+    // Shopping products (only returns data for Shopping/PMax campaigns with a feed)
+    gaqlSearch(accountId, `
+      SELECT
+        segments.product_title,
+        segments.product_brand,
+        segments.product_item_id,
+        segments.product_type_l1,
+        segments.product_category_level1,
+        metrics.cost_micros,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.conversions,
+        metrics.conversions_value,
+        metrics.ctr,
+        metrics.average_cpc
+      FROM shopping_performance_view
+      WHERE ${dateClause}
+        AND metrics.clicks > 0
+      ORDER BY metrics.cost_micros DESC
+      LIMIT 200
     `).catch(() => []),
   ])
 
@@ -455,6 +496,38 @@ export async function getGoogleAdsNativeData(
   const dowOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
   const dayOfWeek: GoogleAdsDayOfWeek[] = dowOrder.filter(d => dowMap.has(d)).map(day => ({ day, ...dowMap.get(day)! }))
 
+  // ── Shopping products ────────────────────────────────────────────────────────
+
+  const shopMap = new Map<string, GoogleAdsShoppingProduct>()
+  for (const row of shoppingRows) {
+    const itemId = str(row, 'segments.productItemId') || str(row, 'segments.productTitle') || 'unknown'
+    const ex = shopMap.get(itemId) ?? {
+      title: str(row, 'segments.productTitle') || '(no title)',
+      brand: str(row, 'segments.productBrand') || '—',
+      itemId: str(row, 'segments.productItemId') || '—',
+      productType: str(row, 'segments.productTypeL1') || '—',
+      category: str(row, 'segments.productCategoryLevel1') || '—',
+      spend: 0, clicks: 0, impressions: 0, conversions: 0, conversionValue: 0,
+      ctr: 0, avgCpc: 0, conversionRate: 0, roas: 0,
+    }
+    ex.spend += micros(row)
+    ex.clicks += metric(row, 'metrics.clicks')
+    ex.impressions += metric(row, 'metrics.impressions')
+    ex.conversions += metric(row, 'metrics.conversions')
+    ex.conversionValue += metric(row, 'metrics.conversionsValue')
+    shopMap.set(itemId, ex)
+  }
+  const shoppingProducts: GoogleAdsShoppingProduct[] = Array.from(shopMap.values())
+    .filter(p => p.clicks > 0)
+    .map(p => ({
+      ...p,
+      ctr: p.impressions > 0 ? (p.clicks / p.impressions) * 100 : 0,
+      avgCpc: p.clicks > 0 ? p.spend / p.clicks : 0,
+      conversionRate: p.clicks > 0 ? (p.conversions / p.clicks) * 100 : 0,
+      roas: p.spend > 0 ? p.conversionValue / p.spend : 0,
+    }))
+    .sort((a, b) => b.conversions - a.conversions || b.clicks - a.clicks)
+
   // ── Summary ──────────────────────────────────────────────────────────────────
 
   const campaigns = Array.from(campMap.values()).filter(c => c.spend > 0 || c.clicks > 0).sort((a, b) => b.spend - a.spend)
@@ -482,6 +555,7 @@ export async function getGoogleAdsNativeData(
     daily,
     searchTerms,
     ads,
+    shoppingProducts,
   }
 }
 
