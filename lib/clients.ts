@@ -107,6 +107,16 @@ export const CLIENTS: Client[] = [
     hasLeadGen: false,
     shareToken: 'bl-p4k9w2xm7r',
   },
+  {
+    id: 'disclose-media',
+    name: 'Disclose Media',
+    accountId: '248024534142873',
+    type: 'paid',
+    status: 'active',
+    currency: 'NZD',
+    hasLeadGen: false,
+    shareToken: 'dm-p6x3n8wk2q',
+  },
   // ── Google Ads-only clients ───────────────────────────────────────────────
   {
     id: 'co-kids-google',
