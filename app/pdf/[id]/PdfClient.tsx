@@ -146,6 +146,8 @@ export function PdfClient({
   generatedDate: string
 }) {
   useEffect(() => {
+    const platformLabel = client.type === 'organic' ? 'Organic Social' : 'Meta Ads'
+    document.title = `${client.name} — ${platformLabel} — ${period}`
     const t = setTimeout(() => window.print(), 900)
     return () => clearTimeout(t)
   }, [])
@@ -209,12 +211,12 @@ export function PdfClient({
           print-color-adjust: exact !important;
           font-size: 10pt;
         }
-        @page { margin: 14mm 16mm; size: A4 portrait; }
+        @page { margin: 0; size: A4 portrait; }
         @media print {
           .no-print { display: none !important; }
           .avoid-break { break-inside: avoid; page-break-inside: avoid; }
           .keep-with-next { break-after: avoid; page-break-after: avoid; }
-          .page-wrap { padding: 0; }
+          .page-wrap { padding: 14mm 16mm 8mm 16mm; }
         }
         @media screen {
           body { background: #e5e7eb; }

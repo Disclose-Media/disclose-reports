@@ -1,11 +1,13 @@
 'use client'
 
-export function ExportButton({ clientId, clientType, period, customFrom, customTo }: {
+export function ExportButton({ clientId, clientType, period, customFrom, customTo, clientName = '', periodLabel = '' }: {
   clientId: string
   clientType?: string
   period: string
   customFrom?: string
   customTo?: string
+  clientName?: string
+  periodLabel?: string
 }) {
   function handleExport() {
     const isCustom = period === 'custom'
@@ -14,7 +16,11 @@ export function ExportButton({ clientId, clientType, period, customFrom, customT
       let url = `/client/${clientId}?period=${period}`
       if (isCustom && customFrom && customTo) url += `&from=${customFrom}&to=${customTo}`
       const win = window.open(url, '_blank')
-      if (win) win.onload = () => setTimeout(() => win.print(), 800)
+      if (win) win.onload = () => {
+        const platform = clientType === 'organic' ? 'Organic Social' : 'Google Ads'
+        win.document.title = `${clientName} — ${platform} — ${periodLabel}`
+        setTimeout(() => win.print(), 800)
+      }
       return
     }
     let url = `/pdf/${clientId}?period=${period}`

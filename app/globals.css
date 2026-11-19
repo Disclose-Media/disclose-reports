@@ -176,9 +176,11 @@ body {
   /* Keep campaign sections together */
   .mb-6 { break-inside: avoid; }
 
-  /* Charts — constrain height */
-  canvas { max-height: 160pt !important; }
+  /* Charts — constrain size and prevent overflow */
+  canvas { max-width: 100% !important; max-height: 160pt !important; }
   .h-52 { height: 160pt !important; }
+  /* Chart wrappers */
+  [style*="height"] > canvas { width: 100% !important; }
 
   /* Rounded borders print ok */
   .rounded-\\[8px\\] { border-radius: 6pt !important; }

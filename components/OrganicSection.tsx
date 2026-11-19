@@ -148,7 +148,19 @@ function AiSummaryBlurb({ platform, metrics, clientName, period, fallback }: {
 }) {
   const [summary, setSummary] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [isPrinting, setIsPrinting] = useState(false)
   const fetched = useRef(false)
+
+  useEffect(() => {
+    const handleBefore = () => setIsPrinting(true)
+    const handleAfter = () => setIsPrinting(false)
+    window.addEventListener('beforeprint', handleBefore)
+    window.addEventListener('afterprint', handleAfter)
+    return () => {
+      window.removeEventListener('beforeprint', handleBefore)
+      window.removeEventListener('afterprint', handleAfter)
+    }
+  }, [])
 
   useEffect(() => {
     if (!clientName || fetched.current) return
@@ -174,7 +186,7 @@ function AiSummaryBlurb({ platform, metrics, clientName, period, fallback }: {
         <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#888888]" style={{ fontFamily: 'Montserrat, sans-serif' }}>Performance Snapshot</span>
       </div>
       <div className="px-5 py-4">
-        {loading && !text ? (
+        {loading && !text && !isPrinting ? (
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-[#C8972D] animate-pulse" />
             <span className="text-[11px] text-[#AAAAAA]" style={{ fontFamily: 'Inter, sans-serif' }}>Generating snapshot…</span>

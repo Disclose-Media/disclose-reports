@@ -88,10 +88,22 @@ function SortableTable({
   const [sortAsc, setSortAsc] = useState(false)
   const [showAll, setShowAll] = useState(false)
 
+  function toSortNum(v: string | number | React.ReactNode): number {
+    if (typeof v === 'number') return v
+    if (typeof v === 'string') {
+      const s = v.trim()
+      if (!s || s === '—' || s === '-') return -Infinity
+      const clean = s.replace(/[$,%]/g, '').replace(/,/g, '').trim()
+      if (/K$/i.test(clean)) return parseFloat(clean) * 1_000
+      if (/M$/i.test(clean)) return parseFloat(clean) * 1_000_000
+      const n = parseFloat(clean)
+      return isNaN(n) ? -Infinity : n
+    }
+    return -Infinity
+  }
   const sorted = [...rows].sort((a, b) => {
-    const av = a[sortCol], bv = b[sortCol]
-    if (typeof av === 'number' && typeof bv === 'number') return sortAsc ? av - bv : bv - av
-    return sortAsc ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av))
+    const an = toSortNum(a[sortCol]), bn = toSortNum(b[sortCol])
+    return sortAsc ? an - bn : bn - an
   })
   const displayed = showAll ? sorted : sorted.slice(0, maxRows)
 
@@ -258,7 +270,18 @@ function BarChart({
 function AiSummary({ data, clientName, period }: { data: GoogleAdsResult; clientName?: string; period?: string }) {
   const [summary, setSummary] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [isPrinting, setIsPrinting] = useState(false)
   const fetched = useRef(false)
+  useEffect(() => {
+    const handleBefore = () => setIsPrinting(true)
+    const handleAfter = () => setIsPrinting(false)
+    window.addEventListener('beforeprint', handleBefore)
+    window.addEventListener('afterprint', handleAfter)
+    return () => {
+      window.removeEventListener('beforeprint', handleBefore)
+      window.removeEventListener('afterprint', handleAfter)
+    }
+  }, [])
   useEffect(() => {
     if (fetched.current) return
     fetched.current = true
@@ -272,7 +295,7 @@ function AiSummary({ data, clientName, period }: { data: GoogleAdsResult; client
     <div className="bg-white border border-[#E8E4DC] rounded-[8px] overflow-hidden mb-5">
       <div className="px-4 py-3 border-b border-[#F0EEE9]"><SectionHeader title="Performance Snapshot" /></div>
       <div className="px-4 py-4">
-        {loading ? (
+        {loading && !isPrinting ? (
           <div className="space-y-2"><div className="h-3 bg-[#F0EEE9] rounded animate-pulse w-full" /><div className="h-3 bg-[#F0EEE9] rounded animate-pulse w-5/6" /></div>
         ) : (
           <p className="text-[12px] leading-relaxed text-[#444444]" style={{ fontFamily: 'Inter, sans-serif' }}>{summary ?? fallback}</p>
