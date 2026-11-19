@@ -72,7 +72,7 @@ function PctBar({ value, max, color = '#C8972D' }: { value: number; max: number;
 function SortableTable({
   headers,
   rows,
-  defaultSort = 1,
+  defaultSort,
   maxRows = 50,
   highlightCol = 1,
 }: {
@@ -82,7 +82,9 @@ function SortableTable({
   maxRows?: number
   highlightCol?: number
 }) {
-  const [sortCol, setSortCol] = useState(defaultSort)
+  const convCol = headers.findIndex(h => h.label.toLowerCase().startsWith('conv'))
+  const resolvedDefault = defaultSort ?? (convCol >= 0 ? convCol : 1)
+  const [sortCol, setSortCol] = useState(resolvedDefault)
   const [sortAsc, setSortAsc] = useState(false)
   const [showAll, setShowAll] = useState(false)
 
@@ -281,7 +283,7 @@ function AiSummary({ data, clientName, period }: { data: GoogleAdsResult; client
 }
 
 function CampaignSection({ campaign }: { campaign: GoogleAdsCampaign }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   const hasConversions = campaign.conversions > 0
 
   return (
@@ -742,7 +744,7 @@ function SearchTermsSection({ searchTerms }: { searchTerms: GoogleAdsSearchTerm[
   return (
     <div className="bg-white border border-[#E8E4DC] rounded-[8px] p-4 mb-5">
       <SectionHeader title="Search Terms" count={searchTerms.length} />
-      <SortableTable headers={headers} rows={displayRows} defaultSort={2} maxRows={25} highlightCol={2} />
+      <SortableTable headers={headers} rows={displayRows} maxRows={25} highlightCol={2} />
     </div>
   )
 }
@@ -873,25 +875,25 @@ export function GoogleAdsSection({ data, clientName, period }: Props) {
       {/* Account-level trend */}
       <AccountTrendChart data={data} />
 
+      {/* Account-level ad groups */}
+      <AccountAdGroups data={data} />
+
       {/* Devices */}
       <AccountDevices devices={data.devices} />
 
-      {/* Hour of day + Day of week */}
-      {data.hourly && data.hourly.length > 0 && <HourOfDay hourly={data.hourly} />}
+      {/* Day of week + Hour of day */}
       {data.dayOfWeek && data.dayOfWeek.length > 0 && <DayOfWeek dayOfWeek={data.dayOfWeek} />}
+      {data.hourly && data.hourly.length > 0 && <HourOfDay hourly={data.hourly} />}
 
       {/* Account-level keywords (native only) */}
       {isNative(data) && <AccountKeywords data={data} />}
-
-      {/* Account-level ad groups */}
-      <AccountAdGroups data={data} />
 
       {/* Campaigns */}
       <div className="mb-3">
         <div className="flex items-center gap-2.5 mb-3">
           <div style={{ width: '3px', height: '16px', background: '#C8972D', borderRadius: '2px' }} />
           <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#888888]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-            Campaigns ({data.campaigns.length}) — click to expand
+            Campaigns ({data.campaigns.length})
           </span>
         </div>
       </div>
